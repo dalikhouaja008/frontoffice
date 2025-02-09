@@ -1,0 +1,36 @@
+lib/
+├── core/
+│   ├── error/               # Gestion des erreurs
+│   ├── network/             # Configuration réseau (API, GraphQL, etc.)
+│   ├── use_cases/           # Use cases de base (optionnel)
+│   ├── utils/               # Utilitaires (extensions, constantes, etc.)
+│   └── injection.dart       # Injection de dépendances (GetIt, Provider, etc.)
+
+├── features/                # Fonctionnalités de l'application
+
+│   ├── auth/                # Fonctionnalité d'authentification
+
+│   │   ├── data/            # Couche Données
+│   │   │   ├── datasources/ # Sources de données (locale, distante)
+│   │   │   ├── models/      # Modèles de données (DTOs)
+│   │   │   └── repositories/ # Implémentations des repositories
+
+│   │   ├── domain/          # Couche Domaine
+│   │   │   ├── entities/    # Entités métier
+│   │   │   ├── repositories/ # Interfaces des repositories
+│   │   │   └── use_cases/   # Use cases (logique métier)
+
+│   │   └── presentation/    # Couche Présentation
+│   │       ├── bloc/        # Gestion d'état avec BLoC
+│   │       ├── pages/       # Pages/écrans
+│   │       └── widgets/     # Widgets réutilisables
+
+│   ├── terrains/            # Fonctionnalité des terrains
+│   │   ├── data/
+│   │   ├── domain/
+│   │   └── presentation/
+│   └── tokens/              #  Fonctionnalité des tokens
+│       ├── data/
+│       ├── domain/
+│       └── presentation/
+└── main.dart                # Point d'entrée de l'application
