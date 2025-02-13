@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/user.dart';
-import '../../domain/use_cases/sign_up_use_case.dart';
+import '../../../domain/entities/user.dart';
+import '../../../domain/use_cases/sign_up_use_case.dart';
 
 part 'sign_up_event.dart';
 part 'sign_up_state.dart';

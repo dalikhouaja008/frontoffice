@@ -5,9 +5,16 @@ import '../models/user_model.dart';
 abstract class AuthRemoteDataSource {
   Future<UserModel> login(String email, String password);
   Future<UserModel> signUp(String username, String email, String password, String role, String? publicKey);
+
+  //2FA
+  Future<String> enableTwoFactorAuth();
+  Future<bool> verifyAndEnableTwoFactorAuth(String token);
+  Future<UserModel> verifyTwoFactorLogin(String userId, String token);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+
+  
   @override
   Future<UserModel> login(String email, String password) async {
     final GraphQLClient client = GraphQLService.client;
@@ -147,42 +154,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     return isVerified;
   }
   
-   @override
-  Future<UserModel> verifyTwoFactor(String token) async {
-    final GraphQLClient client = GraphQLService.client;
-
-    const String verifyTwoFactorMutation = """
-      mutation VerifyTwoFactor(\$token: String!) {
-        verifyTwoFactorLogin(token: \$token) {
-          accessToken
-          refreshToken
-          user {
-            id
-            email
-          }
-        }
-      }
-    """;
-
-    final QueryResult result = await client.mutate(
-      MutationOptions(
-        document: gql(verifyTwoFactorMutation),
-        variables: {
-          "token": token,
-        },
-      ),
-    );
-
-    if (result.hasException) {
-      throw Exception(result.exception.toString());
-    }
-
-    final userData = result.data?["verifyTwoFactorLogin"];
-    if (userData == null) {
-      throw Exception("Invalid response from server");
-    }
-
-    return UserModel.fromJson(userData["user"]);
+  
+  @override
+  Future<UserModel> verifyTwoFactorLogin(String userId, String token) {
+    // TODO: implement verifyTwoFactorLogin
+    throw UnimplementedError();
   }
+  
 
+  
 }

@@ -45,8 +45,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   dartz: ^0.10.1
+  json_annotation: ^4.9.0
 
 dev_dependencies:
+  # The "build_runner" package makes it easy to build and analyze your Flutter apps.
+  build_runner: ^2.1.10
+  json_serializable: ^6.7.1
   flutter_test:
     sdk: flutter
 
