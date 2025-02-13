@@ -11,6 +11,7 @@ class LoginSubmitted extends LoginEvent {
   LoginSubmitted({required this.email, required this.password});
 }
 
+
 // States
 abstract class LoginState {}
 

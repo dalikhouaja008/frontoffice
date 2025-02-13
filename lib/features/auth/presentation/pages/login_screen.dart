@@ -40,7 +40,7 @@ class LoginScreen extends StatelessWidget {
               child: Container(
                 width: size.width,
                 height: size.height,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage('assets/background.jpg'),
                     fit: BoxFit.cover,
