@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
+import 'package:the_boost/core/services/secure_storage_service.dart';
+import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/two_factor_dialog.dart';
 import '../../domain/entities/user.dart';
@@ -19,19 +21,33 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final TwoFactorAuthRepository _twoFactorAuthRepository;
 
-  @override
-  void initState() {
-    super.initState();
-    _twoFactorAuthRepository = TwoFactorAuthRepositoryImpl(
-      client: GraphQLService.client,
-    );
-    
-    if (!widget.user.isTwoFactorEnabled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _show2FADialog();
-      });
-    }
+@override
+void initState() {
+  super.initState();
+  print('[2025-02-13 23:09:38] 🚀 Initializing HomeScreen state'
+        '\n└─ User: raednas');
+
+  // Récupérer les services via Provider
+  final secureStorage = context.read<SecureStorageService>();
+  final remoteDataSource = AuthRemoteDataSourceImpl(
+    client: GraphQLService.client,
+    secureStorage: secureStorage,
+  );
+
+  print('[2025-02-13 23:09:38] 🏭 Creating TwoFactorAuthRepository'
+        '\n└─ User: raednas');
+        
+  _twoFactorAuthRepository = TwoFactorAuthRepositoryImpl(remoteDataSource);
+
+  if (!widget.user.isTwoFactorEnabled) {
+    print('[2025-02-13 23:09:38] 🔔 Scheduling 2FA dialog'
+          '\n└─ User: raednas');
+          
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _show2FADialog();
+    });
   }
+}
 
   void _show2FADialog() {
     showDialog(
@@ -72,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               icon: const Icon(Icons.security_outlined),
               onPressed: _show2FADialog,
-              tooltip: 'Activer 2FA',
+              tooltip: 'Activate 2FA',
             ),
           IconButton(
             icon: const Icon(Icons.logout),

@@ -7,16 +7,15 @@ import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bl
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_event.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
 
-
 class TwoFactorDialog extends StatefulWidget {
-   final User user;
-  final VoidCallback onSkip; 
-  
+  final User user;
+  final VoidCallback onSkip;
+
   const TwoFactorDialog({
-     super.key,
+    super.key,
     required this.user,
     required this.onSkip,
-    });
+  });
 
   @override
   State<TwoFactorDialog> createState() => _TwoFactorDialogState();
@@ -126,7 +125,8 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: () {
-            context.read<TwoFactorAuthBloc>().add(const EnableTwoFactorAuthEvent());
+            print('[2025-02-13 22:55:59] 🔵 Widget: Enable 2FA button pressed');
+            context.read<TwoFactorAuthBloc>().add(EnableTwoFactorAuthEvent());
           },
           icon: const Icon(Icons.qr_code),
           label: const Text('Activer 2FA'),
@@ -142,7 +142,7 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
         ),
         const SizedBox(height: 16),
         TextButton(
-           onPressed: () {
+          onPressed: () {
             Navigator.of(context).pop(); // Ferme le dialogue
             widget.onSkip(); // Appelle le callback de navigation
           },

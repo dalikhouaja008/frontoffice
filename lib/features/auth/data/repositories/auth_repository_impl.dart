@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:the_boost/features/auth/data/models/2FA/TwoFactorResponse_model.dart';
+import 'package:the_boost/features/auth/domain/entities/login_response.dart';
+import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
@@ -10,12 +11,15 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<String, User>> login(String email, String password) async {
+  Future<LoginResponse> login({
+    required String email,
+    required String password,
+  }) async {
     try {
-      final user = await remoteDataSource.login(email, password);
-      return Right(user);
+      final response = await remoteDataSource.login( email,  password);
+      return response;
     } catch (e) {
-      return Left(e.toString());
+      throw Exception('Failed to login: $e');
     }
   }
 

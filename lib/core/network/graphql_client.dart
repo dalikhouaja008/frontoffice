@@ -3,14 +3,25 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 class GraphQLService {
   static final HttpLink httpLink = HttpLink("http://localhost:3000/graphql");
 
-  static final AuthLink authLink = AuthLink(
-    getToken: () async => 'Bearer YOUR_ACCESS_TOKEN',
-  );
+  // Créer un AuthLink qui obtient le token de SecureStorage
+  static AuthLink getAuthLink(String? token) {
+    return AuthLink(
+      getToken: () async => token != null ? 'Bearer $token' : null,
+    );
+  }
 
-  static final Link link = authLink.concat(httpLink);
+  // Méthode pour obtenir un client authentifié
+  static GraphQLClient getClientWithToken(String? token) {
+    final Link link = getAuthLink(token).concat(httpLink);
+    return GraphQLClient(
+      link: link,
+      cache: GraphQLCache(),
+    );
+  }
 
+  // Client par défaut pour les requêtes non authentifiées
   static final GraphQLClient client = GraphQLClient(
-    link: link,
+    link: httpLink,
     cache: GraphQLCache(),
   );
 }

@@ -3,12 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
+import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
+import '../../../../core/services/secure_storage_service.dart';
 import '../bloc/login/login_bloc.dart';
 import '../../domain/use_cases/login_use_case.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/error_popup.dart';
-import 'home_screen.dart'; 
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,37 +26,66 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool _obscureText = true;
 
-void _handleStandardNavigation(BuildContext context, User user) {
-  Navigator.of(context).pushReplacement(
-    MaterialPageRoute(
-      builder: (_) => HomeScreen(user: user),
-    ),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     bool isMobile = size.width < 800;
+    String formatErrorMessage(String error) {
+      if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
+        return 'Unable to process login information. Please try again.';
+      }
+      return error.replaceAll('Exception:', '').trim();
+    }
+
+    String getDetailedError(String error) {
+      if (error.contains('TypeError')) {
+        return 'Null value received where string was expected';
+      }
+      return 'See error message above';
+    }
 
     return Scaffold(
       body: BlocProvider(
-        create: (context) => LoginBloc(context.read<LoginUseCase>()),
+        create: (context) => LoginBloc(
+          loginUseCase: context.read<LoginUseCase>(),
+          secureStorage: context
+              .read<SecureStorageService>(), // Ajout du paramètre manquant
+        ),
         child: BlocConsumer<LoginBloc, LoginState>(
-        listener: (context, state) {
-          if (state is LoginSuccess) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => HomeScreen(user: state.user),
-              ),
-            );
-          } else if (state is LoginFailure) {
-            showDialog(
-              context: context,
-              builder: (context) => ErrorPopup(message: state.error),
-            );
-          }
-        },
+          listener: (context, state) {
+            if (state is LoginSuccess) {
+              print('[${DateTime.now().toIso8601String()}] 🎉 Login successful'
+                  '\n└─ User: ${state.user.username}'
+                  '\n└─ Email: ${state.user.email}'
+                  '\n└─ Role: ${state.user.role}');
+
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => HomeScreen(user: state.user),
+                ),
+              );
+            } else if (state is LoginFailure) {
+              final errorMessage =
+                  state.error.toString();
+              print('[${DateTime.now().toIso8601String()}] ❌ Login failed'
+                  '\n└─ Error: $errorMessage'
+                  '\n└─ Details: ${getDetailedError(errorMessage)}');
+
+              showDialog(
+                context: context,
+                builder: (context) => ErrorPopup(
+                  message: formatErrorMessage(errorMessage),
+                ),
+              );
+            } else if (state is LoginLoading) {
+              print(
+                  '[${DateTime.now().toIso8601String()}] ⏳ Authentication in progress...');
+            } else if (state is LoginInitial) {
+              print(
+                  '[${DateTime.now().toIso8601String()}] 🔄 Login view initialized');
+            }
+          },
           builder: (context, state) {
             return SafeArea(
               child: Container(
@@ -158,7 +189,7 @@ void _handleStandardNavigation(BuildContext context, User user) {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Lottie.asset('assets/animations/auth.json', height: 150),
-          SizedBox(height: 20),
+         const SizedBox(height: 20),
           Text(
             "Login to TheBoost",
             style:

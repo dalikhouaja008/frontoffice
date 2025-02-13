@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class User {
   final String id;
   final String username;
@@ -18,6 +20,50 @@ class User {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  // Ajout de la méthode fromJson
+factory User.fromJson(Map<String, dynamic> json) {
+  print('[2025-02-13 20:50:39] 🔄 Parsing User from JSON:'
+        '\n${const JsonEncoder.withIndent('  ').convert(json)}');
+        
+  try {
+    return User(
+      // Utiliser '_id' au lieu de 'id' car c'est le format renvoyé par le backend
+      id: json['_id'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      role: json['role'] as String? ?? '',
+      twoFactorSecret: json['twoFactorSecret'] as String?,
+      isTwoFactorEnabled: json['isTwoFactorEnabled'] as bool? ?? false,
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : DateTime.now(),
+    );
+  } catch (e) {
+    print('[2025-02-13 20:50:39] ❌ Error parsing User from JSON:'
+          '\n└─ Error: $e'
+          '\n└─ JSON: ${json.toString()}');
+    rethrow;
+  }
+}
+
+  // Ajout de la méthode toJson
+// Mettre à jour toJson pour correspondre
+Map<String, dynamic> toJson() {
+  return {
+    '_id': id,  // Utiliser '_id' pour être cohérent
+    'username': username,
+    'email': email,
+    'role': role,
+    'twoFactorSecret': twoFactorSecret,
+    'isTwoFactorEnabled': isTwoFactorEnabled,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
+}
 
   User copyWith({
     String? id,
@@ -41,7 +87,6 @@ class User {
     );
   }
 
-  // Pour la comparaison d'objets
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
