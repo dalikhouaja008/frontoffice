@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:the_boost/features/auth/domain/entities/user.dart';
 import '../bloc/login/login_bloc.dart';
 import '../../domain/use_cases/login_use_case.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/error_popup.dart';
-import '../widgets/social_button.dart';
-import 'home_screen.dart'; // ✅ Import Home Page
+import 'home_screen.dart'; 
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -23,6 +24,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool _obscureText = true;
 
+void _handleStandardNavigation(BuildContext context, User user) {
+  Navigator.of(context).pushReplacement(
+    MaterialPageRoute(
+      builder: (_) => HomeScreen(user: user),
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -32,32 +41,26 @@ class _LoginScreenState extends State<LoginScreen> {
       body: BlocProvider(
         create: (context) => LoginBloc(context.read<LoginUseCase>()),
         child: BlocConsumer<LoginBloc, LoginState>(
-          listener: (context, state) {
-            if (state is LoginSuccess) {
-              // ✅ Navigate to Home Screen after login success
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Login Successful! Welcome ${state.user.email}")),
-              );
-              Future.delayed(Duration(seconds: 1), () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomeScreen(user: state.user)),
-                );
-              });
-            } else if (state is LoginFailure) {
-              // ✅ Show an alert dialog pop-up for login failure
-              showDialog(
-                context: context,
-                builder: (context) => ErrorPopup(message: state.error),
-              );
-            }
-          },
+        listener: (context, state) {
+          if (state is LoginSuccess) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => HomeScreen(user: state.user),
+              ),
+            );
+          } else if (state is LoginFailure) {
+            showDialog(
+              context: context,
+              builder: (context) => ErrorPopup(message: state.error),
+            );
+          }
+        },
           builder: (context, state) {
             return SafeArea(
               child: Container(
                 width: size.width,
                 height: size.height,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage('assets/background.jpg'),
                     fit: BoxFit.cover,
@@ -86,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildWelcomeSection(),
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
           _buildLoginForm(context, state),
         ],
       ),
@@ -106,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Center(
             child: Container(
               width: 500,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
               child: _buildLoginForm(context, state),
             ),
           ),
@@ -121,14 +124,18 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CircleAvatar(radius: 60, backgroundColor: Colors.white, backgroundImage: AssetImage('assets/logo.png')),
-        SizedBox(height: 20),
+        const CircleAvatar(
+            radius: 60,
+            backgroundColor: Colors.white,
+            backgroundImage: AssetImage('assets/logo.png')),
+        const SizedBox(height: 20),
         Text(
           "Welcome to TheBoost",
-          style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          style: GoogleFonts.poppins(
+              fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         Text(
           "Invest in land through tokenized assets and grow your portfolio",
           style: GoogleFonts.poppins(fontSize: 16, color: Colors.white70),
@@ -141,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 🔐 **Right Section: Login Form + Animation**
   Widget _buildLoginForm(BuildContext context, LoginState state) {
     return Container(
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
@@ -154,9 +161,10 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(height: 20),
           Text(
             "Login to TheBoost",
-            style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+            style:
+                GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Form(
             key: _formKey,
             child: Column(
@@ -169,20 +177,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return "Please enter your email";
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value)) {
                       return "Please enter a valid email address";
                     }
                     return null;
                   },
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 CustomTextField(
                   controller: _passwordController,
                   label: "Password",
                   icon: Icons.lock,
                   obscureText: _obscureText,
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureText ? Icons.visibility : Icons.visibility_off),
+                    icon: Icon(
+                        _obscureText ? Icons.visibility : Icons.visibility_off),
                     onPressed: () {
                       setState(() {
                         _obscureText = !_obscureText;
@@ -226,11 +236,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (_formKey.currentState!.validate()) {
                       // 🔹 LOGIN LOGIC HERE
                       context.read<LoginBloc>().add(
-                        LoginRequested(
-                          _emailController.text.trim(),
-                          _passwordController.text.trim(),
-                        ),
-                      );
+                            LoginRequested(
+                              _emailController.text.trim(),
+                              _passwordController.text.trim(),
+                            ),
+                          );
                     }
                   },
                 ),
