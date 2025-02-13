@@ -7,13 +7,21 @@ import '../bloc/login_bloc.dart';
 import '../../domain/use_cases/login_use_case.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/error_popup.dart';
 import '../widgets/social_button.dart';
+import 'home_screen.dart'; // ✅ Import Home Page
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool rememberMe = false;
+  bool _obscureText = true;
 
   @override
   Widget build(BuildContext context) {
@@ -26,12 +34,21 @@ class LoginScreen extends StatelessWidget {
         child: BlocConsumer<LoginBloc, LoginState>(
           listener: (context, state) {
             if (state is LoginSuccess) {
+              // ✅ Navigate to Home Screen after login success
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("Login Successful! Welcome ${state.user.email}")),
               );
+              Future.delayed(Duration(seconds: 1), () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeScreen(user: state.user)),
+                );
+              });
             } else if (state is LoginFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.error)),
+              // ✅ Show an alert dialog pop-up for login failure
+              showDialog(
+                context: context,
+                builder: (context) => ErrorPopup(message: state.error),
               );
             }
           },
@@ -86,7 +103,13 @@ class LoginScreen extends StatelessWidget {
         ),
         Expanded(
           flex: 1,
-          child: _buildLoginForm(context, state),
+          child: Center(
+            child: Container(
+              width: 500,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: _buildLoginForm(context, state),
+            ),
+          ),
         ),
       ],
     );
@@ -124,9 +147,10 @@ class LoginScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Lottie.asset('assets/animations/auth.json', height: 180), // Increased animation size for better visual effect
+          Lottie.asset('assets/animations/auth.json', height: 150),
           SizedBox(height: 20),
           Text(
             "Login to TheBoost",
@@ -137,19 +161,61 @@ class LoginScreen extends StatelessWidget {
             key: _formKey,
             child: Column(
               children: [
-                CustomTextField(controller: _emailController, label: "Email", icon: Icons.email),
+                CustomTextField(
+                  controller: _emailController,
+                  label: "Email",
+                  icon: Icons.email,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your email";
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return "Please enter a valid email address";
+                    }
+                    return null;
+                  },
+                ),
                 SizedBox(height: 16),
-                CustomTextField(controller: _passwordController, label: "Password", icon: Icons.lock, obscureText: true),
+                CustomTextField(
+                  controller: _passwordController,
+                  label: "Password",
+                  icon: Icons.lock,
+                  obscureText: _obscureText,
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureText ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText;
+                      });
+                    },
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your password";
+                    }
+                    return null;
+                  },
+                ),
                 SizedBox(height: 10),
                 Row(
                   children: [
                     Checkbox(
                       value: rememberMe,
                       onChanged: (value) {
-                        rememberMe = value!;
+                        setState(() {
+                          rememberMe = value!;
+                        });
                       },
                     ),
                     Text("Remember Me"),
+                    Spacer(),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        "Forgot Password?",
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ),
                   ],
                 ),
                 SizedBox(height: 20),
@@ -158,8 +224,12 @@ class LoginScreen extends StatelessWidget {
                   isLoading: state is LoginLoading,
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
+                      // 🔹 LOGIN LOGIC HERE
                       context.read<LoginBloc>().add(
-                        LoginSubmitted(email: _emailController.text, password: _passwordController.text),
+                        LoginRequested(
+                          _emailController.text.trim(),
+                          _passwordController.text.trim(),
+                        ),
                       );
                     }
                   },
@@ -167,14 +237,26 @@ class LoginScreen extends StatelessWidget {
                 SizedBox(height: 20),
                 Text("Or sign up with"),
                 SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  alignment: WrapAlignment.center,
                   children: [
-                    SocialButton(icon: FontAwesomeIcons.google, color: Colors.red, onPressed: () {}),
-                    SizedBox(width: 16),
-                    SocialButton(icon: FontAwesomeIcons.apple, color: Colors.black, onPressed: () {}),
-                    SizedBox(width: 16),
-                    SocialButton(icon: FontAwesomeIcons.facebook, color: Colors.blue, onPressed: () {}),
+                    SocialButton(
+                      icon: FontAwesomeIcons.google,
+                      color: Colors.red,
+                      onPressed: () {},
+                    ),
+                    SocialButton(
+                      icon: FontAwesomeIcons.apple,
+                      color: Colors.black,
+                      onPressed: () {},
+                    ),
+                    SocialButton(
+                      icon: FontAwesomeIcons.facebook,
+                      color: Colors.blue,
+                      onPressed: () {},
+                    ),
                   ],
                 ),
               ],
@@ -184,4 +266,6 @@ class LoginScreen extends StatelessWidget {
       ),
     );
   }
+
+ 
 }
