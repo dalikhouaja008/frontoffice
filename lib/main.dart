@@ -10,6 +10,8 @@ import 'features/auth/presentation/bloc/login_bloc.dart';
 import 'features/auth/presentation/bloc/sign_up_bloc.dart';
 import 'features/auth/presentation/pages/login_screen.dart';
 import 'features/auth/presentation/pages/sign_up_screen.dart';
+import 'features/auth/presentation/pages/home_screen.dart';
+import 'features/auth/domain/entities/user.dart'; // Import User entity
 
 void main() {
   runApp(
@@ -52,14 +54,21 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // Create a dummy user for demonstration purposes
+    User dummyUser = User(
+      username: 'demo_user',
+      email: 'demo_user@example.com',
+      role: 'investor', id: '',
+    );
+
     return MaterialApp(
       title: 'TheBoost',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-       // home: LoginScreen(), 
-       home: SignUpScreen(), 
+      home: HomeScreen(user: dummyUser), // Pass the dummy user to HomeScreen
     );
   }
 }
