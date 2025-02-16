@@ -18,12 +18,8 @@ class SignUpBloc extends Bloc<SignUpEvent, SignUpState> {
       result.fold(
         (failure) => emit(SignUpFailure(failure)),
         (user) {
-          if (user == null) {
-            emit(SignUpFailure("Sign-Up successful, but no user data returned."));
-          } else {
-            emit(SignUpSuccess(user));
-          }
-        },
+          emit(SignUpSuccess(user));
+                },
       );
     });
   }

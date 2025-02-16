@@ -21,57 +21,46 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<LogoutRequested>(_onLogoutRequested);
   }
 
-  Future<void> _onLoginRequested(
+    Future<void> _onLoginRequested(
     LoginRequested event,
     Emitter<LoginState> emit,
   ) async {
-    print('[${DateTime.now().toIso8601String()}] ⏳ Login attempt initiated'
+    print('LoginBloc: 🚀 Processing login request'
           '\n└─ Email: ${event.email}');
-    
-    emit(LoginLoading());
-    
+
     try {
+      emit( LoginLoading());
+
       final response = await _loginUseCase.execute(
         email: event.email,
         password: event.password,
       );
 
       if (response.requiresTwoFactor) {
-        print('[${DateTime.now().toIso8601String()}] 🔐 2FA Required'
-              '\n└─ Email: ${event.email}');
-        
+        print('LoginBloc:🔐 2FA required'
+              '\n└─ Email: ${response.user.email}');
+
         emit(LoginRequires2FA(
-          tempToken: response.tempToken!,
           user: response.user,
+          tempToken: response.tempToken!,
         ));
         return;
       }
 
-      if (response.accessToken != null && response.refreshToken != null) {
-        await _secureStorage.saveTokens(
-          accessToken: response.accessToken!,
-          refreshToken: response.refreshToken!,
-        );
-        print('[${DateTime.now().toIso8601String()}] 🔑 Tokens saved successfully'
-              '\n└─ User: ${response.accessToken}');
-      }
+      print('LoginBloc: ✅ Login successful'
+            '\n└─ Email: ${response.user.email}');
 
-      emit(LoginSuccess(
-        user: response.user,
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        requiresTwoFactor: false,
-        tempToken: null,
-      ));
-      
-      print('[${DateTime.now().toIso8601String()}] ✅ Login successful'
-            '\n└─ User: ${response.user.email}');
+      await _secureStorage.saveTokens(
+        accessToken: response.accessToken!,
+        refreshToken: response.refreshToken!,
+      );
 
+      emit(LoginSuccess(user: response.user));
     } catch (e) {
-      print('[${DateTime.now().toIso8601String()}] ❌ Login failed'
-            '\n└─ Error: ${e.toString()}'
-            '\n└─ Email: ${event.email}');
-      emit(LoginFailure(e.toString()));
+      print('LoginBloc:❌ Login failed'
+            '\n└─ Error: $e');
+
+      emit(LoginFailure( e.toString()));
     }
   }
 
@@ -79,9 +68,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     LogoutRequested event,
     Emitter<LoginState> emit,
   ) async {
-    print('[${DateTime.now().toIso8601String()}] 🔄 Logout initiated');
+    print('LoginBloc: 🔄 Logout initiated');
     await _secureStorage.deleteTokens();
     emit(LoginInitial());
-    print('[${DateTime.now().toIso8601String()}] ✅ Logout successful');
+    print('LoginBloc: ✅ Logout successful');
   }
 }

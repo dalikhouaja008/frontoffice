@@ -7,101 +7,97 @@ class TwoFactorAuthBloc extends Bloc<TwoFactorAuthEvent, TwoFactorAuthState> {
   final TwoFactorAuthRepository repository;
 
   TwoFactorAuthBloc({required this.repository}) : super(const TwoFactorAuthInitial()) {
-    on<EnableTwoFactorAuthEvent>(_onEnableTwoFactorAuth);
-   // on<VerifyTwoFactorAuthEvent>(_onVerifyTwoFactorAuth);
-    //on<VerifyTwoFactorLoginEvent>(_onVerifyTwoFactorLogin);
+     on<EnableTwoFactorAuthEvent>(_onEnableTwoFactorAuth);
+    on<VerifyTwoFactorAuthEvent>(_onVerifyTwoFactorAuth);
+    on<VerifyTwoFactorLoginEvent>(_onVerifyTwoFactorLogin);
+
   }
 
 Future<void> _onEnableTwoFactorAuth(
   EnableTwoFactorAuthEvent event,
   Emitter<TwoFactorAuthState> emit,
 ) async {
-  final timestamp = '2025-02-13 22:55:59';
-  print('[$timestamp] 🚀 TwoFactorAuthBloc: EnableTwoFactorAuthEvent received'
-        '\n└─ User: raednas');
+  print('TwoFactorAuthBloc:🚀 TwoFactorAuthBloc: EnableTwoFactorAuthEvent received');
 
   emit(const TwoFactorAuthLoading());
 
   try {
-    print('[$timestamp] 📡 TwoFactorAuthBloc: Calling repository.enableTwoFactorAuth'
-          '\n└─ User: raednas');
+    print('TwoFactorAuthBloc: 📡 TwoFactorAuthBloc: Calling repository.enableTwoFactorAuth');
           
     final qrCodeUrl = await repository.enableTwoFactorAuth();
     
-    print('[$timestamp] ✅ TwoFactorAuthBloc: QR Code received'
-          '\n└─ User: raednas');
+    print('TwoFactorAuthBloc: ✅ TwoFactorAuthBloc: QR Code received');
           
     emit(TwoFactorAuthEnabled(qrCodeUrl));
   } catch (e) {
-    print('[$timestamp] ❌ TwoFactorAuthBloc: Error caught'
-          '\n└─ Error: $e'
-          '\n└─ User: raednas');
-    emit(TwoFactorAuthError(e.toString()));
+    print('TwoFactorAuthBloc: ❌ TwoFactorAuthBloc: Error caught'
+          '\n└─ Error: $e');
+
+     emit(const TwoFactorAuthError('Code de vérification invalide'));
   }
 }
 
-/*  Future<void> _onVerifyTwoFactorAuth(
+ Future<void> _onVerifyTwoFactorAuth(
     VerifyTwoFactorAuthEvent event,
     Emitter<TwoFactorAuthState> emit,
   ) async {
-    final timestamp = '2025-02-13 22:24:48';
-    print('[$timestamp] 🔐 Processing Verify 2FA request'
-          '\n└─ User: raednas'
+    print('TwoFactorAuthBloc: 🔐 Processing Verify 2FA request'
           '\n└─ Code length: ${event.code.length}');
 
     emit(const TwoFactorAuthLoading());
 
     try {
-      print('[$timestamp] 📡 Calling repository to verify 2FA code');
+      print('TwoFactorAuthBloc:📡 Calling repository to verify 2FA code');
       final isVerified = await repository.verifyTwoFactorAuth(event.code);
       
       if (isVerified) {
-        print('[$timestamp] ✅ 2FA verification successful'
-              '\n└─ User: raednas');
+        print('TwoFactorAuthBloc: ✅ 2FA verification successful');
         emit(const TwoFactorAuthVerified());
       } else {
-        print('[$timestamp] ⚠️ Invalid verification code'
-              '\n└─ User: raednas');
-        emit(const TwoFactorAuthError('Code de vérification invalide'));
+        print('TwoFactorAuthBloc:⚠️ Invalid verification code');
+        emit(const TwoFactorAuthError( 'Code de vérification invalide'));
       }
     } catch (e) {
-      print('[$timestamp] ❌ Failed to verify 2FA code'
-            '\n└─ Error: $e'
-            '\n└─ User: raednas');
+      print('TwoFactorAuthBloc:❌ Failed to verify 2FA code'
+            '\n└─ Error: $e');
       
       final errorMessage = _formatErrorMessage(e);
       emit(TwoFactorAuthError(errorMessage));
     }
   }
 
-  Future<void> _onVerifyTwoFactorLogin(
+ Future<void> _onVerifyTwoFactorLogin(
     VerifyTwoFactorLoginEvent event,
     Emitter<TwoFactorAuthState> emit,
   ) async {
-    final timestamp = '2025-02-13 22:24:48';
-    print('[$timestamp] 🔐 Processing 2FA Login verification'
-          '\n└─ User: raednas'
-          '\n└─ Code length: ${event.code.length}');
+    print('[2025-02-15 14:44:51] 🔐 Processing 2FA login verification'
+          '\n└─ User: raednas');
+
+    if (!event.code.isValidOtpCode) {
+      emit(const TwoFactorAuthError(
+         'Code OTP invalide',
+
+      ));
+      return;
+    }
 
     emit(const TwoFactorAuthLoading());
 
     try {
-      print('[$timestamp] 📡 Calling repository to verify 2FA login');
-      final loginData = await repository.verifyTwoFactorLogin(event.code);
-      
-      print('[$timestamp] ✅ 2FA login successful'
-            '\n└─ User: raednas');
-      
-      emit(TwoFactorAuthLoginSuccess(loginData));
+      final response = await repository.verifyLoginOtp(
+        event.tempToken,
+        event.code,
+      );
+
+      emit(TwoFactorAuthLoginSuccess(
+        user: response.user,
+        accessToken: response.accessToken!,
+        refreshToken: response.refreshToken!,
+      ));
     } catch (e) {
-      print('[$timestamp] ❌ Failed to verify 2FA login'
-            '\n└─ Error: $e'
-            '\n└─ User: raednas');
-      
-      final errorMessage = _formatErrorMessage(e);
-      emit(TwoFactorAuthError(errorMessage));
+      emit(TwoFactorAuthError(e.toString(),));
     }
-  }*/
+  }
 
   String _formatErrorMessage(dynamic error) {
     if (error.toString().contains('token')) {

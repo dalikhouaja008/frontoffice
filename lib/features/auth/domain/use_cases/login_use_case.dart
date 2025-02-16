@@ -1,4 +1,3 @@
-import 'package:dartz/dartz.dart';
 import 'package:the_boost/features/auth/domain/entities/login_response.dart';
 import '../entities/user.dart';
 import '../repositories/auth_repository.dart';

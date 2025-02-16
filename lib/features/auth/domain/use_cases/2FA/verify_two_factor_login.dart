@@ -1,3 +1,4 @@
+import 'package:the_boost/features/auth/domain/entities/login_response.dart';
 import 'package:the_boost/features/auth/domain/repositories/two_factor_auth_repository.dart';
 
 class VerifyTwoFactorLoginUseCase {
@@ -5,7 +6,7 @@ class VerifyTwoFactorLoginUseCase {
 
   VerifyTwoFactorLoginUseCase(this.repository);
 
-  Future<Map<String, dynamic>> call(String code) async {
+  Future<LoginResponse> call(String code) async {
     return await repository.verifyTwoFactorLogin(code);
   }
 }

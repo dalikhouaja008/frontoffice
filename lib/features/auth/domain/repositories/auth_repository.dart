@@ -1,6 +1,5 @@
 import 'package:dartz/dartz.dart';
 import 'package:the_boost/features/auth/domain/entities/login_response.dart';
-import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
 import '../entities/user.dart';
 
 abstract class AuthRepository {

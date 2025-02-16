@@ -12,7 +12,6 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/login/login_bloc.dart';
 import 'features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import 'features/auth/presentation/pages/login_screen.dart';
-import 'features/auth/presentation/pages/sign_up_screen.dart';
 
 void main() {
   // Assurez-vous que les liaisons Flutter sont initialisées

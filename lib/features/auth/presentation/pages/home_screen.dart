@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
 @override
 void initState() {
   super.initState();
-  print('[2025-02-13 23:09:38] 🚀 Initializing HomeScreen state'
+  print('[HomeScreen: 🚀 Initializing HomeScreen state'
         '\n└─ User: raednas');
 
   // Récupérer les services via Provider
@@ -34,14 +34,12 @@ void initState() {
     secureStorage: secureStorage,
   );
 
-  print('[2025-02-13 23:09:38] 🏭 Creating TwoFactorAuthRepository'
-        '\n└─ User: raednas');
+  print('HomeScreen: 🏭 Creating TwoFactorAuthRepository');
         
   _twoFactorAuthRepository = TwoFactorAuthRepositoryImpl(remoteDataSource);
 
   if (!widget.user.isTwoFactorEnabled) {
-    print('[2025-02-13 23:09:38] 🔔 Scheduling 2FA dialog'
-          '\n└─ User: raednas');
+    print('HomeScreen: 🔔 Scheduling 2FA dialog');
           
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _show2FADialog();
@@ -67,7 +65,7 @@ void initState() {
                   'Vous pouvez activer la 2FA à tout moment via le menu de sécurité',
                 ),
                 action: SnackBarAction(
-                  label: 'Activer',
+                  label: 'Activate',
                   onPressed: _show2FADialog,
                 ),
               ),

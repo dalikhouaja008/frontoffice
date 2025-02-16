@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
-import 'package:the_boost/features/auth/domain/entities/user.dart';
+import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
+import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
+import 'package:the_boost/features/auth/presentation/widgets/dialogs/otp_dialog.dart';
 import '../../../../core/services/secure_storage_service.dart';
 import '../bloc/login/login_bloc.dart';
 import '../../domain/use_cases/login_use_case.dart';
@@ -26,66 +29,21 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool _obscureText = true;
 
-
-  @override
+   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     bool isMobile = size.width < 800;
-    String formatErrorMessage(String error) {
-      if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
-        return 'Unable to process login information. Please try again.';
-      }
-      return error.replaceAll('Exception:', '').trim();
-    }
-
-    String getDetailedError(String error) {
-      if (error.contains('TypeError')) {
-        return 'Null value received where string was expected';
-      }
-      return 'See error message above';
-    }
 
     return Scaffold(
       body: BlocProvider(
         create: (context) => LoginBloc(
           loginUseCase: context.read<LoginUseCase>(),
-          secureStorage: context
-              .read<SecureStorageService>(), // Ajout du paramètre manquant
+          secureStorage: context.read<SecureStorageService>(),
         ),
         child: BlocConsumer<LoginBloc, LoginState>(
-          listener: (context, state) {
-            if (state is LoginSuccess) {
-              print('[${DateTime.now().toIso8601String()}] 🎉 Login successful'
-                  '\n└─ User: ${state.user.username}'
-                  '\n└─ Email: ${state.user.email}'
-                  '\n└─ Role: ${state.user.role}');
-
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => HomeScreen(user: state.user),
-                ),
-              );
-            } else if (state is LoginFailure) {
-              final errorMessage =
-                  state.error.toString();
-              print('[${DateTime.now().toIso8601String()}] ❌ Login failed'
-                  '\n└─ Error: $errorMessage'
-                  '\n└─ Details: ${getDetailedError(errorMessage)}');
-
-              showDialog(
-                context: context,
-                builder: (context) => ErrorPopup(
-                  message: formatErrorMessage(errorMessage),
-                ),
-              );
-            } else if (state is LoginLoading) {
-              print(
-                  '[${DateTime.now().toIso8601String()}] ⏳ Authentication in progress...');
-            } else if (state is LoginInitial) {
-              print(
-                  '[${DateTime.now().toIso8601String()}] 🔄 Login view initialized');
-            }
-          },
+          listenWhen: (previous, current) => previous != current,
+          buildWhen: (previous, current) => previous != current,
+          listener: _handleLoginStateChanges,
           builder: (context, state) {
             return SafeArea(
               child: Container(
@@ -111,6 +69,112 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  void _handleLoginStateChanges(BuildContext context, LoginState state) {
+    if (state is LoginSuccess) {
+      print('LoginScreen ✅ Login successful'
+
+            '\n└─ Email: ${state.user.email}'
+            '\n└─ Role: ${state.user.role}');
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(user: state.user),
+        ),
+      );
+    } else if (state is LoginRequires2FA) {
+      print('LoginScreen 🔐 2FA required'
+            '\n└─ Email: ${state.user.email}');
+
+      _show2FADialog(context, state);
+    } else if (state is LoginFailure) {
+      print('LoginScreen ❌ Login failed'
+            '\n└─ Error: ${state.error}');
+
+      _showErrorDialog(context, state.error);
+    } else if (state is LoginLoading) {
+      print('LoginScreen ⏳ Authentication in progress...');
+    } else if (state is LoginInitial) {
+      print('LoginScreen🔄 Login view initialized');
+    }
+  }
+
+  void _show2FADialog(BuildContext context, LoginRequires2FA state) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => TwoFactorAuthBloc(
+              repository: context.read<TwoFactorAuthRepository>(),
+            ),
+          ),
+        ],
+        child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
+          listener: (context, twoFactorState) {
+            if (twoFactorState is TwoFactorAuthLoginSuccess) {
+              print('LoginScreen ✅ 2FA verification successful'
+                    '\n└─ Email: ${twoFactorState.user.email}');
+
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => HomeScreen(user: twoFactorState.user),
+                ),
+              );
+            } else if (twoFactorState is TwoFactorAuthError) {
+              print('LoginScreen ❌ 2FA verification failed'
+                    '\n└─ Error: ${twoFactorState.message}');
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('2FA verification failed'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: OtpDialog(
+            tempToken: state.tempToken,
+            email: state.user.email,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String error) {
+    final formattedError = _formatErrorMessage(error);
+    print('LoginScreen❌ Showing error dialog'
+          '\n└─ Error: $formattedError');
+
+    showDialog(
+      context: context,
+      builder: (context) => ErrorPopup(message: formattedError),
+    );
+  }
+
+  String _formatErrorMessage(String error) {
+    if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
+      return 'Unable to process login information. Please try again.';
+    }
+    return error.replaceAll('Exception:', '').trim();
+  }
+
+  void _handleLogin(BuildContext context) {
+    if (_formKey.currentState!.validate()) {
+      print('LoginScreen 🚀 Initiating login'
+            '\n└─ Email: ${_emailController.text.trim()}');
+
+      context.read<LoginBloc>().add(
+        LoginRequested(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        ),
+      );
+    }
   }
 
   /// 📱 **Mobile Layout: Single Column**
@@ -189,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Lottie.asset('assets/animations/auth.json', height: 150),
-         const SizedBox(height: 20),
+          const SizedBox(height: 20),
           Text(
             "Login to TheBoost",
             style:
@@ -283,22 +347,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// ❌ **Show Error Dialog for Login Failure**
-  void _showErrorDialog(BuildContext context, String errorMessage) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Login Failed"),
-          content: Text(errorMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("OK"),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
 }

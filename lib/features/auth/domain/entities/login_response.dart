@@ -4,7 +4,6 @@ class LoginResponse {
   final String? accessToken;
   final String? refreshToken;
   final User user;
-  // Ces valeurs sont optionnelles car elles ne sont pas toujours présentes dans la réponse
   final bool requiresTwoFactor;
   final String? tempToken;
 
@@ -12,7 +11,6 @@ class LoginResponse {
     this.accessToken,
     this.refreshToken,
     required this.user,
-    // Valeur par défaut à false si non spécifiée
     this.requiresTwoFactor = false,
     this.tempToken,
   });
