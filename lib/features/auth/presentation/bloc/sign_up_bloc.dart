@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:the_boost/features/auth/domain/entities/grpd_consent.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/use_cases/sign_up_use_case.dart';
 

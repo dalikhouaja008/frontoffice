@@ -32,7 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadLands() async {
     setState(() => _isLoading = true);
     try {
-      // TODO: Implémentez l'appel API pour charger les terres
       await Future.delayed(const Duration(seconds: 1));
       _lands = [
         Land(
@@ -98,7 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // User Info Section
           Container(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -131,7 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const Divider(),
-          // Catalogue Section
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadLands,
@@ -190,7 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return LandCard(
           land: filteredLands[index],
           onTap: () {
-            // TODO: Implémenter la navigation vers la page de détails
           },
         );
       },
