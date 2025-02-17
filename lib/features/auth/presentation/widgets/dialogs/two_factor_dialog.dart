@@ -38,7 +38,6 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
           );
         } else if (state is TwoFactorAuthLoginSuccess) {
           Navigator.of(context).pop(); // Ferme le dialogue
-          // Naviguer vers la page d'accueil ou autre
         }
       },
       builder: (context, state) {
@@ -126,16 +125,12 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: () {
-            print('TwoFactorDialog:🔵 Widget: Enable 2FA button pressed');
-            context.read<TwoFactorAuthBloc>().add( EnableTwoFactorAuthEvent());
+            context.read<TwoFactorAuthBloc>().add(EnableTwoFactorAuthEvent());
           },
           icon: const Icon(Icons.qr_code),
           label: const Text('Activate 2FA'),
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 16,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30),
             ),
@@ -144,8 +139,10 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
         const SizedBox(height: 16),
         TextButton(
           onPressed: () {
-            Navigator.of(context).pop(); // Ferme le dialogue
-            widget.onSkip(); // Appelle le callback de navigation
+            
+            
+              widget.onSkip();  // Call the onSkip callback after dialog closes
+          
           },
           child: const Text('Later'),
         ),
@@ -153,37 +150,37 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
     );
   }
 
-Widget _buildQRSection(String qrCodeUrl) {
-  return Column(
-    children: [
-      CustomQrDisplay(
-        qrData: qrCodeUrl,
-        title: 'Scan Qr Code with your 2FA application',
-        onRefresh: () {
-          context.read<TwoFactorAuthBloc>().add( EnableTwoFactorAuthEvent());
-        },
-      ),
-      const SizedBox(height: 24),
-      CustomPinInput(
-        controller: _pinController,
-        onCompleted: (code) {
-          context.read<TwoFactorAuthBloc>().add(
-                VerifyTwoFactorAuthEvent(code),
-              );
-        },
-        title: 'Enter your app\'s 6-digit code',
-      ),
-    ],
-  );
-}
+  Widget _buildQRSection(String qrCodeUrl) {
+    return Column(
+      children: [
+        CustomQrDisplay(
+          qrData: qrCodeUrl,
+          title: 'Scan Qr Code with your 2FA application',
+          onRefresh: () {
+            context.read<TwoFactorAuthBloc>().add(EnableTwoFactorAuthEvent());
+          },
+        ),
+        const SizedBox(height: 24),
+        CustomPinInput(
+          controller: _pinController,
+          onCompleted: (code) {
+            context.read<TwoFactorAuthBloc>().add(
+                  VerifyTwoFactorAuthEvent(code),
+                );
+          },
+          title: 'Enter your app\'s 6-digit code',
+        ),
+      ],
+    );
+  }
 
-Widget _buildSuccessSection() {
-  return SuccessDialog(
-    title: 'Two-factor authentication has been successfully enabled!',
-    buttonText: 'Terminer',
-    onButtonPressed: () => Navigator.of(context).pop(),
-  );
-}
+  Widget _buildSuccessSection() {
+    return SuccessDialog(
+      title: 'Two-factor authentication has been successfully enabled!',
+      buttonText: 'Terminer',
+      onButtonPressed: () => Navigator.of(context).pop(),
+    );
+  }
 
   @override
   void dispose() {
