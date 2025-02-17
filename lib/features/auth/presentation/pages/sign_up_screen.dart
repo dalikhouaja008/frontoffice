@@ -9,7 +9,6 @@ import 'package:the_boost/features/auth/domain/entities/grpd_consent.dart';
 import '../bloc/sign_up_bloc.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
-import '../widgets/error_popup.dart';
 import '../widgets/social_button.dart';
 import 'login_screen.dart';
 
@@ -526,19 +525,59 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return BlocConsumer<SignUpBloc, SignUpState>(
       listener: (context, state) {
         if (state is SignUpFailure) {
-          showDialog(
-            context: context,
-            builder: (context) => ErrorPopup(message: state.error),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.error),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              action: SnackBarAction(
+                label: 'Dismiss',
+                textColor: Colors.white,
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+              ),
+            ),
           );
         } else if (state is SignUpSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Sign-Up Successful!"),
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    "Account created successfully!",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+              duration: Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           );
-          Future.delayed(Duration(seconds: 1), () {
-            _navigateToLogin(context);
+          
+          // Navigate to login page after short delay
+          Future.delayed(Duration(seconds: 2), () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LoginScreen(),
+              ),
+              (route) => false, // This removes all previous routes
+            );
           });
         }
       },
@@ -553,8 +592,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   if (!_acceptedTerms || !_acceptedPrivacyPolicy || !_acceptedDataProcessing) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Please accept the mandatory terms and conditions'),
+                        content: Row(
+                          children: [
+                            Icon(Icons.warning, color: Colors.white),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Please accept the mandatory terms and conditions',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.all(16),
+                        duration: Duration(seconds: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        action: SnackBarAction(
+                          label: 'OK',
+                          textColor: Colors.white,
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          },
+                        ),
                       ),
                     );
                     return;
@@ -627,46 +693,53 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildLoginLink() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Already have an account? ",
+  return Column(
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Already have an account? ",
+            style: GoogleFonts.poppins(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LoginScreen(),
+                ),
+                (route) => false,
+              );
+            },
+            child: Text(
+              "Login",
               style: GoogleFonts.poppins(
-                color: Colors.grey[600],
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
             ),
-            TextButton(
-              onPressed: () => _navigateToLogin(context),
-              child: Text(
-                "Login",
-                style: GoogleFonts.poppins(
-                  color: Colors.blue,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10.0),
-          child: Text(
-            "By signing up, you agree to our Terms of Service and Privacy Policy",
-            style: GoogleFonts.poppins(
-              color: Colors.grey[500],
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
           ),
+        ],
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10.0),
+        child: Text(
+          "By signing up, you agree to our Terms of Service and Privacy Policy",
+          style: GoogleFonts.poppins(
+            color: Colors.grey[500],
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
         ),
-      ],
-    );
-  }
-
+      ),
+    ],
+  );
+}
   @override
   void dispose() {
     _usernameController.dispose();
