@@ -100,51 +100,54 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _show2FADialog(BuildContext context, LoginRequires2FA state) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            create: (context) => TwoFactorAuthBloc(
-              repository: context.read<TwoFactorAuthRepository>(),
-            ),
-          ),
-        ],
-        child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
-          listener: (context, twoFactorState) {
-            if (twoFactorState is TwoFactorAuthLoginSuccess) {
-              print('LoginScreen ✅ 2FA verification successful'
-                    '\n└─ Email: ${twoFactorState.user.email}');
+void _show2FADialog(BuildContext context, LoginRequires2FA state) {
+  print('[2025-02-17 09:44:06] LoginScreen: 🔐 Showing 2FA dialog'
+        '\n└─ User: raednas'
+        '\n└─ Email: ${state.user.email}');
 
-              Navigator.of(dialogContext).pop();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => HomeScreen(user: twoFactorState.user),
-                ),
-              );
-            } else if (twoFactorState is TwoFactorAuthError) {
-              print('LoginScreen ❌ 2FA verification failed'
-                    '\n└─ Error: ${twoFactorState.message}');
+  final twoFactorAuthRepository = context.read<TwoFactorAuthRepository>();
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('2FA verification failed'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
-          child: OtpDialog(
-            tempToken: state.tempToken,
-            email: state.user.email,
-          ),
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => BlocProvider<TwoFactorAuthBloc>(
+      create: (context) => TwoFactorAuthBloc(
+        repository: twoFactorAuthRepository,
+      ),
+      child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
+        listener: (context, twoFactorState) {
+          if (twoFactorState is TwoFactorAuthLoginSuccess) {
+            print('[2025-02-17 09:44:06] LoginScreen: ✅ 2FA verification successful'
+                  '\n└─ User: raednas'
+                  '\n└─ Email: ${twoFactorState.user.email}');
+
+            Navigator.of(dialogContext).pop();
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => HomeScreen(user: twoFactorState.user),
+              ),
+            );
+          } else if (twoFactorState is TwoFactorAuthError) {
+            print('[2025-02-17 09:44:06] LoginScreen: ❌ 2FA verification failed'
+                  '\n└─ User: raednas'
+                  '\n└─ Error: ${twoFactorState.message}');
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(twoFactorState.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: OtpDialog(
+          tempToken: state.tempToken,
+          email: state.user.email,
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
   void _showErrorDialog(BuildContext context, String error) {
     final formattedError = _formatErrorMessage(error);
     print('LoginScreen❌ Showing error dialog'
@@ -316,14 +319,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     Spacer(),
                     TextButton(
                       onPressed: () {},
-                      child: Text(
+                      child: const Text(
                         "Forgot Password?",
                         style: TextStyle(color: Colors.blue),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 CustomButton(
                   text: "Login",
                   isLoading: state is LoginLoading,

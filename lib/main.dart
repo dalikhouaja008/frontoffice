@@ -4,6 +4,7 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
+import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'features/auth/domain/use_cases/login_use_case.dart';
 import 'features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
@@ -19,9 +20,8 @@ void main() {
 
   // Créez une instance unique de SecureStorageService
   final secureStorage = SecureStorageService();
-   // Créez une instance du client GraphQL
+  // Créez une instance du client GraphQL
   final graphQLClient = GraphQLService.client;
-
 
   runApp(
     MultiProvider(
@@ -35,7 +35,7 @@ void main() {
         Provider<GraphQLClient>.value(
           value: graphQLClient,
         ),
-         Provider<AuthRemoteDataSource>(
+        Provider<AuthRemoteDataSource>(
           create: (context) => AuthRemoteDataSourceImpl(
             client: context.read<GraphQLClient>(),
             secureStorage: context.read<SecureStorageService>(),
@@ -65,6 +65,11 @@ void main() {
         BlocProvider<SignUpBloc>(
           create: (context) => SignUpBloc(
             context.read<SignUpUseCase>(),
+          ),
+        ),
+        Provider<TwoFactorAuthRepository>(
+          create: (context) => TwoFactorAuthRepositoryImpl(
+            context.read<AuthRemoteDataSource>(),
           ),
         ),
       ],

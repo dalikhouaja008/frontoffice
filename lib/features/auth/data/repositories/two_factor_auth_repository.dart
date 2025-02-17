@@ -12,6 +12,7 @@ abstract class TwoFactorAuthRepository {
 
 class TwoFactorAuthRepositoryImpl implements TwoFactorAuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
+    final _timeoutDuration = const Duration(seconds: 30);
 
   TwoFactorAuthRepositoryImpl(this._remoteDataSource);
 
@@ -56,18 +57,19 @@ class TwoFactorAuthRepositoryImpl implements TwoFactorAuthRepository {
         '\n└─ User: raednas');
 
     try {
-      final response = await _remoteDataSource.verifyLoginOtp(
+      print('[2025-02-15 13:32:49] ✅ Repository: OTP verification loading');
+      return await _remoteDataSource.verifyLoginOtp(
         tempToken,
         otpCode,
-      );
-
-      print('[2025-02-15 13:32:49] ✅ Repository: OTP verification successful'
-          '\n└─ User: raednas');
-
-      return response;
+      ) .timeout(
+            _timeoutDuration,
+            onTimeout: () => throw Exception(
+              'La vérification a pris trop de temps. Veuillez réessayer.',
+            ),
+          );
+      
     } catch (e) {
       print('[2025-02-15 13:32:49] ❌ Repository: OTP verification failed'
-          '\n└─ User: raednas'
           '\n└─ Error: $e');
       rethrow;
     }

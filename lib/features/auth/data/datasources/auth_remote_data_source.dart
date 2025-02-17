@@ -29,7 +29,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl({
     required GraphQLClient client,
     required SecureStorageService secureStorage,
-  })  : _secureStorage = secureStorage;
+  }) : _secureStorage = secureStorage;
 
   Future<LoginResponse> login(String email, String password) async {
     DateTime.now().toIso8601String();
@@ -38,7 +38,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     final GraphQLClient client = GraphQLService.client;
 
-  const String loginMutation = """
+    const String loginMutation = """
     mutation Login(\$credentials: LoginInput!) {
       login(credentials: \$credentials) {
         accessToken
@@ -55,101 +55,101 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   """;
 
-   try {
-    final QueryResult result = await client.mutate(
-      MutationOptions(
-        document: gql(loginMutation),
-        variables: {
-          "credentials": {
-            "email": email,
-            "password": password,
+    try {
+      final QueryResult result = await client.mutate(
+        MutationOptions(
+          document: gql(loginMutation),
+          variables: {
+            "credentials": {
+              "email": email,
+              "password": password,
+            },
           },
-        },
-      ),
-    );
+        ),
+      );
 
-    if (result.hasException) {
-      print('AuthRemoteDataSourceImpl: ❌ GraphQL error'
+      if (result.hasException) {
+        print('AuthRemoteDataSourceImpl: ❌ GraphQL error'
             '\n└─ Error: ${result.exception.toString()}');
-      throw Exception(result.exception.toString());
-    }
-
-    print('AuthRemoteDataSourceImpl: 📥 Raw GraphQL response:'
-          '\n${JsonEncoder.withIndent('  ').convert(result.data)}');
-
-    final loginData = result.data?['login'];
-    if (loginData == null) {
-      print('[2025-02-15 16:44:26] ❌ No login data received');
-      throw Exception('No login data received');
-    }
-
-    // Vérifier les données utilisateur
-    final userData = loginData['user'];
-    if (userData == null) {
-      print('AuthRemoteDataSourceImpl:❌ No user data in response');
-      throw Exception('No user data in response');
-    }
-
-    // Créer l'objet User
-    final user = User.fromJson({
-      '_id': userData['_id'],
-      'email': userData['email'],
-      'username': userData['username'],
-      'role': userData['role'],
-    });
-
-    // Vérifier si 2FA est requis
-    final requiresTwoFactor = loginData['requiresTwoFactor'] ?? false;
-    if (requiresTwoFactor) {
-      final tempToken = loginData['tempToken'];
-      if (tempToken == null) {
-        print('AuthRemoteDataSourceImpl: ❌ No temp token for 2FA'
-              '\n└─ Email: ${user.email}');
-        throw Exception('No temporary token provided for 2FA');
+        throw Exception(result.exception.toString());
       }
 
-      print('AuthRemoteDataSourceImpl: 🔐 2FA required'
+      print('AuthRemoteDataSourceImpl: 📥 Raw GraphQL response:'
+          '\n${JsonEncoder.withIndent('  ').convert(result.data)}');
+
+      final loginData = result.data?['login'];
+      if (loginData == null) {
+        print('[2025-02-15 16:44:26] ❌ No login data received');
+        throw Exception('No login data received');
+      }
+
+      // Vérifier les données utilisateur
+      final userData = loginData['user'];
+      if (userData == null) {
+        print('AuthRemoteDataSourceImpl:❌ No user data in response');
+        throw Exception('No user data in response');
+      }
+
+      // Créer l'objet User
+      final user = User.fromJson({
+        '_id': userData['_id'],
+        'email': userData['email'],
+        'username': userData['username'],
+        'role': userData['role'],
+      });
+
+      // Vérifier si 2FA est requis
+      final requiresTwoFactor = loginData['requiresTwoFactor'] ?? false;
+      if (requiresTwoFactor) {
+        final tempToken = loginData['tempToken'];
+        if (tempToken == null) {
+          print('AuthRemoteDataSourceImpl: ❌ No temp token for 2FA'
+              '\n└─ Email: ${user.email}');
+          throw Exception('No temporary token provided for 2FA');
+        }
+
+        print('AuthRemoteDataSourceImpl: 🔐 2FA required'
             '\n└─ Email: ${user.email}');
 
-      return LoginResponse(
-        user: user,
-        requiresTwoFactor: true,
-        tempToken: tempToken,
-        accessToken: null,
-        refreshToken: null,
-      );
-    }
+        return LoginResponse(
+          user: user,
+          requiresTwoFactor: true,
+          tempToken: tempToken,
+          accessToken: null,
+          refreshToken: null,
+        );
+      }
 
-    // Vérifier les tokens pour le login normal
-    final accessToken = loginData['accessToken'];
-    final refreshToken = loginData['refreshToken'];
+      // Vérifier les tokens pour le login normal
+      final accessToken = loginData['accessToken'];
+      final refreshToken = loginData['refreshToken'];
 
-    if (accessToken == null || refreshToken == null) {
-      print('AuthRemoteDataSourceImpl: ❌ Missing tokens'
+      if (accessToken == null || refreshToken == null) {
+        print('AuthRemoteDataSourceImpl: ❌ Missing tokens'
             '\n└─ Email: ${user.email}'
             '\n└─ Has access token: ${accessToken != null}'
             '\n└─ Has refresh token: ${refreshToken != null}');
-      throw Exception('Missing required tokens');
-    }
+        throw Exception('Missing required tokens');
+      }
 
-    print('AuthRemoteDataSourceImpl:✅ Login successful'
+      print('AuthRemoteDataSourceImpl:✅ Login successful'
           '\n└─ Email: ${user.email}'
           '\n└─ Role: ${user.role}');
 
-    return LoginResponse(
-      user: user,
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      requiresTwoFactor: false,
-      tempToken: null,
-    );
-  } catch (e) {
-    final errorMessage = 'Failed to login: $e';
-    print('AuthRemoteDataSourceImpl: ❌ Login error'
+      return LoginResponse(
+        user: user,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        requiresTwoFactor: false,
+        tempToken: null,
+      );
+    } catch (e) {
+      final errorMessage = 'Failed to login: $e';
+      print('AuthRemoteDataSourceImpl: ❌ Login error'
           '\n└─ Error: $errorMessage'
           '\n└─ Email: $email');
-    throw Exception(errorMessage);
-  }
+      throw Exception(errorMessage);
+    }
   }
 
   @override
@@ -245,80 +245,112 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  @override
-  Future<LoginResponse> verifyLoginOtp(
-    String tempToken,
-    String otpCode,
-  ) async {
-    print('AuthRemoteDataSourceImpl :🔐 RemoteDataSource: Verifying login OTP'
+ @override
+Future<LoginResponse> verifyLoginOtp(
+  String tempToken,
+  String otpCode,
+) async {
+  const timestamp = '2025-02-17 11:55:47';
+  const user = 'raednas';
+
+  print('[$timestamp] AuthRemoteDataSource: 🔐 Verifying login OTP'
+        '\n└─ User: $user'
         '\n└─ OTP length: ${otpCode.length}');
 
-    try {
-      // Utiliser le client authentifié
-      final GraphQLClient client = GraphQLService.getClientWithToken(tempToken);
+  try {
+    // Créer un client avec le token temporaire
+    final client = GraphQLService.getClientWithToken(tempToken);
 
-      // Définir la mutation GraphQL
-      const String verifyTwoFactorMutation = r'''
+    const String verifyTwoFactorMutation = r'''
       mutation VerifyTwoFactorLogin($token: String!) {
         verifyTwoFactorLogin(token: $token) {
           accessToken
           refreshToken
+          requiresTwoFactor
           user {
-            id
+            _id
             email
-            firstName
-            lastName
+            username
+            role
             isTwoFactorEnabled
           }
         }
       }
     ''';
 
-      // Configurer les headers avec le token temporaire
-      final QueryResult result = await client.mutate(
-        MutationOptions(
-          document: gql(verifyTwoFactorMutation),
-          variables: {
-            "token": otpCode,
-          },
-        ),
-      );
+    print('[$timestamp] AuthRemoteDataSource: 🌐 Sending verification request'
+          '\n└─ User: $user'
+          '\n└─ Has tempToken: ${tempToken.isNotEmpty}'
+          '\n└─ OTP length: ${otpCode.length}');
 
-      if (result.hasException) {
-        print('AuthRemoteDataSource: ❌ GraphQL mutation failed'
-            '\n└─ Error: ${result.exception?.graphqlErrors.first.message ?? result.exception.toString()}');
+    final QueryResult result = await client.mutate(
+      MutationOptions(
+        document: gql(verifyTwoFactorMutation),
+        variables: {
+          'token': otpCode,
+        },
+        fetchPolicy: FetchPolicy.noCache,
+      ),
+    );
 
-        throw Exception(result.exception?.graphqlErrors.first.message ??
-            'Erreur de vérification OTP');
-      }
+    print('[$timestamp] AuthRemoteDataSource: 📥 Raw GraphQL response:'
+          '\n${result.data}');
 
-      final data = result.data?['verifyTwoFactorLogin'];
-      if (data == null) {
-        print('AuthRemoteDataSource: ❌ No data received from API');
-        throw Exception('Aucune donnée reçue du serveur');
-      }
-
-      // Sauvegarder les nouveaux tokens
-      await _secureStorage.saveTokens(
-          accessToken: data['accessToken'], refreshToken: data['refreshToken']);
-
-      print('AuthRemoteDataSource :✅ 2FA verification successful'
-          '\n└─ Tokens stored in secure storage');
-
-      return LoginResponse(
-        user: User.fromJson(data['user']),
-        accessToken: data['accessToken'],
-        refreshToken: data['refreshToken'],
-        requiresTwoFactor: false,
-        tempToken: null,
-      );
-    } catch (e) {
-      print('AuthRemoteDataSource: ❌ 2FA verification error'
-          '\n└─ Error: $e');
-      throw Exception('Erreur lors de la vérification 2FA: $e');
+    if (result.hasException) {
+      final error = result.exception?.graphqlErrors.firstOrNull?.message ?? 
+                   result.exception.toString();
+      
+      print('[$timestamp] AuthRemoteDataSource: ❌ GraphQL error'
+            '\n└─ User: $user'
+            '\n└─ Error: $error');
+      
+      throw Exception(error);
     }
-  }
 
+    final data = result.data?['verifyTwoFactorLogin'];
+    if (data == null) {
+      print('[$timestamp] AuthRemoteDataSource: ❌ No data in response'
+            '\n└─ User: $user');
+      throw Exception('Réponse invalide du serveur');
+    }
+
+    // Vérifier les tokens
+    final accessToken = data['accessToken'];
+    final refreshToken = data['refreshToken'];
+
+    if (accessToken == null || refreshToken == null) {
+      print('[$timestamp] AuthRemoteDataSource: ❌ Missing tokens'
+            '\n└─ User: $user'
+            '\n└─ Has accessToken: ${accessToken != null}'
+            '\n└─ Has refreshToken: ${refreshToken != null}');
+      throw Exception('Tokens manquants dans la réponse');
+    }
+
+    // Sauvegarder les nouveaux tokens
+    await _secureStorage.saveTokens(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+
+    print('[$timestamp] AuthRemoteDataSource: ✅ 2FA verification successful'
+          '\n└─ User: $user'
+          '\n└─ Tokens stored: true');
+
+    return LoginResponse(
+      user: User.fromJson(data['user']),
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      requiresTwoFactor: false,
+      tempToken: null,
+    );
+
+  } catch (e) {
+    print('[$timestamp] AuthRemoteDataSource: ❌ Verification failed'
+          '\n└─ User: $user'
+          '\n└─ Error: $e');
+    throw Exception('Erreur lors de la vérification: ${e.toString()}');
+  }
+}
   @override
   Future<String> enableTwoFactorAuth() async {
     print('AuthRemoteDataSource:🔐 Initiating 2FA activation'

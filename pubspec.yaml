@@ -48,6 +48,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   dartz: ^0.10.1
   json_annotation: ^4.9.0
+  provider: ^6.1.2
 
 dev_dependencies:
   # The "build_runner" package makes it easy to build and analyze your Flutter apps.

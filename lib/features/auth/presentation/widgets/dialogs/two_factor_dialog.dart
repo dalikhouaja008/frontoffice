@@ -62,7 +62,7 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
                       if (state is TwoFactorAuthLoading) ...[
                         const CircularProgressIndicator(),
                         const SizedBox(height: 16),
-                        const Text('Chargement...'),
+                        const Text('Please wait...'),
                       ] else if (state is TwoFactorAuthEnabled) ...[
                         _buildQRSection(state.qrCodeUrl),
                       ] else if (state is TwoFactorAuthVerified) ...[
@@ -144,7 +144,6 @@ class _TwoFactorDialogState extends State<TwoFactorDialog> {
         const SizedBox(height: 16),
         TextButton(
           onPressed: () {
-            Navigator.of(context).pop(); // Ferme le dialogue
             widget.onSkip(); // Appelle le callback de navigation
           },
           child: const Text('Later'),
