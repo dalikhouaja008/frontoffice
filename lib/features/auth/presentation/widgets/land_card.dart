@@ -1,15 +1,16 @@
+// widgets/land_card.dart
+
 import 'package:flutter/material.dart';
-import 'package:the_boost/features/auth/presentation/models/land_model.dart';
 import '../models/land_model.dart';
 
 class LandCard extends StatelessWidget {
   final Land land;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   const LandCard({
     Key? key,
     required this.land,
-    this.onTap,
+    required this.onTap,
   }) : super(key: key);
 
   @override
@@ -25,14 +26,22 @@ class LandCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImage(),
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Image.asset(
+                land.imageUrl,
+                height: 160,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    land.title,
+                    land.name,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -41,11 +50,42 @@ class LandCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  _buildLocationRow(),
+                  Text(
+                    land.location,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  _buildPriceRow(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${land.surface.toStringAsFixed(0)} m²',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '${land.price.toStringAsFixed(0)} DT',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
-                  _buildStatusChips(),
+                  Row(
+                    children: [
+                      _buildChip(_getLandTypeLabel(land.type), Colors.blue),
+                      const SizedBox(width: 8),
+                      _buildChip(_getLandStatusLabel(land.status), _getStatusColor(land.status)),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -55,90 +95,7 @@ class LandCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImage() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-      child: land.imageUrl != null
-          ? Image.network(
-              land.imageUrl!,
-              height: 120,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  _buildPlaceholderImage(),
-            )
-          : _buildPlaceholderImage(),
-    );
-  }
-
-  Widget _buildPlaceholderImage() {
-    return Container(
-      height: 120,
-      color: Colors.grey[200],
-      child: const Icon(
-        Icons.landscape,
-        size: 40,
-        color: Colors.grey,
-      ),
-    );
-  }
-
-  Widget _buildLocationRow() {
-    return Row(
-      children: [
-        const Icon(Icons.location_on, size: 16, color: Colors.grey),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            land.location,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceRow() {
-    return Text(
-      '${land.price.toStringAsFixed(0)} DT',
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.green,
-      ),
-    );
-  }
-
-  Widget _buildStatusChips() {
-    return Row(
-      children: [
-        _buildChip(
-          text: land.type == LandType.AGRICULTURAL ? 'Agricole' : 'Urbain',
-          color: Colors.blue,
-        ),
-        const SizedBox(width: 8),
-        _buildChip(
-          text: switch (land.status) {
-            LandStatus.PENDING => 'En attente',
-            LandStatus.APPROVED => 'Approuvé',
-            LandStatus.REJECTED => 'Rejeté',
-          },
-          color: switch (land.status) {
-            LandStatus.PENDING => Colors.orange,
-            LandStatus.APPROVED => Colors.green,
-            LandStatus.REJECTED => Colors.red,
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChip({required String text, required Color color}) {
+  Widget _buildChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -146,13 +103,48 @@ class LandCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        text,
+        label,
         style: TextStyle(
-          color: color,
           fontSize: 12,
+          color: color,
           fontWeight: FontWeight.w500,
         ),
       ),
     );
+  }
+
+  String _getLandTypeLabel(LandType type) {
+    switch (type) {
+      case LandType.AGRICULTURAL:
+        return 'Agricole';
+      case LandType.RESIDENTIAL:
+        return 'Résidentiel';
+      case LandType.INDUSTRIAL:
+        return 'Industriel';
+      case LandType.COMMERCIAL:
+        return 'Commercial';
+    }
+  }
+
+  String _getLandStatusLabel(LandStatus status) {
+    switch (status) {
+      case LandStatus.AVAILABLE:
+        return 'Disponible';
+      case LandStatus.PENDING:
+        return 'En attente';
+      case LandStatus.SOLD:
+        return 'Vendu';
+    }
+  }
+
+  Color _getStatusColor(LandStatus status) {
+    switch (status) {
+      case LandStatus.AVAILABLE:
+        return Colors.green;
+      case LandStatus.PENDING:
+        return Colors.orange;
+      case LandStatus.SOLD:
+        return Colors.red;
+    }
   }
 }

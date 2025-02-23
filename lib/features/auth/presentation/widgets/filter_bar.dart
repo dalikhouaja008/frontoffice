@@ -1,5 +1,6 @@
+// widgets/filter_bar.dart
+
 import 'package:flutter/material.dart';
-import 'package:the_boost/features/auth/presentation/models/land_model.dart';
 import '../models/land_model.dart';
 
 class FilterBar extends StatelessWidget {
@@ -20,23 +21,10 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          TextField(
-            onChanged: onSearchChanged,
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
             decoration: InputDecoration(
               hintText: 'Rechercher un terrain...',
               prefixIcon: const Icon(Icons.search),
@@ -44,67 +32,80 @@ class FilterBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
+            onChanged: onSearchChanged,
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTypeDropdown(),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatusDropdown(),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 16),
+        _buildTypeDropdown(),
+        const SizedBox(width: 16),
+        _buildStatusDropdown(),
+      ],
     );
   }
 
   Widget _buildTypeDropdown() {
-    return DropdownButtonFormField<LandType>(
+    return DropdownButton<LandType>(
       value: selectedType,
-      decoration: InputDecoration(
-        labelText: 'Type de terrain',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
+      hint: const Text('Type'),
       items: LandType.values.map((type) {
         return DropdownMenuItem(
           value: type,
-          child: Text(
-            type == LandType.AGRICULTURAL ? 'Agricole' : 'Urbain',
-          ),
+          child: Text(_getLandTypeLabel(type)),
         );
-      }).toList(),
+      }).toList()
+        ..insert(
+          0,
+          const DropdownMenuItem(
+            value: null,
+            child: Text('Tous les types'),
+          ),
+        ),
       onChanged: onTypeChanged,
     );
   }
 
   Widget _buildStatusDropdown() {
-    return DropdownButtonFormField<LandStatus>(
+    return DropdownButton<LandStatus>(
       value: selectedStatus,
-      decoration: InputDecoration(
-        labelText: 'Statut',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
+      hint: const Text('Statut'),
       items: LandStatus.values.map((status) {
         return DropdownMenuItem(
           value: status,
-          child: Text(
-            switch (status) {
-              LandStatus.PENDING => 'En attente',
-              LandStatus.APPROVED => 'Approuvé',
-              LandStatus.REJECTED => 'Rejeté',
-            },
-          ),
+          child: Text(_getLandStatusLabel(status)),
         );
-      }).toList(),
+      }).toList()
+        ..insert(
+          0,
+          const DropdownMenuItem(
+            value: null,
+            child: Text('Tous les statuts'),
+          ),
+        ),
       onChanged: onStatusChanged,
     );
+  }
+
+  String _getLandTypeLabel(LandType type) {
+    switch (type) {
+      case LandType.AGRICULTURAL:
+        return 'Agricole';
+      case LandType.RESIDENTIAL:
+        return 'Résidentiel';
+      case LandType.INDUSTRIAL:
+        return 'Industriel';
+      case LandType.COMMERCIAL:
+        return 'Commercial';
+    }
+  }
+
+  String _getLandStatusLabel(LandStatus status) {
+    switch (status) {
+      case LandStatus.AVAILABLE:
+        return 'Disponible';
+      case LandStatus.PENDING:
+        return 'En attente';
+      case LandStatus.SOLD:
+        return 'Vendu';
+    }
   }
 }
