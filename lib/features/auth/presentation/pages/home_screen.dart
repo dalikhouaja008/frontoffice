@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:the_boost/constants.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:the_boost/features/auth/data/static_lands.dart';
+import 'package:the_boost/features/auth/presentation/pages/landing_page.dart';
 import '../../domain/entities/user.dart';
 import '../bloc/login_bloc.dart';
 import 'login_screen.dart';
@@ -19,6 +24,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Widget _buildSocialIcon(IconData icon, VoidCallback onPressed) {
+    return InkWell(
+      onTap: onPressed,
+      child: Icon(
+        icon,
+        color: kTextColor,
+        size: 24,
+      ),
+    );
+  }
   LandType? _selectedType;
   LandStatus? _selectedStatus;
   String _searchQuery = '';
@@ -26,6 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Land> _lands = [];
   int selectedIndex = 0;
   int hoverIndex = 0;
+  String currentDateTime = '';
+
 
   List<Land> get filteredLands {
     return _lands.where((land) {
@@ -49,6 +66,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadLands();
+    _startTimeUpdate();
+
+  }
+
+  void _startTimeUpdate() {
+    // Mise à jour initiale
+    _updateDateTime();
+    // Mise à jour toutes les secondes
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateDateTime();
+    });
+  }
+
+  void _updateDateTime() {
+    setState(() {
+      currentDateTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now().toUtc());
+    });
   }
 
   Widget buildMenuItem(int index) {
@@ -204,13 +238,14 @@ Widget build(BuildContext context) {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
+                    MaterialPageRoute(builder: (context) => LandingPage()),
                   );
                 },
               ),
             ],
           ),
         ),
+        
         // Content Section
         Expanded(
           child: LayoutBuilder(
@@ -224,6 +259,7 @@ Widget build(BuildContext context) {
                 ),
                 child: Column(
                   children: [
+                    // FilterBar
                     Container(
                       padding: const EdgeInsets.all(kDefaultPadding),
                       decoration: BoxDecoration(
@@ -238,11 +274,12 @@ Widget build(BuildContext context) {
                         selectedStatus: _selectedStatus,
                       ),
                     ),
+                    // Grid Content
                     Expanded(
                       child: _isLoading
                           ? const Center(
                               child: CircularProgressIndicator(
-                                color: Color.fromARGB(255, 255, 255, 255),
+                                color: kPrimaryColor,
                               ),
                             )
                           : _buildLandGrid(filteredLands, constraints),
@@ -253,10 +290,105 @@ Widget build(BuildContext context) {
             },
           ),
         ),
+
+        // Footer (Nouveau)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                offset: const Offset(0, -2),
+                blurRadius: 10,
+                color: Colors.black.withOpacity(0.05),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Company Info
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'The Boost',
+                          style: TextStyle(
+                            color: kPrimaryColor,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Dernière mise à jour: $currentDateTime',
+                          style: TextStyle(
+                            color: kTextColor.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Quick Links
+                  Expanded(
+                    flex: 3,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      
+                    ),
+                  ),
+                  // Social Media
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Suivez-nous',
+                          style: TextStyle(
+                            color: kTextColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            _buildSocialIcon(FontAwesomeIcons.facebook, () {}),
+                            const SizedBox(width: 12),
+                            _buildSocialIcon(FontAwesomeIcons.linkedin, () {}),
+                            const SizedBox(width: 12),
+                            _buildSocialIcon(FontAwesomeIcons.twitter, () {}),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Copyright
+              Text(
+                '© ${DateTime.now().year} The Boost. Tous droits réservés',
+                style: TextStyle(
+                  color: kTextColor.withOpacity(0.7),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     ),
   );
 }
+
 
   Widget _buildLandGrid(List<Land> lands, BoxConstraints constraints) {
     if (lands.isEmpty) {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
@@ -12,10 +13,20 @@ import 'features/auth/presentation/bloc/sign_up_bloc.dart';
 import 'features/auth/presentation/pages/login_screen.dart';
 import 'features/auth/presentation/pages/sign_up_screen.dart';
 import 'features/auth/presentation/pages/home_screen.dart';
+import 'features/auth/presentation/pages/landing_page.dart';
 import 'features/auth/domain/entities/user.dart';
+import 'constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (kIsWeb) {
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      debugPrint('Error: ${details.toString()}');
+    };
+  }
+
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
@@ -39,13 +50,11 @@ void main() async {
             context.read<AuthRepository>(),
           ),
         ),
-      
         BlocProvider<LoginBloc>(
           create: (context) => LoginBloc(
             context.read<LoginUseCase>(),
           ),
         ),
-        
         BlocProvider<SignUpBloc>(
           create: (context) => SignUpBloc(
             context.read<SignUpUseCase>(),
@@ -65,41 +74,63 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        primaryColor: kPrimaryColor,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: BlocBuilder<LoginBloc, LoginState>(
-        builder: (context, state) {
-          // Si l'utilisateur est déjà connecté, aller à HomeScreen
-          if (state is LoginSuccess) {
-            return HomeScreen(user: state.user);
-          }
-          // Sinon, afficher LoginScreen
-          return LoginScreen();
-        },
-      ),
-      routes: {
-        '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignUpScreen(),
-        '/home': (context) => BlocBuilder<LoginBloc, LoginState>(
-          builder: (context, state) {
-            if (state is LoginSuccess) {
-              return HomeScreen(user: state.user);
-            }
-            // Rediriger vers login si non authentifié
-            return LoginScreen();
-          },
+        scaffoldBackgroundColor: Colors.white,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kPrimaryColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         ),
-      },
-      // Gestion de la navigation non authentifiée
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: kPrimaryColor,
+            side: const BorderSide(color: kPrimaryColor),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ),
       onGenerateRoute: (settings) {
         return MaterialPageRoute(
+          settings: settings,
           builder: (context) {
             final state = context.read<LoginBloc>().state;
-            if (state is! LoginSuccess) {
-              return LoginScreen();
+            
+            // Protected routes that require authentication
+            if (settings.name == '/home') {
+              if (state is LoginSuccess) {
+                return HomeScreen(user: state.user);
+              }
+              return const LandingPage();
             }
-            // Route par défaut si authentifié
-            return HomeScreen(user: state.user);
+
+            // Public routes
+            switch (settings.name) {
+              case '/login':
+                return LoginScreen();
+              case '/signup':
+                return SignUpScreen();
+              case '/':
+              default:
+                if (state is LoginSuccess) {
+                  return HomeScreen(user: state.user);
+                }
+                return const LandingPage();
+            }
           },
         );
       },
@@ -107,7 +138,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Ajoutez cette extension pour faciliter l'accès à l'utilisateur connecté
+// Extension for authentication state
 extension AuthContextExtension on BuildContext {
   User? get currentUser {
     final state = read<LoginBloc>().state;
@@ -118,4 +149,23 @@ extension AuthContextExtension on BuildContext {
   }
 
   bool get isAuthenticated => currentUser != null;
+}
+
+// Extension for navigation
+extension NavigationExtension on BuildContext {
+  void navigateToLogin() {
+    Navigator.pushNamed(this, '/login');
+  }
+
+  void navigateToSignUp() {
+    Navigator.pushNamed(this, '/signup');
+  }
+
+  void navigateToHome() {
+    Navigator.pushReplacementNamed(this, '/home');
+  }
+
+  void navigateToLanding() {
+    Navigator.pushReplacementNamed(this, '/');
+  }
 }
