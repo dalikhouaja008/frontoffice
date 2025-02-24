@@ -40,7 +40,7 @@ class LandingPage extends StatelessWidget {
                           );
                         },
                         icon: const Icon(Icons.login),
-                        label: const Text("Se connecter"),
+                        label: const Text("Login"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kPrimaryColor,
                           foregroundColor: Colors.white,
@@ -59,7 +59,7 @@ class LandingPage extends StatelessWidget {
                           );
                         },
                         icon: const Icon(Icons.person_add),
-                        label: const Text("S'inscrire"),
+                        label: const Text("Sign Up"),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: kPrimaryColor,
                           side: const BorderSide(color: kPrimaryColor),
@@ -91,7 +91,7 @@ class LandingPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    "Bienvenue sur The Boost",
+                    "Welcome to The Boost",
                     style: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
@@ -100,7 +100,7 @@ class LandingPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    "Votre plateforme de gestion des terrains en Tunisie",
+                    "Your Land Management Platform in Tunisia",
                     style: TextStyle(
                       fontSize: 24,
                       color: kTextColor.withOpacity(0.8),
@@ -118,7 +118,7 @@ class LandingPage extends StatelessWidget {
                           );
                         },
                         icon: const Icon(Icons.explore),
-                        label: const Text("Commencer maintenant"),
+                        label: const Text("Get Started"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kPrimaryColor,
                           foregroundColor: Colors.white,
@@ -135,7 +135,7 @@ class LandingPage extends StatelessWidget {
                           // Scroll to features section
                         },
                         icon: const Icon(Icons.arrow_downward),
-                        label: const Text("En savoir plus"),
+                        label: const Text("Learn More"),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: kPrimaryColor,
                           side: const BorderSide(color: kPrimaryColor),
@@ -158,7 +158,7 @@ class LandingPage extends StatelessWidget {
               child: Column(
                 children: [
                   const Text(
-                    "Nos Services",
+                    "Our Services",
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
@@ -171,18 +171,18 @@ class LandingPage extends StatelessWidget {
                     children: [
                       _buildFeatureCard(
                         icon: Icons.search,
-                        title: "Recherche Simple",
-                        description: "Trouvez facilement le terrain qui vous convient",
+                        title: "Simple Search",
+                        description: "Easily find the perfect land for your needs",
                       ),
                       _buildFeatureCard(
                         icon: Icons.real_estate_agent,
-                        title: "Gestion Immobilière",
-                        description: "Gérez vos terrains en toute simplicité",
+                        title: "Property Management",
+                        description: "Manage your lands with ease",
                       ),
                       _buildFeatureCard(
                         icon: Icons.security,
-                        title: "Transactions Sécurisées",
-                        description: "Vos transactions sont 100% sécurisées",
+                        title: "Secure Transactions",
+                        description: "Your transactions are 100% secure",
                       ),
                     ],
                   ),
@@ -197,9 +197,9 @@ class LandingPage extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildStatistic("+1000", "Terrains"),
-                  _buildStatistic("+500", "Clients Satisfaits"),
-                  _buildStatistic("+50", "Villes Couvertes"),
+                  _buildStatistic("+1000", "Properties"),
+                  _buildStatistic("+500", "Satisfied Clients"),
+                  _buildStatistic("+50", "Cities Covered"),
                 ],
               ),
             ),
@@ -226,7 +226,7 @@ class LandingPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            "La meilleure plateforme de gestion\ndes terrains en Tunisie",
+                            "The best land management platform\nin Tunisia",
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.7),
                             ),
@@ -256,7 +256,7 @@ class LandingPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 40),
                   Text(
-                    "© ${DateTime.now().year} The Boost. Tous droits réservés",
+                    "© ${DateTime.now().year} The Boost. All rights reserved",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.7),
                     ),
