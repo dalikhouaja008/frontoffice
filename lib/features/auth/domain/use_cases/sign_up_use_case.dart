@@ -11,3 +11,4 @@ class SignUpUseCase {
     return repository.signUp(username, email, password, role, publicKey);
   }
 }
+

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final IconData icon;
   final bool obscureText;
-  final FocusNode? focusNode;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
+  final TextInputType? keyboardType; // Add this line
 
   const CustomTextField({
     Key? key,
@@ -15,35 +16,49 @@ class CustomTextField extends StatelessWidget {
     required this.label,
     required this.icon,
     this.obscureText = false,
-    this.focusNode,
     this.suffixIcon,
     this.validator,
+    this.keyboardType, // Add this line
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        focusNode: focusNode,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          prefixIcon: Icon(icon, color: Colors.green),
-          suffixIcon: suffixIcon,
-          errorStyle: TextStyle(color: Colors.red),
-          errorBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.red),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.red),
-            borderRadius: BorderRadius.circular(8),
-          ),
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      validator: validator,
+      keyboardType: keyboardType, // Add this line
+      style: GoogleFonts.poppins(
+        fontSize: 14,
+        color: Colors.black87,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.poppins(
+          color: Colors.grey[600],
+          fontSize: 14,
         ),
-        validator: validator,
+        prefixIcon: Icon(icon, color: Colors.blue),
+        suffixIcon: suffixIcon,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.blue),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.red),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }

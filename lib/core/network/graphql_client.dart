@@ -1,16 +1,37 @@
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 class GraphQLService {
-  static final HttpLink httpLink = HttpLink("http://localhost:3000/graphql");
+  static const String _timestamp = '2025-02-17 11:55:47';
+  static const String _user = 'raednas';
 
-  static final AuthLink authLink = AuthLink(
-    getToken: () async => 'Bearer YOUR_ACCESS_TOKEN',
-  );
+  static GraphQLClient getClientWithToken(String token) {
+    print('[$_timestamp] GraphQLService: 🔑 Creating authenticated client'
+          '\n└─ User: $_user'
+          '\n└─ Has token: ${token.isNotEmpty}');
 
-  static final Link link = authLink.concat(httpLink);
+    final authLink = AuthLink(
+      getToken: () => 'Bearer $token',
+    );
 
-  static final GraphQLClient client = GraphQLClient(
-    link: link,
-    cache: GraphQLCache(),
-  );
+    final httpLink = HttpLink('http://localhost:3000/graphql');
+    
+    print('[$_timestamp] GraphQLService: 🔗 Setting up GraphQL link'
+          '\n└─ User: $_user'
+          '\n└─ Authorization: Bearer ${token.length > 10 ? "${token.substring(0, 10)}..." : token}');
+
+    final link = authLink.concat(httpLink);
+
+    return GraphQLClient(
+      link: link,
+      cache: GraphQLCache(),
+    );
+  }
+
+  static GraphQLClient get client {
+    final httpLink = HttpLink('http://localhost:3000/graphql');
+    return GraphQLClient(
+      link: httpLink,
+      cache: GraphQLCache(),
+    );
+  }
 }
