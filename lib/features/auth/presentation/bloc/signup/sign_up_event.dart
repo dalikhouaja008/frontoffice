@@ -11,9 +11,12 @@ class SignUpRequested extends SignUpEvent {
   final String password;
   final String role;
   final String? publicKey;
+  final GDPRConsent gdprConsent;
 
-  SignUpRequested({required this.username, required this.email, required this.password, required this.role, this.publicKey});
+
+  SignUpRequested({required this.username, required this.email, required this.password, required this.role, this.publicKey,
+    required this.gdprConsent});
 
   @override
-  List<Object> get props => [username, email, password, role];
+  List<Object> get props => [username, email, password, role, gdprConsent];
 }

@@ -9,7 +9,7 @@ import 'package:the_boost/features/auth/presentation/widgets/Qr%20Code/custom_qr
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/success_dialog.dart';
 
 class TwoFactorDialog extends StatefulWidget {
-  final User user;
+  final User? user;
   final VoidCallback onSkip;
 
   const TwoFactorDialog({

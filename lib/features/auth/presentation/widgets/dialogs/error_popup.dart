@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ErrorPopup extends StatelessWidget {
   final String message;
 
-  const ErrorPopup({super.key, required this.message});
+  const ErrorPopup({Key? key, required this.message}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
