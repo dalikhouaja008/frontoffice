@@ -20,28 +20,26 @@ final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
 Future<void> initDependencies() async {
-  print('[2025-03-02 17:01:24] DependencyInjection: 🚀 Initializing dependencies'
-        '\n└─ User: raednas');
-  
+  print('DependencyInjection: 🚀 Initializing dependencies');
+
   //=== Core ===//
-  
+
   // Services
-  getIt.registerLazySingleton<SecureStorageService>(() => SecureStorageService());
+  getIt.registerLazySingleton<SecureStorageService>(
+      () => SecureStorageService());
   getIt.registerLazySingleton<GraphQLClient>(() => GraphQLService.client);
-  
+
   //=== Features ===//
   await _initAuthFeature();
   await _initPropertyFeature();
-  
-  print('[2025-03-02 17:01:24] DependencyInjection: ✅ Dependencies initialized'
-        '\n└─ User: raednas');
+
+  print('DependencyInjection: ✅ Dependencies initialized');
 }
 
 /// Initialise les dépendances de la fonctionnalité d'authentification
 Future<void> _initAuthFeature() async {
-  print('[2025-03-02 17:01:24] DependencyInjection: 🔄 Initializing auth feature'
-        '\n└─ User: raednas');
-  
+  print(' DependencyInjection: 🔄 Initializing auth feature');
+
   // Data Sources
   getIt.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(
@@ -49,74 +47,77 @@ Future<void> _initAuthFeature() async {
       secureStorage: getIt<SecureStorageService>(),
     ),
   );
-  
+
   // Two Factor Authentication
   getIt.registerFactory<TwoFactorAuthBloc>(() => TwoFactorAuthBloc(
-    repository: getIt<TwoFactorAuthRepository>(),
-  ));
-  
+        repository: getIt<TwoFactorAuthRepository>(),
+      ));
+
   // Repositories
   getIt.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(getIt<AuthRemoteDataSource>()),
   );
-  
+
   getIt.registerLazySingleton<TwoFactorAuthRepository>(
     () => TwoFactorAuthRepositoryImpl(getIt<AuthRemoteDataSource>()),
   );
-  
+
   // Use Cases
   getIt.registerLazySingleton<LoginUseCase>(() => LoginUseCase(
-    repository: getIt<AuthRepository>(),
-  ));
-  
+        repository: getIt<AuthRepository>(),
+      ));
+
   getIt.registerLazySingleton<SignUpUseCase>(() => SignUpUseCase(
-    getIt<AuthRepository>(),
-  ));
-  
+        getIt<AuthRepository>(),
+      ));
+
   // BLoCs
   getIt.registerFactory<LoginBloc>(() => LoginBloc(
-    loginUseCase: getIt<LoginUseCase>(),
-    secureStorage: getIt<SecureStorageService>(),
-  ));
-  
+        loginUseCase: getIt<LoginUseCase>(),
+        secureStorage: getIt<SecureStorageService>(),
+      ));
+
   getIt.registerFactory<SignUpBloc>(() => SignUpBloc(
-    getIt<SignUpUseCase>(),
-  ));
-  
-  print('[2025-03-02 17:01:24] DependencyInjection: ✅ Auth feature initialized');
+        getIt<SignUpUseCase>(),
+      ));
+
+  print(
+      '[2025-03-02 17:01:24] DependencyInjection: ✅ Auth feature initialized');
 }
 
 /// Initialise les dépendances de la fonctionnalité de gestion des propriétés
 Future<void> _initPropertyFeature() async {
-  print('[2025-03-02 17:01:24] DependencyInjection: 🔄 Initializing property feature'
-        '\n└─ User: raednas');
-  
+  print(
+      '[2025-03-02 17:01:24] DependencyInjection: 🔄 Initializing property feature');
+
   try {
     // Repositories avec implémentation simplifiée (sans dépendances)
     if (!getIt.isRegistered<PropertyRepository>()) {
       getIt.registerLazySingleton<PropertyRepository>(
         () => PropertyRepositoryImpl(),
       );
-      print('[2025-03-02 17:01:24] DependencyInjection: ✅ PropertyRepository registered');
+      print(
+          '[2025-03-02 17:01:24] DependencyInjection: ✅ PropertyRepository registered');
     }
-    
+
     // Use Cases
     if (!getIt.isRegistered<GetPropertiesUseCase>()) {
-      getIt.registerLazySingleton<GetPropertiesUseCase>(() => GetPropertiesUseCase(
-        getIt<PropertyRepository>(),
-      ));
-      print('[2025-03-02 17:01:24] DependencyInjection: ✅ GetPropertiesUseCase registered');
+      getIt.registerLazySingleton<GetPropertiesUseCase>(
+          () => GetPropertiesUseCase(
+                getIt<PropertyRepository>(),
+              ));
+      print(
+          '[2025-03-02 17:01:24] DependencyInjection: ✅ GetPropertiesUseCase registered');
     }
-    
     // BLoCs
     getIt.registerFactory<PropertyBloc>(() => PropertyBloc(
-      getPropertiesUseCase: getIt<GetPropertiesUseCase>(),
-    ));
-    print('[2025-03-02 17:01:24] DependencyInjection: ✅ PropertyBloc registered');
-    
-    print('[2025-03-02 17:01:24] DependencyInjection: ✅ Property feature initialized');
+          getPropertiesUseCase: getIt<GetPropertiesUseCase>(),
+        ));
+    print('DependencyInjection: ✅ PropertyBloc registered');
+
+    print('DependencyInjection: ✅ Property feature initialized');
   } catch (e) {
-    print('[2025-03-02 17:01:24] DependencyInjection: ❌ Error initializing property feature'
-          '\n└─ Error: $e');
+    print('DependencyInjection: ❌ Error initializing property feature'
+        '\n└─ Error: $e');
   }
 }
