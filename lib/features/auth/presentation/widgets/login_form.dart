@@ -4,7 +4,6 @@ import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
-import 'package:the_boost/features/auth/presentation/pages/home_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
 import 'package:the_boost/features/auth/presentation/widgets/textfields/app_text_field.dart';
 import '../../../../../../core/constants/colors.dart';

@@ -9,7 +9,6 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTickerProviderStateMixin {
   bool isEmailMethod = true;
   late AnimationController _animationController;
-  late Animation<double> _animationTextRotate;
   final _formKey = GlobalKey<FormState>();
   
   String? _verificationCode;
@@ -31,10 +30,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
       duration: Duration(milliseconds: 500),
     );
 
-    _animationTextRotate = Tween<double>(
-      begin: 0,
-      end: 90,
-    ).animate(_animationController);
   }
 
   @override

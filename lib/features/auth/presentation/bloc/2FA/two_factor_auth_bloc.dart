@@ -86,6 +86,7 @@ class TwoFactorAuthBloc extends Bloc<TwoFactorAuthEvent, TwoFactorAuthState> {
     print('[$_timestamp] TwoFactorAuthBloc: 🔐 Verifying login OTP'
           '\n└─ User: $_user'
           '\n└─ Code length: ${event.code.length}'
+          // ignore: unnecessary_null_comparison
           '\n└─ Has tempToken: ${event.tempToken != null}');
 
     if (_currentRequests >= _maxConcurrentRequests) {
