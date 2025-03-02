@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:the_boost/core/utils/constants.dart';
+import 'package:the_boost/core/constants/constants.dart';
 
 class AppFooter extends StatelessWidget {
   final String currentDateTime;

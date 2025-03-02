@@ -14,17 +14,18 @@ class SignUpBloc extends Bloc<SignUpEvent, SignUpState> {
     on<SignUpRequested>((event, emit) async {
       emit(SignUpLoading());
 
-      final result = await signUpUseCase(event.username, event.email, event.password, event.role, event.publicKey);
+      final result = await signUpUseCase(
+        event.username, 
+        event.email, 
+        event.password, 
+        event.role, 
+        event.publicKey);
 
       result.fold(
         (failure) => emit(SignUpFailure(failure)),
         (user) {
-          if (user == null) {
-            emit(SignUpFailure("Sign-Up successful, but no user data returned."));
-          } else {
-            emit(SignUpSuccess(user));
-          }
-        },
+          emit(SignUpSuccess(user));
+                },
       );
     });
   }

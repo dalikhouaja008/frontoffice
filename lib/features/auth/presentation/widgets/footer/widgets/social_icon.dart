@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:the_boost/core/utils/constants.dart';
+import 'package:the_boost/core/constants/constants.dart';
 
 class SocialIcon extends StatelessWidget {
   final IconData icon;

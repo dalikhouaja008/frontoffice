@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:the_boost/core/utils/constants.dart';
+import 'package:the_boost/core/constants/constants.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/pages/login_screen.dart';
 
