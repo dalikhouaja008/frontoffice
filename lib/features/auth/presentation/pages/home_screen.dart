@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:the_boost/core/utils/constants.dart';
+import 'package:the_boost/core/constants/constants.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
-import 'package:the_boost/features/auth/data/static_lands.dart';
+import 'package:the_boost/features/auth/data/datasources/static_lands.dart';
 import 'package:the_boost/features/auth/presentation/widgets/Menu/app_menu.dart';
 import 'package:the_boost/features/auth/presentation/widgets/Menu/widgets/securityBadge.dart';
 import 'package:the_boost/features/auth/presentation/widgets/catalogue/filter_bar.dart';

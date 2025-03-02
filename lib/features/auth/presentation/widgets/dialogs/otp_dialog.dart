@@ -7,7 +7,7 @@ import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bl
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_event.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
 import 'package:the_boost/features/auth/presentation/widgets/OTP/custom_pin_input.dart';
-import 'package:the_boost/features/auth/presentation/widgets/custom_button.dart';
+import 'package:the_boost/features/auth/presentation/widgets/buttons/custom_button.dart';
 
 class OtpDialog extends StatefulWidget {
   final String tempToken;

@@ -7,9 +7,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:the_boost/features/auth/domain/entities/grpd_consent.dart';
 import '../bloc/signup/sign_up_bloc.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/social_button.dart';
+import '../widgets/buttons/custom_button.dart';
+import '../widgets/textfields/custom_text_field.dart';
+import '../widgets/buttons/social_button.dart';
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {

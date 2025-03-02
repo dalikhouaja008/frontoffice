@@ -1,28 +1,28 @@
 part of 'sign_up_bloc.dart';
 
-abstract class SignUpState extends Equatable {
-  @override
-  List<Object> get props => [];
-}
+  abstract class SignUpState extends Equatable {
+    @override
+    List<Object> get props => [];
+  }
 
-class SignUpInitial extends SignUpState {}
+  class SignUpInitial extends SignUpState {}
 
-class SignUpLoading extends SignUpState {}
+  class SignUpLoading extends SignUpState {}
 
-class SignUpSuccess extends SignUpState {
-  final User user;
+  class SignUpSuccess extends SignUpState {
+    final User user;
 
-  SignUpSuccess(this.user);
+    SignUpSuccess(this.user);
 
-  @override
-  List<Object> get props => [user];
-}
+    @override
+    List<Object> get props => [user];
+  }
 
-class SignUpFailure extends SignUpState {
-  final String error;
+  class SignUpFailure extends SignUpState {
+    final String error;
 
-  SignUpFailure(this.error);
+    SignUpFailure(this.error);
 
-  @override
-  List<Object> get props => [error];
-}
+    @override
+    List<Object> get props => [error];
+  }

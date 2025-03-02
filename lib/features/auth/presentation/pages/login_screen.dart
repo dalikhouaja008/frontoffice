@@ -2,22 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/pages/sign_up_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/otp_dialog.dart';
-import '../../../../core/services/secure_storage_service.dart';
 import '../bloc/login/login_bloc.dart';
-import '../../domain/use_cases/login_use_case.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
+import '../widgets/buttons/custom_button.dart';
+import '../widgets/textfields/custom_text_field.dart';
 import '../widgets/dialogs/error_popup.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final Function? updateView;
+  
+  const LoginScreen({super.key, this.updateView});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -30,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool _obscureText = true;
 
-    void _showErrorDialog(BuildContext context, String error) {
+  void _showErrorDialog(BuildContext context, String error) {
     final formattedError = _formatErrorMessage(error);
     print('LoginScreen❌ Showing error dialog'
           '\n└─ Error: $formattedError');
@@ -41,10 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
- void _handleLoginStateChanges(BuildContext context, LoginState state) {
+  void _handleLoginStateChanges(BuildContext context, LoginState state) {
     if (state is LoginSuccess) {
       print('LoginScreen ✅ Login successful'
-
             '\n└─ Email: ${state.user.email}'
             '\n└─ Role: ${state.user.role}');
 
@@ -70,18 +70,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
-   @override
+  @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     bool isMobile = size.width < 800;
 
+    // Utilisez BlocProvider.value si le LoginBloc est fourni par un parent
+    // ou créez-en un nouveau si nécessaire
     return Scaffold(
       body: BlocProvider(
-        create: (context) => LoginBloc(
-          loginUseCase: context.read<LoginUseCase>(),
-          secureStorage: context.read<SecureStorageService>(),
-        ),
+        // Utilisez getIt pour obtenir vos dépendances
+        create: (context) => getIt<LoginBloc>(),
         child: BlocConsumer<LoginBloc, LoginState>(
           listenWhen: (previous, current) => previous != current,
           buildWhen: (previous, current) => previous != current,
@@ -113,75 +112,62 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
- 
-void _show2FADialog(BuildContext context, LoginRequires2FA state) {
-  print('[2025-02-17 09:44:06] LoginScreen: 🔐 Showing 2FA dialog'
-        '\n└─ User: raednas'
-        '\n└─ Email: ${state.user.email}');
+  void _show2FADialog(BuildContext context, LoginRequires2FA state) {
+    print('[2025-02-17 09:44:06] LoginScreen: 🔐 Showing 2FA dialog'
+          '\n└─ User: raednas'
+          '\n└─ Email: ${state.user.email}');
 
-  final twoFactorAuthRepository = context.read<TwoFactorAuthRepository>();
+    // Utilisez getIt pour obtenir le repository
+    final twoFactorAuthRepository = getIt<TwoFactorAuthRepository>();
 
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) => BlocProvider<TwoFactorAuthBloc>(
-      create: (context) => TwoFactorAuthBloc(
-        repository: twoFactorAuthRepository,
-      ),
-      child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
-        listener: (context, twoFactorState) {
-          if (twoFactorState is TwoFactorAuthLoginSuccess) {
-            print('[2025-02-17 09:44:06] LoginScreen: ✅ 2FA verification successful'
-                  '\n└─ User: raednas'
-                  '\n└─ Email: ${twoFactorState.user.email}');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => BlocProvider<TwoFactorAuthBloc>(
+        // Utilisez getIt ou créez une nouvelle instance avec le repository obtenu
+        create: (context) => TwoFactorAuthBloc(
+          repository: twoFactorAuthRepository,
+        ),
+        child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
+          listener: (context, twoFactorState) {
+            if (twoFactorState is TwoFactorAuthLoginSuccess) {
+              print('[2025-02-17 09:44:06] LoginScreen: ✅ 2FA verification successful'
+                    '\n└─ User: raednas'
+                    '\n└─ Email: ${twoFactorState.user.email}');
 
-            Navigator.of(dialogContext).pop();
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => HomeScreen(user: twoFactorState.user),
-              ),
-            );
-          } else if (twoFactorState is TwoFactorAuthError) {
-            print('[2025-02-17 09:44:06] LoginScreen: ❌ 2FA verification failed'
-                  '\n└─ User: raednas'
-                  '\n└─ Error: ${twoFactorState.message}');
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => HomeScreen(user: twoFactorState.user),
+                ),
+              );
+            } else if (twoFactorState is TwoFactorAuthError) {
+              print('[2025-02-17 09:44:06] LoginScreen: ❌ 2FA verification failed'
+                    '\n└─ User: raednas'
+                    '\n└─ Error: ${twoFactorState.message}');
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(twoFactorState.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        child: OtpDialog(
-          tempToken: state.tempToken,
-          email: state.user.email,
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(twoFactorState.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: OtpDialog(
+            tempToken: state.tempToken,
+            email: state.user.email,
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _formatErrorMessage(String error) {
     if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
       return 'Unable to process login information. Please try again.';
     }
     return error.replaceAll('Exception:', '').trim();
-  }
-
-  void _handleLogin(BuildContext context) {
-    if (_formKey.currentState!.validate()) {
-      print('LoginScreen 🚀 Initiating login'
-            '\n└─ Email: ${_emailController.text.trim()}');
-
-      context.read<LoginBloc>().add(
-        LoginRequested(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        ),
-      );
-    }
   }
 
   /// 📱 **Mobile Layout: Single Column**
@@ -248,146 +234,150 @@ void _show2FADialog(BuildContext context, LoginRequires2FA state) {
   }
 
   /// 🔐 **Right Section: Login Form + Animation**
-Widget _buildLoginForm(BuildContext context, LoginState state) {
-  const timestamp = '2025-02-17 13:34:21';
-  const user = 'raednas';
+  Widget _buildLoginForm(BuildContext context, LoginState state) {
+    const timestamp = '2025-02-17 13:34:21';
+    const user = 'raednas';
 
-  return Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.9),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Lottie.asset('assets/animations/auth.json', height: 150),
-        const SizedBox(height: 20),
-        Text(
-          "Login to TheBoost",
-          style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 20),
-        Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              CustomTextField(
-                controller: _emailController,
-                label: "Email",
-                icon: Icons.email,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your email";
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(value)) {
-                    return "Please enter a valid email address";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _passwordController,
-                label: "Password",
-                icon: Icons.lock,
-                obscureText: _obscureText,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                      _obscureText ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () {
-                    setState(() {
-                      _obscureText = !_obscureText;
-                    });
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Lottie.asset('assets/animations/auth.json', height: 150),
+          const SizedBox(height: 20),
+          Text(
+            "Login to TheBoost",
+            style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                CustomTextField(
+                  controller: _emailController,
+                  label: "Email",
+                  icon: Icons.email,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your email";
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value)) {
+                      return "Please enter a valid email address";
+                    }
+                    return null;
                   },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your password";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Checkbox(
-                    value: rememberMe,
-                    onChanged: (value) {
+                const SizedBox(height: 16),
+                CustomTextField(
+                  controller: _passwordController,
+                  label: "Password",
+                  icon: Icons.lock,
+                  obscureText: _obscureText,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                        _obscureText ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () {
                       setState(() {
-                        rememberMe = value!;
+                        _obscureText = !_obscureText;
                       });
                     },
                   ),
-                  const Text("Remember Me"),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      "Forgot Password?",
-                      style: TextStyle(color: Colors.blue),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your password";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: rememberMe,
+                      onChanged: (value) {
+                        setState(() {
+                          rememberMe = value!;
+                        });
+                      },
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              CustomButton(
-                text: "Login",
-                isLoading: state is LoginLoading,
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    print('[$timestamp] LoginScreen: 🚀 Login button pressed'
-                          '\n└─ User: $user'
-                          '\n└─ Email: ${_emailController.text.trim()}');
-
-                    context.read<LoginBloc>().add(
-                          LoginRequested(
-                            _emailController.text.trim(),
-                            _passwordController.text.trim(),
-                          ),
-                        );
-                  }
-                },
-              ),
-              const SizedBox(height: 20),
-              // Nouvelle section pour le lien d'inscription
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Don't have an account? ",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      print('[$timestamp] LoginScreen: 📝 Navigate to signup'
-                            '\n└─ User: $user');
-                            
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>  SignUpScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
+                    const Text("Remember Me"),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text(
+                        "Forgot Password?",
+                        style: TextStyle(color: Colors.blue),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 20),
+                CustomButton(
+                  text: "Login",
+                  isLoading: state is LoginLoading,
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      print('[$timestamp] LoginScreen: 🚀 Login button pressed'
+                            '\n└─ User: $user'
+                            '\n└─ Email: ${_emailController.text.trim()}');
+
+                      context.read<LoginBloc>().add(
+                            LoginRequested(
+                              _emailController.text.trim(),
+                              _passwordController.text.trim(),
+                            ),
+                          );
+                    }
+                  },
+                ),
+                const SizedBox(height: 20),
+                // Nouvelle section pour le lien d'inscription
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Don't have an account? ",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        print('[$timestamp] LoginScreen: 📝 Navigate to signup'
+                              '\n└─ User: $user');
+                              
+                        // Si widget.updateView est fourni, utilisez-le
+                        if (widget.updateView != null) {
+                          widget.updateView!();
+                        } else {
+                          // Sinon, utilisez la navigation standard
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SignUpScreen(),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        "Sign Up",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-
+        ],
+      ),
+    );
+  }
 }

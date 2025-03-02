@@ -1,96 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:provider/provider.dart';
-import 'package:the_boost/core/network/graphql_client.dart';
-import 'package:the_boost/core/services/secure_storage_service.dart';
-import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
-import 'features/auth/domain/use_cases/login_use_case.dart';
-import 'features/auth/domain/use_cases/sign_up_use_case.dart';
-import 'features/auth/data/repositories/auth_repository_impl.dart';
-import 'features/auth/data/datasources/auth_remote_data_source.dart';
-import 'features/auth/domain/repositories/auth_repository.dart';
-import 'features/auth/presentation/bloc/login/login_bloc.dart';
-import 'features/auth/presentation/bloc/signup/sign_up_bloc.dart';
-import 'features/auth/presentation/pages/login_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:the_boost/core/constants/colors.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
+import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
+import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
+import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 
-void main() {
+void main() async {
   // Assurez-vous que les liaisons Flutter sont initialisées
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Créez une instance unique de SecureStorageService
-  final secureStorage = SecureStorageService();
-  // Créez une instance du client GraphQL
-  final graphQLClient = GraphQLService.client;
-
-  runApp(
-    MultiProvider(
-      providers: [
-        // Ajout du provider pour SecureStorageService
-        // Provider pour SecureStorageService
-        Provider<SecureStorageService>.value(
-          value: secureStorage,
-        ),
-        // Provider pour GraphQLClient
-        Provider<GraphQLClient>.value(
-          value: graphQLClient,
-        ),
-        Provider<AuthRemoteDataSource>(
-          create: (context) => AuthRemoteDataSourceImpl(
-            client: context.read<GraphQLClient>(),
-            secureStorage: context.read<SecureStorageService>(),
-          ),
-        ),
-        Provider<AuthRepository>(
-          create: (context) => AuthRepositoryImpl(
-            context.read<AuthRemoteDataSource>(),
-          ),
-        ),
-        Provider<LoginUseCase>(
-          create: (context) => LoginUseCase(
-            repository: context.read<AuthRepository>(),
-          ),
-        ),
-        Provider<SignUpUseCase>(
-          create: (context) => SignUpUseCase(
-            context.read<AuthRepository>(),
-          ),
-        ),
-        BlocProvider<LoginBloc>(
-          create: (context) => LoginBloc(
-            loginUseCase: context.read<LoginUseCase>(),
-            secureStorage: context.read<SecureStorageService>(),
-          ),
-        ),
-        BlocProvider<SignUpBloc>(
-          create: (context) => SignUpBloc(
-            context.read<SignUpUseCase>(),
-          ),
-        ),
-        Provider<TwoFactorAuthRepository>(
-          create: (context) => TwoFactorAuthRepositoryImpl(
-            context.read<AuthRemoteDataSource>(),
-          ),
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  
+  // Initialiser toutes les dépendances
+  await initDependencies();
+  
+  runApp(const TheBoostApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class TheBoostApp extends StatelessWidget {
+  const TheBoostApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TheBoost',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        // Ajoutez d'autres configurations de thème si nécessaire
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<LoginBloc>(
+          create: (_) => getIt<LoginBloc>(),
+        ),
+        BlocProvider<SignUpBloc>(
+          create: (_) => getIt<SignUpBloc>(),
+        ),
+        BlocProvider<PropertyBloc>(
+          create: (_) => getIt<PropertyBloc>(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'TheBoost - Land Investment via Tokenization',
+        theme: ThemeData(
+          primaryColor: AppColors.primary,
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.primary,
+            secondary: AppColors.primaryLight,
+            surface: Colors.white,
+            background: Colors.white,
+          ),
+          textTheme: GoogleFonts.poppinsTextTheme(),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+        debugShowCheckedModeBanner: false,
+        initialRoute: AppRoutes.home,
+        onGenerateRoute: AppRoutes.generateRoute,
+        builder: (context, child) {
+          return BlocBuilder<LoginBloc, LoginState>(
+            builder: (context, state) {
+              // Redirect to dashboard if logged in and trying to access auth page
+              if (child?.key == const ValueKey('AuthPage') && state is LoginSuccess) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+                });
+              }
+              
+              return child!;
+            },
+          );
+        },
       ),
-      home: const LoginScreen(),
     );
   }
 }
