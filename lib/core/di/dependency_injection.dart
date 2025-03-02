@@ -4,6 +4,7 @@ import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:the_boost/features/auth/data/repositories/property_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/property_repository.dart';
@@ -19,6 +20,9 @@ final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
 Future<void> initDependencies() async {
+  print('[2025-03-02 17:01:24] DependencyInjection: 🚀 Initializing dependencies'
+        '\n└─ User: raednas');
+  
   //=== Core ===//
   
   // Services
@@ -28,10 +32,16 @@ Future<void> initDependencies() async {
   //=== Features ===//
   await _initAuthFeature();
   await _initPropertyFeature();
+  
+  print('[2025-03-02 17:01:24] DependencyInjection: ✅ Dependencies initialized'
+        '\n└─ User: raednas');
 }
 
 /// Initialise les dépendances de la fonctionnalité d'authentification
 Future<void> _initAuthFeature() async {
+  print('[2025-03-02 17:01:24] DependencyInjection: 🔄 Initializing auth feature'
+        '\n└─ User: raednas');
+  
   // Data Sources
   getIt.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(
@@ -39,12 +49,12 @@ Future<void> _initAuthFeature() async {
       secureStorage: getIt<SecureStorageService>(),
     ),
   );
-  // Ajoutez ceci à votre méthode d'initialisation des dépendances pour l'authentification
   
   // Two Factor Authentication
   getIt.registerFactory<TwoFactorAuthBloc>(() => TwoFactorAuthBloc(
     repository: getIt<TwoFactorAuthRepository>(),
   ));
+  
   // Repositories
   getIt.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(getIt<AuthRemoteDataSource>()),
@@ -72,19 +82,41 @@ Future<void> _initAuthFeature() async {
   getIt.registerFactory<SignUpBloc>(() => SignUpBloc(
     getIt<SignUpUseCase>(),
   ));
+  
+  print('[2025-03-02 17:01:24] DependencyInjection: ✅ Auth feature initialized');
 }
 
 /// Initialise les dépendances de la fonctionnalité de gestion des propriétés
 Future<void> _initPropertyFeature() async {
-  // Use Cases
-  getIt.registerLazySingleton<GetPropertiesUseCase>(() => GetPropertiesUseCase(
-    getIt<PropertyRepository>()
-  ));
+  print('[2025-03-02 17:01:24] DependencyInjection: 🔄 Initializing property feature'
+        '\n└─ User: raednas');
   
-  // BLoCs
-  getIt.registerFactory<PropertyBloc>(() => PropertyBloc(
-    getPropertiesUseCase: getIt<GetPropertiesUseCase>(),
-  ));
-  
-  // Vous pouvez ajouter d'autres repositories, data sources, etc. liés aux propriétés ici
+  try {
+    // Repositories avec implémentation simplifiée (sans dépendances)
+    if (!getIt.isRegistered<PropertyRepository>()) {
+      getIt.registerLazySingleton<PropertyRepository>(
+        () => PropertyRepositoryImpl(),
+      );
+      print('[2025-03-02 17:01:24] DependencyInjection: ✅ PropertyRepository registered');
+    }
+    
+    // Use Cases
+    if (!getIt.isRegistered<GetPropertiesUseCase>()) {
+      getIt.registerLazySingleton<GetPropertiesUseCase>(() => GetPropertiesUseCase(
+        getIt<PropertyRepository>(),
+      ));
+      print('[2025-03-02 17:01:24] DependencyInjection: ✅ GetPropertiesUseCase registered');
+    }
+    
+    // BLoCs
+    getIt.registerFactory<PropertyBloc>(() => PropertyBloc(
+      getPropertiesUseCase: getIt<GetPropertiesUseCase>(),
+    ));
+    print('[2025-03-02 17:01:24] DependencyInjection: ✅ PropertyBloc registered');
+    
+    print('[2025-03-02 17:01:24] DependencyInjection: ✅ Property feature initialized');
+  } catch (e) {
+    print('[2025-03-02 17:01:24] DependencyInjection: ❌ Error initializing property feature'
+          '\n└─ Error: $e');
+  }
 }

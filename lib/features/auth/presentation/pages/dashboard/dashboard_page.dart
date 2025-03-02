@@ -17,7 +17,10 @@ import 'widgets/recent_activity.dart';
 import 'widgets/featured_properties.dart';
 
 class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _DashboardPageState createState() => _DashboardPageState();
 }
 
@@ -68,12 +71,12 @@ class _DashboardPageState extends State<DashboardPage> {
                     DashboardStats(),
                     const SizedBox(height: AppDimensions.paddingXL),
                     
-                    SectionTitle(title: "Your Portfolio"),
+                    const SectionTitle(title: "Your Portfolio"),
                     const SizedBox(height: AppDimensions.paddingL),
                     InvestmentPortfolio(),
                     const SizedBox(height: AppDimensions.paddingXL),
                     
-                    SectionTitle(title: "Recent Activity"),
+                    const SectionTitle(title: "Recent Activity"),
                     const SizedBox(height: AppDimensions.paddingL),
                     RecentActivity(),
                     const SizedBox(height: AppDimensions.paddingXL),
@@ -81,7 +84,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        SectionTitle(title: "Featured Properties"),
+                        const SectionTitle(title: "Featured Properties"),
                         TextButton(
                           onPressed: () {
                             Navigator.pushNamed(context, '/invest');
@@ -114,7 +117,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Modifié pour accepter un User au lieu d'un AuthController
   Widget _buildDashboardHeader(BuildContext context, user) {
     final isMobile = ResponsiveHelper.isMobile(context);
     

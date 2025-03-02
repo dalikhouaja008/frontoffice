@@ -30,31 +30,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _acceptedPrivacyPolicy = false;
   bool _acceptedDataProcessing = false;
   bool _acceptedMarketing = false;
-  bool _isLoading = false;
 
   String get _currentTimestamp => 
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now().toUtc());
 
-  void _navigateToLogin(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => LoginScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(-1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOutCubic;
-          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-          var offsetAnimation = animation.drive(tween);
-          return SlideTransition(
-            position: offsetAnimation,
-            child: child,
-          );
-        },
-        transitionDuration: Duration(milliseconds: 500),
-      ),
-    );
-  }
 
   void _showPrivacyPolicy() {
     showDialog(
