@@ -5,7 +5,6 @@ import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/dashboard_stats.dart';
-import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/investment_portfolio.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/recent_activity.dart';
 import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
 
@@ -57,7 +56,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   
                   SectionTitle(title: "Your Portfolio"),
                   const SizedBox(height: AppDimensions.paddingL),
-                  InvestmentPortfolio(),
                   const SizedBox(height: AppDimensions.paddingXL),
                   
                   SectionTitle(title: "Recent Activity"),

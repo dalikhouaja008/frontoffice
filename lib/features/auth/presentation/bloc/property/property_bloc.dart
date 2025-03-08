@@ -2,13 +2,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:the_boost/features/auth/domain/entities/property.dart';
-import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 
 part 'property_event.dart';
 part 'property_state.dart';
 
 class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
-  final GetPropertiesUseCase getPropertiesUseCase;
+  PropertyBloc() : super(PropertyInitial()) {
+    on<LoadProperties>(_onLoadProperties);
+    on<SetCategory>(_onSetCategory);
+    on<SetPriceRange>(_onSetPriceRange);
+    on<SetReturnRange>(_onSetReturnRange);
+    on<ToggleRiskLevel>(_onToggleRiskLevel);
+    on<ResetFilters>(_onResetFilters);
+  }
 
   // Filter state
   String _selectedCategory = 'All';
@@ -21,14 +27,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   RangeValues get returnRange => _returnRange;
   List<String> get selectedRiskLevels => _selectedRiskLevels;
 
-  PropertyBloc({required this.getPropertiesUseCase}) : super(PropertyInitial()) {
-    on<LoadProperties>(_onLoadProperties);
-    on<SetCategory>(_onSetCategory);
-    on<SetPriceRange>(_onSetPriceRange);
-    on<SetReturnRange>(_onSetReturnRange);
-    on<ToggleRiskLevel>(_onToggleRiskLevel);
-    on<ResetFilters>(_onResetFilters);
-  }
+  
 
   List<Property> getFilteredProperties(List<Property> properties) {
     return properties.where((property) {
@@ -61,15 +60,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   Future<void> _onLoadProperties(LoadProperties event, Emitter<PropertyState> emit) async {
     emit(PropertyLoading());
 
-    try {
-      final properties = await getPropertiesUseCase.execute();
-      emit(PropertyLoaded(
-        properties: properties,
-        filteredProperties: getFilteredProperties(properties),
-      ));
-    } catch (e) {
-      emit(PropertyError(message: e.toString()));
-    }
+    
   }
 
   void _onSetCategory(SetCategory event, Emitter<PropertyState> emit) {

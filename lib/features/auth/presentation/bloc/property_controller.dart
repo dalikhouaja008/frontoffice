@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import '../../domain/entities/property.dart';
 
 
 enum PropertyLoadingStatus { initial, loading, loaded, error }
 
 class PropertyController with ChangeNotifier {
-  final GetPropertiesUseCase getPropertiesUseCase;
-
   PropertyLoadingStatus _status = PropertyLoadingStatus.initial;
   List<Property> _properties = [];
   String? _errorMessage;
@@ -18,9 +15,6 @@ class PropertyController with ChangeNotifier {
   RangeValues _returnRange = RangeValues(5, 20);
   List<String> _selectedRiskLevels = ['Low', 'Medium', 'Medium-High', 'High'];
 
-  PropertyController({
-    required this.getPropertiesUseCase,
-  });
 
   PropertyLoadingStatus get status => _status;
   List<Property> get properties => _properties;
@@ -64,15 +58,7 @@ class PropertyController with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    try {
-      _properties = await getPropertiesUseCase.execute();
-      _status = PropertyLoadingStatus.loaded;
-      notifyListeners();
-    } catch (e) {
-      _status = PropertyLoadingStatus.error;
-      _errorMessage = e.toString();
-      notifyListeners();
-    }
+    
   }
 
   void setCategory(String category) {

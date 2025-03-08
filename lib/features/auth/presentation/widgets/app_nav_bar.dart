@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
@@ -80,7 +81,7 @@ class AppNavBar extends StatelessWidget {
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
                     _NavLink('Features', route: '/features', currentRoute: currentRoute),
                     _NavLink('How It Works', route: '/how-it-works', currentRoute: currentRoute),
-                    _NavLink('Invest', route: '/invest', currentRoute: currentRoute),
+                    _NavLink('Invest',  route: AppRoutes.investment, currentRoute: currentRoute),
                     _NavLink('Learn More', route: '/learn-more', currentRoute: currentRoute),
                   ],
                 ),

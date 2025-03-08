@@ -1,10 +1,10 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:the_boost/core/constants/constants.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
-import 'package:the_boost/features/auth/data/datasources/static_lands.dart';
+import 'package:the_boost/features/investment/presentation/bloc/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/widgets/Menu/app_menu.dart';
 import 'package:the_boost/features/auth/presentation/widgets/Menu/widgets/securityBadge.dart';
 import 'package:the_boost/features/auth/presentation/widgets/catalogue/filter_bar.dart';
@@ -26,18 +26,18 @@ class _HomeScreenState extends State<HomeScreen> {
   LandType? _selectedType;
   LandStatus? _selectedStatus;
   String _searchQuery = '';
-  bool _isLoading = false;
-  List<Land> _lands = [];
   int selectedIndex = 0;
   String currentDateTime = '';
 
   List<Land> get filteredLands {
-    return _lands.where((land) {
+    final LandState state = context.watch<LandBloc>().state;
+    if (state is! LandLoadedState) return [];
+
+    return state.lands.where((land) {
       final matchesType = _selectedType == null || land.type == _selectedType;
-      final matchesStatus =
-          _selectedStatus == null || land.status == _selectedStatus;
+      final matchesStatus = _selectedStatus == null || land.status == _selectedStatus;
       final matchesQuery = _searchQuery.isEmpty ||
-          land.name.toLowerCase().contains(_searchQuery.toLowerCase());
+          land.title != null && land.title!.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesType && matchesStatus && matchesQuery;
     }).toList();
   }
@@ -45,14 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    print(
-        '[HomeScreen: 🚀 Initializing HomeScreen state] - Current User: ${widget.user?.username}');
+    print('[HomeScreen: 🚀 Initializing HomeScreen state] - Current User: ${widget.user?.username}');
 
-    _loadLands();
+    // Charger les terrains au démarrage
+    context.read<LandBloc>().add(LoadLandsEvent());
     _startTimeUpdate();
 
-    // Vérification de 2FA et affichage du dialogue si nécessaire
-    if (!widget.user!.isTwoFactorEnabled) {
+    // Vérification de 2FA
+    if (widget.user != null && !widget.user!.isTwoFactorEnabled) {
       print('HomeScreen: 🔔 Scheduling 2FA dialog');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _show2FADialog();
@@ -61,37 +61,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _show2FADialog() {
-    if (widget.user == null) {
-      return;
-    } else {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => TwoFactorDialog(
-          user: widget.user,
-          onSkip: () {
-            Navigator.of(context).pop(); // Ferme le dialogue
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                  'Vous pouvez activer la 2FA à tout moment via le menu de sécurité',
-                ),
-                action: SnackBarAction(
-                  label: 'Activer',
-                  onPressed: _show2FADialog,
-                ),
+    if (widget.user == null) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => TwoFactorDialog(
+        user: widget.user,
+        onSkip: () {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Vous pouvez activer la 2FA à tout moment via le menu de sécurité',
               ),
-            );
-          },
-        ),
-      );
-    }
+              action: SnackBarAction(
+                label: 'Activer',
+                onPressed: _show2FADialog,
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _startTimeUpdate() {
-    // Mise à jour initiale
     _updateDateTime();
-    // Mise à jour toutes les secondes
     Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         _updateDateTime();
@@ -103,8 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _updateDateTime() {
     setState(() {
-      currentDateTime =
-          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now().toUtc());
+      currentDateTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now().toUtc());
     });
   }
 
@@ -116,15 +111,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Column(
             children: [
-              // Menu avec utilisateur authentifié
               AppMenu(
                 user: widget.user,
                 on2FAButtonPressed: widget.user != null ? _show2FADialog : null,
                 selectedIndex: selectedIndex,
                 onMenuItemSelected: (index) {
-                  setState(() {
-                    selectedIndex = index;
-                  });
+                  setState(() => selectedIndex = index);
                 },
               ),
 
@@ -141,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         children: [
-                          // FilterBar
                           Container(
                             padding: const EdgeInsets.all(kDefaultPadding),
                             decoration: BoxDecoration(
@@ -149,25 +140,40 @@ class _HomeScreenState extends State<HomeScreen> {
                               boxShadow: [kDefaultShadow],
                             ),
                             child: FilterBar(
-                              onTypeChanged: (type) =>
-                                  setState(() => _selectedType = type),
-                              onStatusChanged: (status) =>
-                                  setState(() => _selectedStatus = status),
-                              onSearchChanged: (query) =>
-                                  setState(() => _searchQuery = query),
+                              onTypeChanged: (type) => setState(() => _selectedType = type),
+                              onStatusChanged: (status) => setState(() => _selectedStatus = status),
+                              onSearchChanged: (query) => setState(() => _searchQuery = query),
                               selectedType: _selectedType,
                               selectedStatus: _selectedStatus,
                             ),
                           ),
-                          // Grid Content
                           Expanded(
-                            child: _isLoading
-                                ? const Center(
-                                    child: CircularProgressIndicator(
-                                      color: kPrimaryColor,
+                            child: BlocBuilder<LandBloc, LandState>(
+                              builder: (context, state) {
+                                if (state is LandLoadingState) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(color: kPrimaryColor),
+                                  );
+                                }
+                                if (state is LandErrorState) {
+                                  return Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(state.message),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            context.read<LandBloc>().add(LoadLandsEvent());
+                                          },
+                                          child: const Text('Réessayer'),
+                                        ),
+                                      ],
                                     ),
-                                  )
-                                : _buildLandGrid(filteredLands, constraints),
+                                  );
+                                }
+                                return _buildLandGrid(filteredLands, constraints);
+                              },
+                            ),
                           ),
                         ],
                       ),
@@ -176,13 +182,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Footer
               AppFooter(currentDateTime: currentDateTime),
             ],
           ),
 
-          // Badge de sécurité si 2FA non activé
-          if (!widget.user!.isTwoFactorEnabled)
+          if (widget.user != null && !widget.user!.isTwoFactorEnabled)
             const Positioned(
               top: 90,
               right: 16,
@@ -217,8 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     const double itemWidth = 300.0;
-    final int crossAxisCount =
-        (constraints.maxWidth / itemWidth).floor().clamp(1, 4);
+    final int crossAxisCount = (constraints.maxWidth / itemWidth).floor().clamp(1, 4);
 
     return GridView.builder(
       padding: const EdgeInsets.all(kDefaultPadding),
@@ -236,26 +239,5 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
-  }
-
-  Future<void> _loadLands() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-      final lands = StaticLandsData.getLands();
-
-      setState(() {
-        _lands = lands;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print('Erreur lors du chargement des terrains: $e');
-    }
   }
 }

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:the_boost/core/constants/colors.dart';
-import 'package:the_boost/core/di/dependency_injection.dart';
-import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
-import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
-import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
-import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
+import 'package:the_boost/features/auth/presentation/pages/auth/auth_page.dart';
+import 'package:the_boost/features/auth/presentation/pages/dashboard/dashboard_page.dart';
+import 'package:the_boost/features/auth/presentation/pages/investments/investment_page.dart';
+import 'core/constants/colors.dart';
+import 'core/di/dependency_injection.dart';
+import 'features/auth/presentation/bloc/login/login_bloc.dart';
+import 'features/auth/presentation/bloc/signup/sign_up_bloc.dart';
+import 'features/auth/presentation/bloc/property/property_bloc.dart';
+import 'features/investment/presentation/bloc/land_bloc.dart';
+import 'features/investment/data/repositories/land_repository.dart';
+import 'features/auth/presentation/bloc/routes.dart';
 
 void main() async {
-  // Assurez-vous que les liaisons Flutter sont initialisées
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialiser toutes les dépendances
   await initDependencies();
-  
   runApp(const TheBoostApp());
 }
 
@@ -34,6 +35,9 @@ class TheBoostApp extends StatelessWidget {
         ),
         BlocProvider<PropertyBloc>(
           create: (_) => getIt<PropertyBloc>(),
+        ),
+        BlocProvider<LandBloc>(
+          create: (_) => LandBloc(LandRepository())..add(LoadLandsEvent()),
         ),
       ],
       child: MaterialApp(
@@ -60,17 +64,20 @@ class TheBoostApp extends StatelessWidget {
         ),
         debugShowCheckedModeBanner: false,
         initialRoute: AppRoutes.home,
+        routes: {
+          AppRoutes.home: (context) => const AuthPage(),
+          AppRoutes.dashboard: (context) => const DashboardPage(),
+          AppRoutes.investment: (context) => const InvestmentPage(),
+        },
         onGenerateRoute: AppRoutes.generateRoute,
         builder: (context, child) {
           return BlocBuilder<LoginBloc, LoginState>(
             builder: (context, state) {
-              // Redirect to dashboard if logged in and trying to access auth page
-              if (child?.key == const ValueKey('AuthPage') && state is LoginSuccess) {
+              if (state is LoginSuccess && child?.key == const ValueKey('AuthPage')) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
                 });
               }
-              
               return child!;
             },
           );
