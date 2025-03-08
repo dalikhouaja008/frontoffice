@@ -15,9 +15,6 @@ class LoginRequested extends LoginEvent {
   List<Object> get props => [email, password];
 }
 
-class LogoutRequested extends LoginEvent {
-   LogoutRequested();
+class LogoutRequested extends LoginEvent {}
 
-  @override
-  List<Object> get props => [];
-}
+class CheckSession extends LoginEvent {}

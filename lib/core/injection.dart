@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart'; //est une interface que tous les types de providers (Provider, BlocProvider, etc.) implémentent, ce qui nous permet de les utiliser ensemble dans la même liste.
 import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
+import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
@@ -13,8 +14,6 @@ import 'package:the_boost/features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
-
-import 'services/session_service.dart';
 
 class InjectionContainer {
   static late final SecureStorageService _secureStorage;
