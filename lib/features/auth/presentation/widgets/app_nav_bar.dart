@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
@@ -26,17 +25,16 @@ class AppNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
     
-    print('[2025-03-02 16:08:35] AppNavBar: 🔄 Building navbar'
-          '\n└─ User: raednas'
+    print('[2025-03-08 22:03:15] AppNavBar: 🔄 Building navbar'
           '\n└─ Current route: $currentRoute');
     
-    // Utiliser BlocBuilder au lieu de Provider pour obtenir l'état d'authentification
+    // Use BlocBuilder to check authentication state
     return BlocBuilder<LoginBloc, LoginState>(
       builder: (context, state) {
-        // L'utilisateur est connecté si l'état est LoginSuccess
+        // The user is authenticated if the state is LoginSuccess
         final isAuthenticated = state is LoginSuccess;
-        // Récupérer l'utilisateur si disponible
-        final user = isAuthenticated ? (state).user : null;
+        // Get the user if available
+        final user = isAuthenticated ? state.user : null;
         
         return Container(
           padding: EdgeInsets.symmetric(
@@ -62,20 +60,19 @@ class AppNavBar extends StatelessWidget {
   }
 
   Widget _buildDesktopNavBar(BuildContext context, bool isAuthenticated, User? user) {
-    // Utiliser Wrap au lieu de Row pour éviter les débordements
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _buildLogo(),
-        // Utilisez un Flexible avec un FittedBox pour les éléments du menu
+        // Use Flexible with a FittedBox for the menu items
         Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(
-              mainAxisSize: MainAxisSize.min, // Important pour éviter l'overflow
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Wrap(
-                  spacing: AppDimensions.paddingM, // Espacement entre les éléments
+                  spacing: AppDimensions.paddingM,
                   children: [
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
                     _NavLink('Features', route: '/features', currentRoute: currentRoute),
@@ -90,7 +87,7 @@ class AppNavBar extends StatelessWidget {
                   _buildUserMenu(context, user)
                 else 
                   Row(
-                    mainAxisSize: MainAxisSize.min, // Important pour éviter l'overflow
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (onLoginPressed != null)
                         TextButton(
@@ -124,7 +121,6 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
-  // Le reste du code reste inchangé
   Widget _buildMobileNavBar(BuildContext context, bool isAuthenticated, User? user) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -190,6 +186,7 @@ class AppNavBar extends StatelessWidget {
 
   Widget _buildUserMenu(BuildContext context, User? user) {
     final displayName = user?.username.split(' ')[0] ?? 'User';
+    final firstLetter = user?.username.isNotEmpty == true ? user!.username[0].toUpperCase() : 'U';
     
     return PopupMenuButton<String>(
       offset: const Offset(0, 40),
@@ -208,7 +205,7 @@ class AppNavBar extends StatelessWidget {
               backgroundColor: AppColors.primary,
               radius: 16,
               child: Text(
-                displayName.substring(0, 1).toUpperCase(),
+                firstLetter,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -299,7 +296,7 @@ class AppNavBar extends StatelessWidget {
             // Navigate to settings page
             break;
           case 'logout':
-            // Envoyer l'événement de déconnexion au bloc
+            // Send logout event to the bloc
             context.read<LoginBloc>().add(LogoutRequested());
             Navigator.pushReplacementNamed(context, '/');
             break;
@@ -309,8 +306,21 @@ class AppNavBar extends StatelessWidget {
   }
 
   Widget _buildUserMenuMobile(BuildContext context, User? user) {
+    final firstLetter = user?.username.isNotEmpty == true ? user!.username[0].toUpperCase() : 'U';
+    
     return IconButton(
-      icon: const Icon(Icons.account_circle),
+      icon: CircleAvatar(
+        backgroundColor: AppColors.primary,
+        radius: 16,
+        child: Text(
+          firstLetter,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ),
       onPressed: () {
         showModalBottomSheet(
           context: context,
@@ -319,6 +329,50 @@ class AppNavBar extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // User info header
+                Padding(
+                  padding: const EdgeInsets.all(AppDimensions.paddingL),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppColors.primary,
+                        radius: 24,
+                        child: Text(
+                          firstLetter,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppDimensions.paddingL),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.username ?? 'User',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              user?.email ?? '',
+                              style: const TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                // Menu options
                 ListTile(
                   leading: const Icon(Icons.dashboard, color: AppColors.primary),
                   title: const Text('Dashboard'),
@@ -357,7 +411,7 @@ class AppNavBar extends StatelessWidget {
                   title: const Text('Logout', style: TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
-                    // Envoyer l'événement de déconnexion au bloc
+                    // Send logout event to the bloc
                     context.read<LoginBloc>().add(LogoutRequested());
                     Navigator.pushReplacementNamed(context, '/');
                   },

@@ -1,4 +1,3 @@
-// presentation/widgets/signup_form.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/features/auth/domain/entities/grpd_consent.dart';
@@ -9,7 +8,7 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/dimensions.dart';
 import '../../../../core/constants/text_styles.dart';
 import '../../../../core/utils/input_validators.dart';
-
+import '../pages/auth/auth_page.dart'; // Make sure this import exists
 
 class SignUpForm extends StatefulWidget {
   final Function updateView;
@@ -43,12 +42,172 @@ class _SignUpFormState extends State<SignUpForm> {
     super.dispose();
   }
 
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.success,
+                    size: 50,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  "Account Created Successfully!",
+                  style: AppTextStyles.h3,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Your account has been created. You can now login with your credentials.",
+                  style: AppTextStyles.body2,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      widget.updateView(); // Switch to login view
+                    },
+                    child: const Text(
+                      "Proceed to Login",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper method to show user-friendly error messages
+  String _getUserFriendlyErrorMessage(String error) {
+    if (error.contains("Email already in use")) {
+      return "This email address is already registered. Please use a different email or login to your existing account.";
+    } else if (error.contains("password") || error.contains("Password")) {
+      return "Please check your password. It must be at least 8 characters long and include letters and numbers.";
+    } else if (error.contains("network") || error.contains("connection")) {
+      return "We're having trouble connecting to our servers. Please check your internet connection and try again.";
+    } else {
+      return "We couldn't create your account. Please check your information and try again.";
+    }
+  }
+  
+  // Method to show error dialog with user-friendly message
+  void _showErrorDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 50,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  "Unable to Create Account",
+                  style: AppTextStyles.h3,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _getUserFriendlyErrorMessage(errorMessage),
+                  style: AppTextStyles.body2,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                    },
+                    child: const Text(
+                      "Try Again",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<SignUpBloc, SignUpState>(
       listener: (context, state) {
         if (state is SignUpSuccess && mounted) {
-          Navigator.pushReplacementNamed(context, '/');
+          _showSuccessDialog();
+        } else if (state is SignUpFailure) {
+          _showErrorDialog(state.error);
         }
       },
       child: Padding(
@@ -177,34 +336,8 @@ class _SignUpFormState extends State<SignUpForm> {
                   ],
                 ),
                 
-                // Error message
-                BlocBuilder<SignUpBloc, SignUpState>(
-                  builder: (context, state) {
-                    if (state is SignUpFailure) {
-                      return Container(
-                        margin: EdgeInsets.only(top: AppDimensions.paddingM),
-                        padding: EdgeInsets.all(AppDimensions.paddingM),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red),
-                            SizedBox(width: AppDimensions.paddingS),
-                            Expanded(
-                              child: Text(
-                                state.error,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return SizedBox.shrink();
-                  },
-                ),
+                // We're no longer showing inline error messages as they're presented in a dialog
+                // for better web app UX
                 SizedBox(height: AppDimensions.paddingXL),
                 
                 // Sign up button
@@ -260,11 +393,73 @@ class _SignUpFormState extends State<SignUpForm> {
     }
 
     if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the Terms of Service and Privacy Policy'),
-          backgroundColor: Colors.red,
-        ),
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.info_outline,
+                      color: Colors.orange,
+                      size: 50,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    "Terms Agreement Required",
+                    style: AppTextStyles.h3,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Please accept the Terms of Service and Privacy Policy to create your account.",
+                    style: AppTextStyles.body2,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close dialog
+                      },
+                      child: const Text(
+                        "Got It",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       );
       return;
     }
@@ -291,4 +486,3 @@ class _SignUpFormState extends State<SignUpForm> {
     }
   }
 }
-

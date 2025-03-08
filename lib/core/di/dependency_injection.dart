@@ -28,7 +28,6 @@ Future<void> initDependencies() async {
   getIt.registerLazySingleton<SecureStorageService>(
       () => SecureStorageService());
   getIt.registerLazySingleton<GraphQLClient>(() => GraphQLService.client);
-
   //=== Features ===//
   await _initAuthFeature();
   await _initPropertyFeature();

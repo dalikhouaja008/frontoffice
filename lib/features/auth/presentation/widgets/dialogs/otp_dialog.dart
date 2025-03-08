@@ -1,11 +1,15 @@
+// lib/features/auth/presentation/widgets/dialogs/otp_dialog.dart 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
+import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_event.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
+import 'package:the_boost/features/auth/presentation/pages/home_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/OTP/custom_pin_input.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/custom_button.dart';
 
@@ -102,7 +106,26 @@ class _OtpDialogState extends State<OtpDialog> {
       onWillPop: () async => false,
       child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
         listener: (context, state) {
-          if (state is TwoFactorAuthError) {
+          if (state is TwoFactorAuthLoginSuccess) {
+            print('[2025-02-17 09:44:06] LoginScreen: ✅ 2FA verification successful'
+                  '\n└─ User: raednas'
+                  '\n└─ Email: ${state.user.email}');
+                  
+            // Save session data after successful 2FA login
+            getIt<SessionService>().saveSession(
+              user: state.user,
+              accessToken: state.accessToken,
+              refreshToken: state.refreshToken,
+            ).then((_) {
+              print('[2025-02-17 09:44:06] LoginScreen: 💾 Session saved after 2FA');
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => HomeScreen(user: state.user),
+                ),
+              );
+            });
+          } else if (state is TwoFactorAuthError) {
             _otpController.clear();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

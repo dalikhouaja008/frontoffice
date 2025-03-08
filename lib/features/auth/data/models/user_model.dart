@@ -27,23 +27,26 @@ class UserModel extends User {
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['user']['_id'] ?? "",
-      username: json['user']['username'] ?? "Unknown",
-      email: json['user']['email'] ?? "",
-      role: json['user']['role'] ?? 'user',
-      accessToken: json['accessToken'] ?? "",
-      refreshToken: json['refreshToken'] ?? "",
-      twoFactorSecret: json['user']['twoFactorSecret'],
-      isTwoFactorEnabled: json['user']['isTwoFactorEnabled'] ?? false,
-      createdAt: json['user']['createdAt'] != null 
-          ? DateTime.parse(json['user']['createdAt']) 
-          : DateTime.now(),
-      updatedAt: json['user']['updatedAt'] != null 
-          ? DateTime.parse(json['user']['updatedAt']) 
-          : DateTime.now(),
-    );
-  }
+  // Check if the user data is nested inside a 'user' field or at the root
+  final userData = json.containsKey('user') ? json['user'] : json;
+  
+  return UserModel(
+    id: userData['_id'] ?? "",
+    username: userData['username'] ?? "Unknown",
+    email: userData['email'] ?? "",
+    role: userData['role'] ?? 'user',
+    accessToken: json['accessToken'] ?? "",
+    refreshToken: json['refreshToken'] ?? "",
+    twoFactorSecret: userData['twoFactorSecret'],
+    isTwoFactorEnabled: userData['isTwoFactorEnabled'] ?? false,
+    createdAt: userData['createdAt'] != null 
+        ? DateTime.parse(userData['createdAt']) 
+        : DateTime.now(),
+    updatedAt: userData['updatedAt'] != null 
+        ? DateTime.parse(userData['updatedAt']) 
+        : DateTime.now(),
+  );
+}
 
   Map<String, dynamic> toJson() {
     return {
