@@ -1,6 +1,8 @@
-// routes.dart
+// lib/features/auth/presentation/bloc/routes.dart
 import 'package:flutter/material.dart';
+import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/features_pages.dart';
+import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
 import '../pages/auth/auth_page.dart';
 import '../pages/auth/forgot_password_page.dart';
 import '../pages/dashboard/dashboard_page.dart';
@@ -20,6 +22,7 @@ class AppRoutes {
   static const String learnMore = '/learn-more';
   static const String propertyDetails = '/property-details';
   static const String forgotPassword = '/forgot-password';
+  static const String preferences = '/preferences';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -44,6 +47,11 @@ class AppRoutes {
         );
       case forgotPassword:
         return MaterialPageRoute(builder: (_) => ForgotPasswordPage());
+      case preferences:
+        final User user = settings.arguments as User;
+        return MaterialPageRoute(
+          builder: (_) => UserPreferencesScreen(user: user),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

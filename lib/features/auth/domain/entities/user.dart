@@ -1,4 +1,6 @@
+// lib/features/auth/domain/entities/user.dart
 import 'dart:convert';
+import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
 
 class User {
   final String id;
@@ -9,6 +11,7 @@ class User {
   final bool isTwoFactorEnabled;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final UserPreferences? preferences;
 
   User({
     required this.id,
@@ -19,6 +22,7 @@ class User {
     this.isTwoFactorEnabled = false,
     required this.createdAt,
     required this.updatedAt,
+    this.preferences,
   });
 
   // Ajout de la méthode fromJson
@@ -27,6 +31,12 @@ factory User.fromJson(Map<String, dynamic> json) {
         '\n${const JsonEncoder.withIndent('  ').convert(json)}');
         
   try {
+    // Parse preferences if they exist
+    UserPreferences? userPrefs;
+    if (json['preferences'] != null) {
+      userPrefs = UserPreferences.fromJson(json['preferences']);
+    }
+    
     return User(
       // Utiliser '_id' au lieu de 'id' car c'est le format renvoyé par le backend
       id: json['_id'] as String? ?? '',
@@ -41,6 +51,7 @@ factory User.fromJson(Map<String, dynamic> json) {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : DateTime.now(),
+      preferences: userPrefs,
     );
   } catch (e) {
     print('[2025-02-13 20:50:39] ❌ Error parsing User from JSON:'
@@ -53,7 +64,7 @@ factory User.fromJson(Map<String, dynamic> json) {
   // Ajout de la méthode toJson
 // Mettre à jour toJson pour correspondre
 Map<String, dynamic> toJson() {
-  return {
+  final Map<String, dynamic> data = {
     '_id': id,  // Utiliser '_id' pour être cohérent
     'username': username,
     'email': email,
@@ -63,6 +74,12 @@ Map<String, dynamic> toJson() {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
+  
+  if (preferences != null) {
+    data['preferences'] = preferences!.toJson();
+  }
+  
+  return data;
 }
 
   User copyWith({
@@ -74,6 +91,7 @@ Map<String, dynamic> toJson() {
     bool? isTwoFactorEnabled,
     DateTime? createdAt,
     DateTime? updatedAt,
+    UserPreferences? preferences,
   }) {
     return User(
       id: id ?? this.id,
@@ -84,6 +102,7 @@ Map<String, dynamic> toJson() {
       isTwoFactorEnabled: isTwoFactorEnabled ?? this.isTwoFactorEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      preferences: preferences ?? this.preferences,
     );
   }
 

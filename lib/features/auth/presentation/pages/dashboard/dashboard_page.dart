@@ -1,13 +1,16 @@
+// lib/features/auth/presentation/pages/dashboard/dashboard_page.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
+import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/dashboard_stats.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/investment_portfolio.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/recent_activity.dart';
 import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
+import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
   final User? user;
@@ -20,6 +23,8 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  final PreferencesService _preferencesService = PreferencesService();
+  
   @override
   void initState() {
     super.initState();
@@ -28,8 +33,29 @@ class _DashboardPageState extends State<DashboardPage> {
           '\n└─ User: raednas'
           '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
     
-    // Ne plus utiliser PropertyController ici
-    // Supprimé: context.read<PropertyController>().loadProperties();
+    // Check for notifications and preferences when dashboard loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkPreferencesAndNotifications();
+    });
+  }
+
+  Future<void> _checkPreferencesAndNotifications() async {
+    if (widget.user == null) return;
+    
+    // First check if user has set preferences
+    final hasPreferences = await _preferencesService.hasPreferences(widget.user!.id);
+    
+    // If not, show preferences setup dialog
+    if (!hasPreferences && mounted) {
+      await Future.delayed(const Duration(seconds: 1));
+      showDialog(
+        context: context,
+        builder: (context) => PreferencesAlertDialog(user: widget.user!),
+      );
+    }
+    
+    // Check for new land notifications
+    _preferencesService.checkForNewLandNotifications(widget.user!);
   }
 
   @override

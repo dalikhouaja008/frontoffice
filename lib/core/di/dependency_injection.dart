@@ -2,6 +2,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
+import 'package:the_boost/core/services/notification_service.dart';
+import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -31,6 +33,8 @@ Future<void> initDependencies() async {
       () => SecureStorageService());
   getIt.registerLazySingleton<GraphQLClient>(() => GraphQLService.client);
   getIt.registerLazySingleton<SessionService>(() => SessionService());
+  getIt.registerLazySingleton<NotificationService>(() => NotificationService());
+  getIt.registerLazySingleton<PreferencesService>(() => PreferencesService());
 
   //=== Features ===//
   await _initAuthFeature();
