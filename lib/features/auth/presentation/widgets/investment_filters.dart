@@ -1,3 +1,4 @@
+// lib/features/auth/presentation/widgets/investment_filters.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
@@ -54,15 +55,27 @@ class InvestmentFilters extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text("Filters", style: AppTextStyles.h3),
+        // Use a flexible text that can shrink if needed
+        Flexible(
+          child: Text(
+            "Filters", 
+            style: AppTextStyles.h3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
         TextButton(
           onPressed: () => bloc.add(ResetFilters()),
+          // Use a more compact style for the reset button
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: const Size(0, 36),
+          ),
           child: Text(
             "Reset",
             style: TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 14, // Slightly smaller font
             ),
           ),
         ),
@@ -82,7 +95,7 @@ class InvestmentFilters extends StatelessWidget {
         BlocBuilder<PropertyBloc, PropertyState>(
           builder: (context, state) {
             return Wrap(
-              spacing: 8.0,
+              spacing: 4.0, // Reduce spacing between chips
               runSpacing: 8.0,
               children: [
                 _buildCategoryChip('All', bloc.selectedCategory),
@@ -107,7 +120,7 @@ class InvestmentFilters extends StatelessWidget {
         style: TextStyle(
           color: isSelected ? Colors.white : AppColors.textPrimary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          fontSize: 14,
+          fontSize: 12, // Smaller font size for chips
         ),
       ),
       selected: isSelected,
@@ -119,9 +132,11 @@ class InvestmentFilters extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: 4,
-        vertical: 2,
+        horizontal: 2, // Reduce padding
+        vertical: 0,
       ),
+      visualDensity: VisualDensity.compact, // Use compact density
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Shrink tap target
     );
   }
 
@@ -134,29 +149,38 @@ class InvestmentFilters extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Investment Range",
-                  style: AppTextStyles.h4,
+                // Use Flexible for the label
+                Flexible(
+                  child: Text(
+                    "Investment Range",
+                    style: AppTextStyles.h4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                // Use a compact format for the range display
                 Text(
-                  "\$${bloc.priceRange.start.round()} - \$${bloc.priceRange.end.round()}",
+                  "\$${bloc.priceRange.start.round()}-\$${bloc.priceRange.end.round()}",
                   style: AppTextStyles.body3,
                 ),
               ],
             ),
             const SizedBox(height: AppDimensions.paddingM),
-            RangeSlider(
-              min: 100,
-              max: 50000,
-              divisions: 100,
-              values: bloc.priceRange,
-              activeColor: AppColors.primary,
-              inactiveColor: Colors.grey.shade300,
-              labels: RangeLabels(
-                "\$${bloc.priceRange.start.round()}",
-                "\$${bloc.priceRange.end.round()}",
+            // Make the slider expand to fill available width
+            SizedBox(
+              width: double.infinity,
+              child: RangeSlider(
+                min: 100,
+                max: 50000,
+                divisions: 100,
+                values: bloc.priceRange,
+                activeColor: AppColors.primary,
+                inactiveColor: Colors.grey.shade300,
+                labels: RangeLabels(
+                  "\$${bloc.priceRange.start.round()}",
+                  "\$${bloc.priceRange.end.round()}",
+                ),
+                onChanged: (values) => bloc.add(SetPriceRange(values)),
               ),
-              onChanged: (values) => bloc.add(SetPriceRange(values)),
             ),
           ],
         );
@@ -173,29 +197,38 @@ class InvestmentFilters extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Projected Return",
-                  style: AppTextStyles.h4,
+                // Use Flexible for the label
+                Flexible(
+                  child: Text(
+                    "Projected Return",
+                    style: AppTextStyles.h4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                // Use a compact format for the range display
                 Text(
-                  "${bloc.returnRange.start.round()}% - ${bloc.returnRange.end.round()}%",
+                  "${bloc.returnRange.start.round()}-${bloc.returnRange.end.round()}%",
                   style: AppTextStyles.body3,
                 ),
               ],
             ),
             const SizedBox(height: AppDimensions.paddingM),
-            RangeSlider(
-              min: 5,
-              max: 20,
-              divisions: 15,
-              values: bloc.returnRange,
-              activeColor: AppColors.primary,
-              inactiveColor: Colors.grey.shade300,
-              labels: RangeLabels(
-                "${bloc.returnRange.start.round()}%",
-                "${bloc.returnRange.end.round()}%",
+            // Make the slider expand to fill available width
+            SizedBox(
+              width: double.infinity,
+              child: RangeSlider(
+                min: 5,
+                max: 20,
+                divisions: 15,
+                values: bloc.returnRange,
+                activeColor: AppColors.primary,
+                inactiveColor: Colors.grey.shade300,
+                labels: RangeLabels(
+                  "${bloc.returnRange.start.round()}%",
+                  "${bloc.returnRange.end.round()}%",
+                ),
+                onChanged: (values) => bloc.add(SetReturnRange(values)),
               ),
-              onChanged: (values) => bloc.add(SetReturnRange(values)),
             ),
           ],
         );
@@ -241,13 +274,16 @@ class InvestmentFilters extends StatelessWidget {
               onChanged: (_) => bloc.add(ToggleRiskLevel(level)),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
+          const SizedBox(width: 8), // Reduce spacing
+          // Use Flexible for the text to allow wrapping
+          Flexible(
             child: Text(
               level,
               style: AppTextStyles.body2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 4), // Reduce spacing
           Container(
             width: 12,
             height: 12,

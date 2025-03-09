@@ -1,3 +1,4 @@
+// lib/features/auth/presentation/pages/investments/invest_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
@@ -24,6 +25,14 @@ class _InvestPageState extends State<InvestPage> {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
+    final isTablet = ResponsiveHelper.isTablet(context);
+    
+    // Calculate responsive padding based on screen size
+    final horizontalPadding = isMobile 
+        ? AppDimensions.paddingM
+        : isTablet 
+            ? AppDimensions.paddingL
+            : AppDimensions.paddingXXL;
 
     return BlocProvider(
       create: (context) => PropertyBloc(
@@ -34,6 +43,7 @@ class _InvestPageState extends State<InvestPage> {
           final bloc = context.read<PropertyBloc>();
           
           return BasePage(
+            key: const ValueKey('InvestPage'),
             title: 'Investment Opportunities',
             currentRoute: '/invest',
             body: Column(
@@ -41,11 +51,18 @@ class _InvestPageState extends State<InvestPage> {
                 InvestmentHeader(),
                 Container(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
+                    horizontal: horizontalPadding,
                     vertical: AppDimensions.paddingL,
                   ),
-                  child: isMobile
-                      ? Column(
+                  // Use LayoutBuilder to constrain content width
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      print('Available width for invest page: ${constraints.maxWidth}');
+                      
+                      // Adjust layout based on constraints
+                      if (constraints.maxWidth < 700) {
+                        // Mobile layout
+                        return Column(
                           children: [
                             InvestmentFilters(
                               bloc: bloc,
@@ -54,20 +71,33 @@ class _InvestPageState extends State<InvestPage> {
                             const SizedBox(height: AppDimensions.paddingL),
                             _buildInvestmentContent(state, bloc),
                           ],
-                        )
-                      : Row(
+                        );
+                      } else {
+                        // Desktop/tablet layout with size constraints
+                        final filterWidth = constraints.maxWidth * 0.25;
+                        final filterWidthCapped = filterWidth > 300 ? 300.0 : filterWidth;
+                        final contentWidth = constraints.maxWidth - filterWidthCapped - AppDimensions.paddingL;
+                        
+                        return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            InvestmentFilters(
-                              bloc: bloc,
-                              isMobile: false,
+                            SizedBox(
+                              width: filterWidthCapped,
+                              child: InvestmentFilters(
+                                bloc: bloc,
+                                isMobile: false,
+                              ),
                             ),
                             const SizedBox(width: AppDimensions.paddingL),
-                            Expanded(
+                            SizedBox(
+                              width: contentWidth,
                               child: _buildInvestmentContent(state, bloc),
                             ),
                           ],
-                        ),
+                        );
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
@@ -134,27 +164,41 @@ class _InvestPageState extends State<InvestPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          "$propertyCount Investment Opportunities",
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        // Use Flexible to allow text to shrink if needed
+        Flexible(
+          child: Text(
+            "$propertyCount Investment Opportunities",
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        DropdownButton<String>(
-          value: 'Featured',
-          onChanged: (String? value) {},
-          items: ['Featured', 'Newest', 'Highest Return', 'Lowest Risk']
-              .map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          underline: Container(
-            height: 2,
-            color: AppColors.primary,
+        // Constrain the dropdown to prevent overflow
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 150),
+          child: DropdownButton<String>(
+            value: 'Featured',
+            onChanged: (String? value) {},
+            isExpanded: true, // Make dropdown use full width of its container
+            isDense: true, // Use dense style for dropdown
+            items: ['Featured', 'Newest', 'Highest Return', 'Lowest Risk']
+                .map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              );
+            }).toList(),
+            underline: Container(
+              height: 2,
+              color: AppColors.primary,
+            ),
           ),
         ),
       ],
