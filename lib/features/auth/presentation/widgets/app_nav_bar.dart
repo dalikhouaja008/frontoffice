@@ -1,4 +1,4 @@
-// Updated implementation for lib/features/auth/presentation/widgets/app_nav_bar.dart
+// lib/features/auth/presentation/widgets/app_nav_bar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -33,6 +33,10 @@ class AppNavBar extends StatelessWidget {
     // Use BlocBuilder to check authentication state
     return BlocBuilder<LoginBloc, LoginState>(
       builder: (context, state) {
+        // Debug print to track state changes in the navbar
+        print('[2025-03-09 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}'
+              '\n└─ Is authenticated: ${state is LoginSuccess}');
+        
         // The user is authenticated if the state is LoginSuccess
         final isAuthenticated = state is LoginSuccess;
         // Get the user if available

@@ -1,9 +1,8 @@
-// Updated AuthPage to properly handle authentication state
+// lib/features/auth/presentation/pages/auth/auth_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
-import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
@@ -63,148 +62,152 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     final size = MediaQuery.of(context).size;
     final isMobile = ResponsiveHelper.isMobile(context);
     
-    // Access the LoginBloc from context to ensure state changes are properly propagated
-    final loginBloc = BlocProvider.of<LoginBloc>(context);
-
-    return Scaffold(
-      key: const ValueKey('AuthPage'),
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(70),
-        // Pass the LoginBloc instance to ensure state is properly shared
-        child: BlocProvider.value(
-          value: loginBloc,
-          child: AppNavBar(
-            currentRoute: '/auth',
-          ),
-        ),
-      ),
-      endDrawer: isMobile ? _buildDrawer(context) : null,
-      body: SafeArea(
-        child: Container(
-          width: size.width,
-          height: size.height,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: const AssetImage("assets/images/auth_background.jpg"),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.5),
-                BlendMode.darken,
-              ),
+    // Use BlocBuilder to ensure the page rebuilds when auth state changes
+    return BlocBuilder<LoginBloc, LoginState>(
+      builder: (context, loginState) {
+        print('[2025-03-09 12:00:02] AuthPage: 🔄 Building with state: ${loginState.runtimeType}');
+        
+        // Redirect to dashboard if already logged in
+        if (loginState is LoginSuccess) {
+          print('[2025-03-09 12:00:02] AuthPage: 🔄 User already logged in, redirecting to dashboard');
+          
+          // Delay navigation to allow build to complete
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacementNamed(context, '/dashboard');
+          });
+        }
+        
+        return Scaffold(
+          key: const ValueKey('AuthPage'),
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(70),
+            child: AppNavBar(
+              currentRoute: '/auth',
             ),
           ),
-          child: Center(
+          endDrawer: isMobile ? _buildDrawer(context) : null,
+          body: SafeArea(
             child: Container(
-              width: isMobile ? size.width * 0.9 : size.width * 0.8,
-              height: isMobile ? null : size.height * 0.8,
+              width: size.width,
+              height: size.height,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusXXL),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    spreadRadius: 5,
-                    blurRadius: 15,
-                    offset: const Offset(0, 3),
+                image: DecorationImage(
+                  image: const AssetImage("assets/images/auth_background.jpg"),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.5),
+                    BlendMode.darken,
                   ),
-                ],
+                ),
               ),
-              child: isMobile
-                  ? SingleChildScrollView(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildLogo(),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: isLogin
-                                ? BlocProvider<LoginBloc>(
-                                    create: (context) => getIt<LoginBloc>(),
-                                    child: LoginForm(
-                                      updateView: updateView,
-                                    ),
-                                  )
-                                : BlocProvider<SignUpBloc>(
-                                    create: (context) => getIt<SignUpBloc>(),
-                                    child: SignUpForm(
-                                      updateView: updateView,
-                                    ),
-                                  ),
-                          ),
-                        ],
+              child: Center(
+                child: Container(
+                  width: isMobile ? size.width * 0.9 : size.width * 0.8,
+                  height: isMobile ? null : size.height * 0.8,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusXXL),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        spreadRadius: 5,
+                        blurRadius: 15,
+                        offset: const Offset(0, 3),
                       ),
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(32),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(AppDimensions.radiusXXL),
-                                bottomLeft: Radius.circular(AppDimensions.radiusXXL),
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildLogo(isWhite: true),
-                                const SizedBox(height: 30),
-                                SizedBox(
-                                  width: 280,
-                                  child: AnimatedBuilder(
-                                    animation: _animationController,
-                                    builder: (context, child) {
-                                      return Transform(
-                                        alignment: Alignment.center,
-                                        transform: Matrix4.rotationY(
-                                            _animationTextRotate.value * (3.1415927 / 180)),
-                                        child: Text(
-                                          isLogin
-                                              ? "Welcome back to TheBoost, where your land investment journey continues."
-                                              : "Join TheBoost and start investing in tokenized land assets today.",
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w300,
-                                          ),
+                    ],
+                  ),
+                  child: isMobile
+                      ? SingleChildScrollView(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildLogo(),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 500),
+                                child: isLogin
+                                    ? LoginForm(
+                                        updateView: updateView,
+                                      )
+                                    : BlocProvider.value(
+                                        value: context.read<SignUpBloc>(),
+                                        child: SignUpForm(
+                                          updateView: updateView,
                                         ),
-                                      );
-                                    },
+                                      ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(32),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(AppDimensions.radiusXXL),
+                                    bottomLeft: Radius.circular(AppDimensions.radiusXXL),
                                   ),
                                 ),
-                                const SizedBox(height: 50),
-                                _buildIllustration(),
-                              ],
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildLogo(isWhite: true),
+                                    const SizedBox(height: 30),
+                                    SizedBox(
+                                      width: 280,
+                                      child: AnimatedBuilder(
+                                        animation: _animationController,
+                                        builder: (context, child) {
+                                          return Transform(
+                                            alignment: Alignment.center,
+                                            transform: Matrix4.rotationY(
+                                                _animationTextRotate.value * (3.1415927 / 180)),
+                                            child: Text(
+                                              isLogin
+                                                  ? "Welcome back to TheBoost, where your land investment journey continues."
+                                                  : "Join TheBoost and start investing in tokenized land assets today.",
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w300,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 50),
+                                    _buildIllustration(),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                            Expanded(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 500),
+                                child: isLogin
+                                    ? LoginForm(
+                                        updateView: updateView,
+                                      )
+                                    : BlocProvider.value(
+                                        value: context.read<SignUpBloc>(),
+                                        child: SignUpForm(
+                                          updateView: updateView,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: isLogin
-                                ? BlocProvider<LoginBloc>.value(
-                                    value: loginBloc, // Use the same LoginBloc instance
-                                    child: LoginForm(
-                                      updateView: updateView,
-                                    ),
-                                  )
-                                : BlocProvider<SignUpBloc>(
-                                    create: (context) => getIt<SignUpBloc>(),
-                                    child: SignUpForm(
-                                      updateView: updateView,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -221,7 +224,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLogo(isWhite: true),
+                _buildLogo(isWhite: true, isSmall: true),
                 const SizedBox(height: 10),
                 const Text(
                   'Land Investment via Tokenization',
@@ -311,20 +314,20 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildLogo({bool isWhite = false}) {
+  Widget _buildLogo({bool isWhite = false, bool isSmall = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
           Icons.landscape,
           color: isWhite ? Colors.white : AppColors.primary,
-          size: 40,
+          size: isSmall ? 30 : 40,
         ),
         const SizedBox(width: 10),
         Text(
           'TheBoost',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: isSmall ? 24 : 32,
             fontWeight: FontWeight.bold,
             color: isWhite ? Colors.white : AppColors.primary,
           ),
