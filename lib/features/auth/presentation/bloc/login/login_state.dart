@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:the_boost/features/auth/data/models/device_info_model.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 
 abstract class LoginState extends Equatable {
@@ -16,6 +17,8 @@ class LoginSuccess extends LoginState {
   final String? refreshToken;
   final bool requiresTwoFactor;
   final String? tempToken;
+  final String? sessionId;  // Ajout du sessionId
+  final DeviceInfoModel? deviceInfo;  // Ajout du deviceInfo
 
   LoginSuccess({
     required this.user,
@@ -23,6 +26,8 @@ class LoginSuccess extends LoginState {
     this.refreshToken,
     this.requiresTwoFactor = false,
     this.tempToken,
+    this.sessionId, 
+    this.deviceInfo,  
   });
 
   @override
@@ -32,6 +37,8 @@ class LoginSuccess extends LoginState {
         refreshToken,
         requiresTwoFactor,
         tempToken,
+        sessionId, 
+        deviceInfo,  
       ];
 }
 
