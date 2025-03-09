@@ -1,3 +1,4 @@
+// Updated implementation for lib/features/auth/presentation/widgets/app_nav_bar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +9,7 @@ import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -25,7 +27,7 @@ class AppNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
     
-    print('[2025-03-08 22:03:15] AppNavBar: 🔄 Building navbar'
+    print('[2025-03-09 10:05:23] AppNavBar: 🔄 Building navbar'
           '\n└─ Current route: $currentRoute');
     
     // Use BlocBuilder to check authentication state
@@ -89,28 +91,30 @@ class AppNavBar extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (onLoginPressed != null)
-                        TextButton(
-                          onPressed: onLoginPressed,
-                          child: const Text(
-                            'Login',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      TextButton(
+                        onPressed: onLoginPressed ?? () {
+                          Navigator.pushNamed(context, AppRoutes.auth);
+                        },
+                        child: const Text(
+                          'Login',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                      ),
                       const SizedBox(width: AppDimensions.paddingS),
-                      if (onSignUpPressed != null)
-                         AppButton(
-                          text: 'Get Started',
-                          onPressed: onSignUpPressed ?? () {},
-                          type: ButtonType.primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.paddingL,
-                            vertical: AppDimensions.paddingS,
-                          ),
+                      AppButton(
+                        text: 'Get Started',
+                        onPressed: onSignUpPressed ?? () {
+                          Navigator.pushNamed(context, AppRoutes.auth);
+                        },
+                        type: ButtonType.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppDimensions.paddingL,
+                          vertical: AppDimensions.paddingS,
                         ),
+                      ),
                     ],
                   ),
               ],
@@ -132,15 +136,17 @@ class AppNavBar extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.dashboard),
                 onPressed: () {
-                  Navigator.pushNamed(context, '/dashboard');
+                  Navigator.pushNamed(context, AppRoutes.dashboard);
                 },
               ),
               
             if (isAuthenticated)
               _buildUserMenuMobile(context, user)
-            else if (onLoginPressed != null)
+            else
               TextButton(
-                onPressed: onLoginPressed,
+                onPressed: onLoginPressed ?? () {
+                  Navigator.pushNamed(context, AppRoutes.auth);
+                },
                 child: const Text(
                   'Login',
                   style: TextStyle(
@@ -284,13 +290,14 @@ class AppNavBar extends StatelessWidget {
       onSelected: (value) {
         switch (value) {
           case 'dashboard':
-            Navigator.pushNamed(context, '/dashboard');
+            Navigator.pushNamed(context, AppRoutes.dashboard);
             break;
           case 'profile':
             // Navigate to profile page
             break;
           case 'investments':
             // Navigate to investments page
+            Navigator.pushNamed(context, AppRoutes.invest);
             break;
           case 'settings':
             // Navigate to settings page
@@ -298,7 +305,7 @@ class AppNavBar extends StatelessWidget {
           case 'logout':
             // Send logout event to the bloc
             context.read<LoginBloc>().add(LogoutRequested());
-            Navigator.pushReplacementNamed(context, '/');
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
             break;
         }
       },
@@ -324,6 +331,11 @@ class AppNavBar extends StatelessWidget {
       onPressed: () {
         showModalBottomSheet(
           context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(20),
+            ),
+          ),
           builder: (context) => Container(
             padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingL),
             child: Column(
@@ -378,7 +390,7 @@ class AppNavBar extends StatelessWidget {
                   title: const Text('Dashboard'),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/dashboard');
+                    Navigator.pushNamed(context, AppRoutes.dashboard);
                   },
                 ),
                 ListTile(
@@ -394,7 +406,7 @@ class AppNavBar extends StatelessWidget {
                   title: const Text('My Investments'),
                   onTap: () {
                     Navigator.pop(context);
-                    // Navigate to investments page
+                    Navigator.pushNamed(context, AppRoutes.invest);
                   },
                 ),
                 ListTile(
@@ -413,7 +425,7 @@ class AppNavBar extends StatelessWidget {
                     Navigator.pop(context);
                     // Send logout event to the bloc
                     context.read<LoginBloc>().add(LogoutRequested());
-                    Navigator.pushReplacementNamed(context, '/');
+                    Navigator.pushReplacementNamed(context, AppRoutes.home);
                   },
                 ),
               ],

@@ -1,3 +1,4 @@
+// Updated AuthPage to properly handle authentication state
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
@@ -5,6 +6,7 @@ import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import 'package:the_boost/features/auth/presentation/widgets/app_nav_bar.dart';
 import 'package:the_boost/features/auth/presentation/widgets/login_form.dart';
@@ -35,7 +37,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
       end: 90,
     ).animate(_animationController);
     
-    print('[2025-03-02 15:53:02] AuthPage: 🔄 Initializing'
+    print('[2025-03-09 12:00:02] AuthPage: 🔄 Initializing'
           '\n└─ User: raednas');
   }
 
@@ -51,7 +53,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     });
     isLogin ? _animationController.reverse() : _animationController.forward();
     
-    print('[2025-03-02 15:53:02] AuthPage: 🔄 Switching view'
+    print('[2025-03-09 12:00:02] AuthPage: 🔄 Switching view'
           '\n└─ User: raednas'
           '\n└─ Current view: ${isLogin ? 'Login' : 'Signup'}');
   }
@@ -60,13 +62,20 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isMobile = ResponsiveHelper.isMobile(context);
+    
+    // Access the LoginBloc from context to ensure state changes are properly propagated
+    final loginBloc = BlocProvider.of<LoginBloc>(context);
 
     return Scaffold(
       key: const ValueKey('AuthPage'),
-      appBar: const PreferredSize(
+      appBar: PreferredSize(
         preferredSize: Size.fromHeight(70),
-        child: AppNavBar(
-          currentRoute: '/auth',
+        // Pass the LoginBloc instance to ensure state is properly shared
+        child: BlocProvider.value(
+          value: loginBloc,
+          child: AppNavBar(
+            currentRoute: '/auth',
+          ),
         ),
       ),
       endDrawer: isMobile ? _buildDrawer(context) : null,
@@ -176,8 +185,8 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: isLogin
-                                ? BlocProvider<LoginBloc>(
-                                    create: (context) => getIt<LoginBloc>(),
+                                ? BlocProvider<LoginBloc>.value(
+                                    value: loginBloc, // Use the same LoginBloc instance
                                     child: LoginForm(
                                       updateView: updateView,
                                     ),
@@ -230,7 +239,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/');
-              print('[2025-03-02 15:53:02] AuthPage: 🏠 Navigating to Home'
+              print('[2025-03-09 12:00:02] AuthPage: 🏠 Navigating to Home'
                     '\n└─ User: raednas');
             },
           ),
@@ -240,7 +249,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/features');
-              print('[2025-03-02 15:53:02] AuthPage: 🚀 Navigating to Features'
+              print('[2025-03-09 12:00:02] AuthPage: 🚀 Navigating to Features'
                     '\n└─ User: raednas');
             },
           ),
@@ -250,7 +259,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/how-it-works');
-              print('[2025-03-02 15:53:02] AuthPage: ❓ Navigating to How It Works'
+              print('[2025-03-09 12:00:02] AuthPage: ❓ Navigating to How It Works'
                     '\n└─ User: raednas');
             },
           ),
@@ -260,7 +269,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/invest');
-              print('[2025-03-02 15:53:02] AuthPage: 💰 Navigating to Invest'
+              print('[2025-03-09 12:00:02] AuthPage: 💰 Navigating to Invest'
                     '\n└─ User: raednas');
             },
           ),
@@ -270,7 +279,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/learn-more');
-              print('[2025-03-02 15:53:02] AuthPage: 📚 Navigating to Learn More'
+              print('[2025-03-09 12:00:02] AuthPage: 📚 Navigating to Learn More'
                     '\n└─ User: raednas');
             },
           ),
@@ -282,7 +291,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               onTap: () {
                 Navigator.pop(context);
                 updateView();
-                print('[2025-03-02 15:53:02] AuthPage: 👤 Switching to Sign Up'
+                print('[2025-03-09 12:00:02] AuthPage: 👤 Switching to Sign Up'
                       '\n└─ User: raednas');
               },
             )
@@ -293,7 +302,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               onTap: () {
                 Navigator.pop(context);
                 updateView();
-                print('[2025-03-02 15:53:02] AuthPage: 🔑 Switching to Login'
+                print('[2025-03-09 12:00:02] AuthPage: 🔑 Switching to Login'
                       '\n└─ User: raednas');
               },
             ),

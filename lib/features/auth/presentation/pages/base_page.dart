@@ -1,5 +1,8 @@
-// presentation/pages/base_page.dart
+// Updated BasePage to properly handle authentication state
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import '../widgets/app_nav_bar.dart';
 import '../widgets/app_footer.dart';
 
@@ -25,20 +28,27 @@ class BasePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Explicitly get the LoginBloc from the context
+    final loginBloc = BlocProvider.of<LoginBloc>(context);
+    
     return Scaffold(
       drawer: drawer,
       endDrawer: endDrawer,
       body: Column(
         children: [
           if (showNavBar)
-            AppNavBar(
-              currentRoute: currentRoute,
-              onLoginPressed: () {
-                Navigator.of(context).pushNamed('/auth');
-              },
-              onSignUpPressed: () {
-                Navigator.of(context).pushNamed('/auth');
-              },
+            // Use BlocProvider.value to ensure the same LoginBloc instance is passed down
+            BlocProvider.value(
+              value: loginBloc,
+              child: AppNavBar(
+                currentRoute: currentRoute,
+                onLoginPressed: () {
+                  Navigator.of(context).pushNamed('/auth');
+                },
+                onSignUpPressed: () {
+                  Navigator.of(context).pushNamed('/auth');
+                },
+              ),
             ),
           Expanded(
             child: SingleChildScrollView(
