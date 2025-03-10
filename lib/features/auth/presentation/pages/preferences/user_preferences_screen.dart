@@ -1,10 +1,13 @@
 // lib/features/auth/presentation/pages/preferences/user_preferences_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/services/notification_service.dart';
+import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
+import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
@@ -27,12 +30,12 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   UserPreferences? _preferences;
   bool _isLoading = true;
   bool _isSaving = false;
-  final SecureStorageService _storageService = SecureStorageService();
-  final NotificationService _notificationService = NotificationService();
+  bool _hasChanges = false;
+  final PreferencesService _preferencesService = PreferencesService();
   
   // Selected values for UI
-   List<LandType> _selectedLandTypes = [];
-   List<String> _selectedLocations = [];
+  final List<LandType> _selectedLandTypes = [];
+  final List<String> _selectedLocations = [];
   double _minPrice = 0;
   double _maxPrice = 1000000;
   double _maxDistance = 50;
@@ -40,6 +43,10 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   
   // Controllers for adding new locations
   final TextEditingController _locationController = TextEditingController();
+  final FocusNode _locationFocusNode = FocusNode();
+  
+  // For web accessibility
+  final _formKey = GlobalKey<FormState>();
   
   @override
   void initState() {
@@ -50,6 +57,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   @override
   void dispose() {
     _locationController.dispose();
+    _locationFocusNode.dispose();
     super.dispose();
   }
   
@@ -59,15 +67,16 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
     });
     
     try {
-      // Try to load existing preferences
-      final prefsJson = await _storageService.read(key: 'user_preferences_${widget.user.id}');
+      // Use the PreferencesService instead of direct storage access
+      final prefs = await _preferencesService.getPreferences(widget.user.id);
       
-      if (prefsJson != null) {
-        final prefs = UserPreferences.fromJson(jsonDecode(prefsJson));
+      if (prefs != null) {
         setState(() {
           _preferences = prefs;
-          _selectedLandTypes = List.from(prefs.preferredLandTypes);
-          _selectedLocations = List.from(prefs.preferredLocations);
+          _selectedLandTypes.clear();
+          _selectedLandTypes.addAll(prefs.preferredLandTypes);
+          _selectedLocations.clear();
+          _selectedLocations.addAll(prefs.preferredLocations);
           _minPrice = prefs.minPrice;
           _maxPrice = prefs.maxPrice == double.infinity ? 1000000 : prefs.maxPrice;
           _maxDistance = prefs.maxDistanceKm;
@@ -75,80 +84,123 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         });
       } else {
         // Use default preferences
+        final defaultPrefs = UserPreferences.defaultPreferences();
         setState(() {
-          _preferences = UserPreferences.defaultPreferences();
-          _selectedLandTypes = List.from(_preferences!.preferredLandTypes);
-          _selectedLocations = List.from(_preferences!.preferredLocations);
-          _minPrice = _preferences!.minPrice;
-          _maxPrice = _preferences!.maxPrice == double.infinity ? 1000000 : _preferences!.maxPrice;
-          _maxDistance = _preferences!.maxDistanceKm;
-          _notificationsEnabled = _preferences!.notificationsEnabled;
+          _preferences = defaultPrefs;
+          _selectedLandTypes.clear();
+          _selectedLandTypes.addAll(defaultPrefs.preferredLandTypes);
+          _selectedLocations.clear();
+          _selectedLocations.addAll(defaultPrefs.preferredLocations);
+          _minPrice = defaultPrefs.minPrice;
+          _maxPrice = defaultPrefs.maxPrice == double.infinity ? 1000000 : defaultPrefs.maxPrice;
+          _maxDistance = defaultPrefs.maxDistanceKm;
+          _notificationsEnabled = defaultPrefs.notificationsEnabled;
         });
       }
     } catch (e) {
       print('Error loading preferences: $e');
       // Use default preferences in case of error
+      final defaultPrefs = UserPreferences.defaultPreferences();
       setState(() {
-        _preferences = UserPreferences.defaultPreferences();
-        _selectedLandTypes = List.from(_preferences!.preferredLandTypes);
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-  
-  Future<void> _savePreferences() async {
-    setState(() {
-      _isSaving = true;
-    });
-    
-    try {
-      final updatedPreferences = UserPreferences(
-        preferredLandTypes: _selectedLandTypes,
-        minPrice: _minPrice,
-        maxPrice: _maxPrice,
-        preferredLocations: _selectedLocations,
-        maxDistanceKm: _maxDistance,
-        notificationsEnabled: _notificationsEnabled,
-        lastUpdated: DateTime.now(),
-      );
-      
-      // Save to secure storage
-      final jsonData = jsonEncode(updatedPreferences.toJson());
-      await _storageService.write(
-        key: 'user_preferences_${widget.user.id}',
-        value: jsonData,
-      );
-      
-      setState(() {
-        _preferences = updatedPreferences;
+        _preferences = defaultPrefs;
+        _selectedLandTypes.clear();
+        _selectedLandTypes.addAll(defaultPrefs.preferredLandTypes);
+        _selectedLocations.clear();
+        _selectedLocations.addAll(defaultPrefs.preferredLocations);
       });
       
-      // Show success feedback
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Preferences saved successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      print('Error saving preferences: $e');
+      // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving preferences: $e'),
+            content: Text('Could not load preferences: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
       setState(() {
-        _isSaving = false;
+        _isLoading = false;
+        _hasChanges = false;
       });
+    }
+  }
+  
+  void _savePreferences() {
+    // Validate form
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isSaving = true;
+      });
+      
+      try {
+        final updatedPreferences = UserPreferences(
+          preferredLandTypes: _selectedLandTypes,
+          minPrice: _minPrice,
+          maxPrice: _maxPrice,
+          preferredLocations: _selectedLocations,
+          maxDistanceKm: _maxDistance,
+          notificationsEnabled: _notificationsEnabled,
+          lastUpdated: DateTime.now(),
+        );
+        
+        // Use the PreferencesService to save
+        _preferencesService.savePreferences(widget.user.id, updatedPreferences)
+          .then((_) {
+            setState(() {
+              _preferences = updatedPreferences;
+              _hasChanges = false;
+              _isSaving = false;
+            });
+            
+            // Show success feedback
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Preferences saved successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          })
+          .catchError((e) {
+            setState(() {
+              _isSaving = false;
+            });
+            
+            print('Error saving preferences: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error saving preferences: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          });
+      } catch (e) {
+        setState(() {
+          _isSaving = false;
+        });
+        
+        print('Error creating preferences: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error creating preferences: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else {
+      // Show validation error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please check the form for errors'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
   
@@ -159,6 +211,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       } else {
         _selectedLandTypes.add(type);
       }
+      _hasChanges = true;
     });
   }
   
@@ -168,51 +221,143 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       setState(() {
         _selectedLocations.add(location);
         _locationController.clear();
+        _hasChanges = true;
       });
+      
+      // Clear text field and set focus back for web usability
+      _locationFocusNode.requestFocus();
+    } else if (location.isEmpty) {
+      // Show error for empty location
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a location'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } else if (_selectedLocations.contains(location)) {
+      // Show error for duplicate location
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This location is already in your list'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      _locationController.clear();
     }
   }
   
   void _removeLocation(String location) {
     setState(() {
       _selectedLocations.remove(location);
+      _hasChanges = true;
     });
+  }
+  
+  void _confirmDiscard() {
+    if (_hasChanges) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Discard Changes?'),
+          content: const Text('You have unsaved changes. Are you sure you want to discard them?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Discard'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      Navigator.of(context).pop();
+    }
   }
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Investment Preferences'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppDimensions.paddingL),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoCard(),
-                    const SizedBox(height: AppDimensions.paddingL),
-                    _buildLandTypeSection(),
-                    const SizedBox(height: AppDimensions.paddingXL),
-                    _buildPriceRangeSection(),
-                    const SizedBox(height: AppDimensions.paddingXL),
-                    _buildLocationsSection(),
-                    const SizedBox(height: AppDimensions.paddingXL),
-                    _buildDistanceSection(),
-                    const SizedBox(height: AppDimensions.paddingXL),
-                    _buildNotificationsSection(),
-                    const SizedBox(height: AppDimensions.paddingXXL),
-                    _buildSaveButton(),
-                    const SizedBox(height: AppDimensions.paddingL),
-                  ],
+    final isWeb = kIsWeb;
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    return WillPopScope(
+      onWillPop: () async {
+        if (_hasChanges) {
+          _confirmDiscard();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Investment Preferences'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (_hasChanges) {
+                _confirmDiscard();
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+          actions: [
+            if (_hasChanges)
+              TextButton.icon(
+                icon: const Icon(Icons.save, color: Colors.white),
+                label: const Text('Save', style: TextStyle(color: Colors.white)),
+                onPressed: !_isSaving ? () { _savePreferences(); } : null,
+              ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(
+                child: Form(
+                  key: _formKey,
+                  child: Center(
+                    child: Container(
+                      width: isWeb && !isMobile ? min(screenWidth * 0.8, 800) : null,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isWeb && !isMobile ? AppDimensions.paddingXXL : AppDimensions.paddingL,
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(AppDimensions.paddingL),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInfoCard(),
+                            const SizedBox(height: AppDimensions.paddingL),
+                            _buildLandTypeSection(),
+                            const SizedBox(height: AppDimensions.paddingXL),
+                            _buildPriceRangeSection(),
+                            const SizedBox(height: AppDimensions.paddingXL),
+                            _buildLocationsSection(),
+                            const SizedBox(height: AppDimensions.paddingXL),
+                            _buildDistanceSection(),
+                            const SizedBox(height: AppDimensions.paddingXL),
+                            _buildNotificationsSection(),
+                            const SizedBox(height: AppDimensions.paddingXXL),
+                            _buildSaveButton(),
+                            const SizedBox(height: AppDimensions.paddingL),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
   
@@ -222,6 +367,13 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       decoration: BoxDecoration(
         color: AppColors.backgroundGreen,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        boxShadow: kIsWeb ? [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ] : null,
       ),
       child: Row(
         children: [
@@ -257,12 +409,29 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   }
   
   Widget _buildLandTypeSection() {
+    // Validate land types selection
+    bool isValid = _selectedLandTypes.isNotEmpty;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Land Types',
-          style: AppTextStyles.h4,
+        Row(
+          children: [
+            Text(
+              'Land Types',
+              style: AppTextStyles.h4,
+            ),
+            if (!isValid) ...[
+              const SizedBox(width: 8),
+              const Text(
+                '* Required',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 8),
         const Text(
@@ -272,31 +441,48 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           ),
         ),
         const SizedBox(height: AppDimensions.paddingM),
-        Wrap(
-          spacing: AppDimensions.paddingS,
-          runSpacing: AppDimensions.paddingS,
-          children: LandType.values.map((type) {
-            final isSelected = _selectedLandTypes.contains(type);
-            return FilterChip(
-              label: Text(_getLandTypeName(type)),
-              selected: isSelected,
-              onSelected: (selected) => _toggleLandType(type),
-              selectedColor: AppColors.primary.withOpacity(0.2),
-              checkmarkColor: AppColors.primary,
-              backgroundColor: Colors.grey.shade200,
-              avatar: Icon(
-                _getLandTypeIcon(type),
-                color: isSelected ? AppColors.primary : Colors.grey,
-                size: 18,
-              ),
-            );
-          }).toList(),
+        FocusTraversalGroup(
+          child: Wrap(
+            spacing: AppDimensions.paddingS,
+            runSpacing: AppDimensions.paddingS,
+            children: LandType.values.map((type) {
+              final isSelected = _selectedLandTypes.contains(type);
+              return Tooltip(
+                message: _getLandTypeName(type),
+                child: FilterChip(
+                  label: Text(_getLandTypeName(type)),
+                  selected: isSelected,
+                  onSelected: (selected) => _toggleLandType(type),
+                  selectedColor: AppColors.primary.withOpacity(0.2),
+                  checkmarkColor: AppColors.primary,
+                  backgroundColor: Colors.grey.shade200,
+                  avatar: Icon(
+                    _getLandTypeIcon(type),
+                    color: isSelected ? AppColors.primary : Colors.grey,
+                    size: 18,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ),
+        if (!isValid) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Please select at least one land type',
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ],
     );
   }
   
   Widget _buildPriceRangeSection() {
+    final formatCurrency = (double value) => '\$${value.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -316,13 +502,13 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '\${_minPrice.toInt()}',
+              formatCurrency(_minPrice),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              '\${_maxPrice.toInt()}',
+              formatCurrency(_maxPrice),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
@@ -335,18 +521,71 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           max: 2000000,
           divisions: 40,
           labels: RangeLabels(
-            '\${_minPrice.toInt()}',
-            '\${_maxPrice.toInt()}',
+            formatCurrency(_minPrice),
+            formatCurrency(_maxPrice),
           ),
           onChanged: (values) {
             setState(() {
               _minPrice = values.start;
               _maxPrice = values.end;
+              _hasChanges = true;
             });
           },
           activeColor: AppColors.primary,
           inactiveColor: Colors.grey.shade300,
         ),
+        
+        // For web accessibility, add input fields
+        if (kIsWeb) ...[
+          const SizedBox(height: AppDimensions.paddingM),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  initialValue: _minPrice.toInt().toString(),
+                  decoration: InputDecoration(
+                    labelText: 'Min Price (\$)',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    if (value.isNotEmpty) {
+                      final newValue = double.tryParse(value) ?? _minPrice;
+                      if (newValue <= _maxPrice) {
+                        setState(() {
+                          _minPrice = newValue;
+                          _hasChanges = true;
+                        });
+                      }
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: AppDimensions.paddingM),
+              Expanded(
+                child: TextFormField(
+                  initialValue: _maxPrice.toInt().toString(),
+                  decoration: InputDecoration(
+                    labelText: 'Max Price (\$)',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    if (value.isNotEmpty) {
+                      final newValue = double.tryParse(value) ?? _maxPrice;
+                      if (newValue >= _minPrice) {
+                        setState(() {
+                          _maxPrice = newValue;
+                          _hasChanges = true;
+                        });
+                      }
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -370,8 +609,9 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         Row(
           children: [
             Expanded(
-              child: TextField(
+              child: TextFormField(
                 controller: _locationController,
+                focusNode: _locationFocusNode,
                 decoration: InputDecoration(
                   hintText: 'Enter location (city, region)',
                   border: OutlineInputBorder(
@@ -382,17 +622,22 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                     vertical: AppDimensions.paddingS,
                   ),
                 ),
-                onSubmitted: (_) => _addLocation(),
+                onFieldSubmitted: (_) => _addLocation(),
+                textInputAction: TextInputAction.done,
               ),
             ),
             const SizedBox(width: AppDimensions.paddingM),
-            ElevatedButton(
-              onPressed: _addLocation,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(AppDimensions.paddingM),
-                minimumSize: const Size(48, 48),
+            Tooltip(
+              message: 'Add Location',
+              child: ElevatedButton(
+                onPressed: _addLocation,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(AppDimensions.paddingM),
+                  minimumSize: const Size(48, 48),
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Icon(Icons.add, color: Colors.white),
               ),
-              child: const Icon(Icons.add),
             ),
           ],
         ),
@@ -403,6 +648,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+              border: Border.all(color: Colors.grey.shade300),
             ),
             child: const Center(
               child: Text(
@@ -414,17 +660,26 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
             ),
           )
         else
-          Wrap(
-            spacing: AppDimensions.paddingS,
-            runSpacing: AppDimensions.paddingS,
-            children: _selectedLocations.map((location) {
-              return Chip(
-                label: Text(location),
-                onDeleted: () => _removeLocation(location),
-                deleteIconColor: Colors.grey,
-                backgroundColor: Colors.grey.shade200,
-              );
-            }).toList(),
+          Container(
+            padding: const EdgeInsets.all(AppDimensions.paddingM),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Wrap(
+              spacing: AppDimensions.paddingS,
+              runSpacing: AppDimensions.paddingS,
+              children: _selectedLocations.map((location) {
+                return Chip(
+                  label: Text(location),
+                  onDeleted: () => _removeLocation(location),
+                  deleteIconColor: Colors.grey,
+                  backgroundColor: Colors.grey.shade200,
+                  elevation: kIsWeb ? 1 : 0,
+                );
+              }).toList(),
+            ),
           ),
       ],
     );
@@ -463,11 +718,40 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           onChanged: (value) {
             setState(() {
               _maxDistance = value;
+              _hasChanges = true;
             });
           },
           activeColor: AppColors.primary,
           inactiveColor: Colors.grey.shade300,
         ),
+        
+        // For web accessibility, add input field
+        if (kIsWeb) ...[
+          const SizedBox(height: AppDimensions.paddingM),
+          SizedBox(
+            width: 200,
+            child: TextFormField(
+              initialValue: _maxDistance.toInt().toString(),
+              decoration: const InputDecoration(
+                labelText: 'Max Distance (km)',
+                border: OutlineInputBorder(),
+                suffixText: 'km',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                if (value.isNotEmpty) {
+                  final newValue = double.tryParse(value) ?? _maxDistance;
+                  if (newValue >= 0 && newValue <= 200) {
+                    setState(() {
+                      _maxDistance = newValue;
+                      _hasChanges = true;
+                    });
+                  }
+                }
+              },
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -478,6 +762,14 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: kIsWeb ? [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ] : null,
       ),
       child: SwitchListTile(
         title: const Text(
@@ -496,21 +788,39 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         onChanged: (value) {
           setState(() {
             _notificationsEnabled = value;
+            _hasChanges = true;
           });
         },
         activeColor: AppColors.primary,
+        secondary: Icon(
+          _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
+          color: _notificationsEnabled ? AppColors.primary : Colors.grey,
+        ),
       ),
     );
   }
   
   Widget _buildSaveButton() {
-    return AppButton(
-      text: 'Save Preferences',
-      onPressed: _savePreferences,
-      isLoading: _isSaving,
-      isFullWidth: true,
-      type: ButtonType.primary,
+    return ElevatedButton(
+      child: Text(_isSaving ? 'Saving...' : 'Save Preferences'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      onPressed: (_isSaving || !_validateForm()) 
+          ? null 
+          : () { _savePreferences(); },
     );
+  }
+  
+  bool _validateForm() {
+    // Basic validation for required fields
+    return _selectedLandTypes.isNotEmpty;
   }
   
   String _getLandTypeName(LandType type) {
@@ -538,4 +848,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         return Icons.store;
     }
   }
+  
+  // Helper for web
+  T min<T extends num>(T a, T b) => a < b ? a : b;
 }
