@@ -20,6 +20,14 @@ import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart'
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 
+import '../../features/auth/data/datasources/preferences_remote_data_source.dart';
+import '../../features/auth/data/repositories/preferences_repository.dart';
+import '../../features/auth/data/repositories/preferences_repository_impl.dart';
+import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.dart';
+import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
+import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
+import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+
 final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
@@ -39,8 +47,71 @@ Future<void> initDependencies() async {
   //=== Features ===//
   await _initAuthFeature();
   await _initPropertyFeature();
+  await _initPreferencesFeature(); // Add this line
+  await _initPreferencesFeature(); // Add this line
+
+
 
   print('DependencyInjection: ✅ Dependencies initialized');
+}
+
+Future<void> _initPreferencesFeature() async {
+  print('[${DateTime.now()}] DependencyInjection: 🔄 Initializing preferences feature');
+  
+  try {
+    // Data Sources
+    getIt.registerLazySingleton<PreferencesRemoteDataSource>(
+      () => PreferencesRemoteDataSourceImpl(
+        secureStorage: getIt<SecureStorageService>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ PreferencesRemoteDataSource registered');
+    
+    // Repositories
+    getIt.registerLazySingleton<PreferencesRepository>(
+      () => PreferencesRepositoryImpl(
+        getIt<PreferencesRemoteDataSource>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ PreferencesRepository registered');
+    
+    // Use Cases
+    getIt.registerLazySingleton<GetPreferencesUseCase>(
+      () => GetPreferencesUseCase(
+        getIt<PreferencesRepository>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ GetPreferencesUseCase registered');
+    
+    getIt.registerLazySingleton<SavePreferencesUseCase>(
+      () => SavePreferencesUseCase(
+        getIt<PreferencesRepository>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ SavePreferencesUseCase registered');
+
+    getIt.registerLazySingleton<GetLandTypesUseCase>(
+      () => GetLandTypesUseCase(
+        getIt<PreferencesRepository>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ GetLandTypesUseCase registered');
+    
+    // BLoCs
+    getIt.registerFactory<PreferencesBloc>(
+      () => PreferencesBloc(
+        getPreferencesUseCase: getIt<GetPreferencesUseCase>(),
+        savePreferencesUseCase: getIt<SavePreferencesUseCase>(),
+        getLandTypesUseCase: getIt<GetLandTypesUseCase>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ PreferencesBloc registered');
+    
+    print('[${DateTime.now()}] DependencyInjection: ✅ Preferences feature initialized');
+  } catch (e) {
+    print('[${DateTime.now()}] DependencyInjection: ❌ Error initializing preferences feature'
+        '\n└─ Error: $e');
+  }
 }
 
 /// Initialise les dépendances de la fonctionnalité d'authentification

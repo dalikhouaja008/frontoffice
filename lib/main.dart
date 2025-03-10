@@ -11,6 +11,8 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 
+import 'features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+
 // Custom BlocObserver for debugging state changes
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -101,6 +103,9 @@ class TheBoostApp extends StatelessWidget {
         BlocProvider<PropertyBloc>(
           create: (_) => getIt<PropertyBloc>(),
         ),
+         BlocProvider<PreferencesBloc>(
+      create: (_) => getIt<PreferencesBloc>(),
+    ),
       ],
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, state) {

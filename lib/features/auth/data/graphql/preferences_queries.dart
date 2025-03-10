@@ -1,3 +1,4 @@
+// lib/features/auth/data/graphql/preferences_queries.dart
 class PreferencesQueries {
   static const String getUserPreferences = r'''
   query GetUserPreferences {
