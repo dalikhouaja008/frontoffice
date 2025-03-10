@@ -1,9 +1,10 @@
-// lib/features/auth/presentation/pages/preferences/user_preferences_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/notification_service.dart';
 import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
@@ -11,8 +12,10 @@ import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
+import 'package:the_boost/features/auth/presentation/bloc/preferences/preferences_bloc.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
 import 'dart:convert';
+import 'dart:math';
 
 class UserPreferencesScreen extends StatefulWidget {
   final User user;
@@ -34,8 +37,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   final PreferencesService _preferencesService = PreferencesService();
   
   // Selected values for UI
-  final List<LandType> _selectedLandTypes = [];
-  final List<String> _selectedLocations = [];
+   List<LandType> _selectedLandTypes = [];
+   List<String> _selectedLocations = [];
   double _minPrice = 0;
   double _maxPrice = 1000000;
   double _maxDistance = 50;
@@ -52,6 +55,11 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   void initState() {
     super.initState();
     _loadPreferences();
+    
+    // Initialize the preferences bloc
+    final preferencesBloc = BlocProvider.of<PreferencesBloc>(context, listen: false);
+    preferencesBloc.add(LoadPreferences());
+    preferencesBloc.add(LoadLandTypes());
   }
   
   @override
@@ -144,39 +152,21 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           lastUpdated: DateTime.now(),
         );
         
-        // Use the PreferencesService to save
+        // Use BLoC to save preferences to backend
+        final preferencesBloc = BlocProvider.of<PreferencesBloc>(context, listen: false);
+        preferencesBloc.add(SavePreferences(updatedPreferences));
+        
+        // Also update local cache via PreferencesService
         _preferencesService.savePreferences(widget.user.id, updatedPreferences)
           .then((_) {
             setState(() {
               _preferences = updatedPreferences;
               _hasChanges = false;
-              _isSaving = false;
             });
-            
-            // Show success feedback
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Preferences saved successfully'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
           })
           .catchError((e) {
-            setState(() {
-              _isSaving = false;
-            });
-            
-            print('Error saving preferences: $e');
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error saving preferences: ${e.toString()}'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
+            print('Error saving local preferences: $e');
+            // No need to show error as BLoC will handle it
           });
       } catch (e) {
         setState(() {
@@ -295,70 +285,150 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         }
         return true;
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Investment Preferences'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (_hasChanges) {
-                _confirmDiscard();
-              } else {
-                Navigator.of(context).pop();
+      child: BlocProvider<PreferencesBloc>(
+        create: (context) => getIt<PreferencesBloc>(),
+        child: BlocConsumer<PreferencesBloc, PreferencesState>(
+          listener: (context, state) {
+            if (state is PreferencesSaved) {
+              setState(() {
+                _preferences = state.preferences;
+                _hasChanges = false;
+                _isSaving = false;
+              });
+              
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Preferences saved successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else if (state is PreferencesSaving) {
+              setState(() {
+                _isSaving = true;
+              });
+            } else if (state is PreferencesError) {
+              setState(() {
+                _isSaving = false;
+              });
+              
+              // Show error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            } else if (state is PreferencesLoaded) {
+              // Only update UI if it's different from current state
+              if (_preferences == null || 
+                  !_arePreferencesEqual(_preferences!, state.preferences)) {
+                setState(() {
+                  _preferences = state.preferences;
+                  _selectedLandTypes = List.from(state.preferences.preferredLandTypes);
+                  _selectedLocations = List.from(state.preferences.preferredLocations);
+                  _minPrice = state.preferences.minPrice;
+                  _maxPrice = state.preferences.maxPrice == double.infinity ? 1000000 : state.preferences.maxPrice;
+                  _maxDistance = state.preferences.maxDistanceKm;
+                  _notificationsEnabled = state.preferences.notificationsEnabled;
+                  _isLoading = false;
+                  _hasChanges = false;
+                });
               }
-            },
-          ),
-          actions: [
-            if (_hasChanges)
-              TextButton.icon(
-                icon: const Icon(Icons.save, color: Colors.white),
-                label: const Text('Save', style: TextStyle(color: Colors.white)),
-                onPressed: !_isSaving ? () { _savePreferences(); } : null,
+            }
+          },
+          builder: (context, state) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Investment Preferences'),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    if (_hasChanges) {
+                      _confirmDiscard();
+                    } else {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                ),
+                actions: [
+                  if (_hasChanges)
+                    TextButton.icon(
+                      icon: const Icon(Icons.save, color: Colors.white),
+                      label: const Text('Save', style: TextStyle(color: Colors.white)),
+                      onPressed: !_isSaving ? () { _savePreferences(); } : null,
+                    ),
+                ],
               ),
-          ],
-        ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SafeArea(
-                child: Form(
-                  key: _formKey,
-                  child: Center(
-                    child: Container(
-                      width: isWeb && !isMobile ? min(screenWidth * 0.8, 800) : null,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isWeb && !isMobile ? AppDimensions.paddingXXL : AppDimensions.paddingL,
-                      ),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(AppDimensions.paddingL),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInfoCard(),
-                            const SizedBox(height: AppDimensions.paddingL),
-                            _buildLandTypeSection(),
-                            const SizedBox(height: AppDimensions.paddingXL),
-                            _buildPriceRangeSection(),
-                            const SizedBox(height: AppDimensions.paddingXL),
-                            _buildLocationsSection(),
-                            const SizedBox(height: AppDimensions.paddingXL),
-                            _buildDistanceSection(),
-                            const SizedBox(height: AppDimensions.paddingXL),
-                            _buildNotificationsSection(),
-                            const SizedBox(height: AppDimensions.paddingXXL),
-                            _buildSaveButton(),
-                            const SizedBox(height: AppDimensions.paddingL),
-                          ],
+              body: _isLoading || state is PreferencesLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SafeArea(
+                      child: Form(
+                        key: _formKey,
+                        child: Center(
+                          child: Container(
+                            width: isWeb && !isMobile ? min(screenWidth * 0.8, 800) : null,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isWeb && !isMobile ? AppDimensions.paddingXXL : AppDimensions.paddingL,
+                            ),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(AppDimensions.paddingL),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildInfoCard(),
+                                  const SizedBox(height: AppDimensions.paddingL),
+                                  _buildLandTypeSection(),
+                                  const SizedBox(height: AppDimensions.paddingXL),
+                                  _buildPriceRangeSection(),
+                                  const SizedBox(height: AppDimensions.paddingXL),
+                                  _buildLocationsSection(),
+                                  const SizedBox(height: AppDimensions.paddingXL),
+                                  _buildDistanceSection(),
+                                  const SizedBox(height: AppDimensions.paddingXL),
+                                  _buildNotificationsSection(),
+                                  const SizedBox(height: AppDimensions.paddingXXL),
+                                  _buildSaveButton(),
+                                  const SizedBox(height: AppDimensions.paddingL),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ),
+            );
+          },
+        ),
       ),
     );
+  }
+  
+  // Helper method to compare two preferences objects
+  bool _arePreferencesEqual(UserPreferences a, UserPreferences b) {
+    if (a.preferredLandTypes.length != b.preferredLandTypes.length) return false;
+    if (a.preferredLocations.length != b.preferredLocations.length) return false;
+    
+    // Compare land types
+    for (final type in a.preferredLandTypes) {
+      if (!b.preferredLandTypes.contains(type)) return false;
+    }
+    
+    // Compare locations
+    for (final location in a.preferredLocations) {
+      if (!b.preferredLocations.contains(location)) return false;
+    }
+    
+    // Compare numeric values
+    if (a.minPrice != b.minPrice) return false;
+    if (a.maxPrice != b.maxPrice) return false;
+    if (a.maxDistanceKm != b.maxDistanceKm) return false;
+    if (a.notificationsEnabled != b.notificationsEnabled) return false;
+    
+    return true;
   }
   
   Widget _buildInfoCard() {
@@ -543,7 +613,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
               Expanded(
                 child: TextFormField(
                   initialValue: _minPrice.toInt().toString(),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Min Price (\$)',
                     border: OutlineInputBorder(),
                   ),
@@ -565,7 +635,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
               Expanded(
                 child: TextFormField(
                   initialValue: _maxPrice.toInt().toString(),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Max Price (\$)',
                     border: OutlineInputBorder(),
                   ),
@@ -848,7 +918,4 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         return Icons.store;
     }
   }
-  
-  // Helper for web
-  T min<T extends num>(T a, T b) => a < b ? a : b;
 }
