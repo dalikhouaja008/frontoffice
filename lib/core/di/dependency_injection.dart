@@ -19,6 +19,8 @@ import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bl
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
+import '../services/gemini_service.dart';
+import '../../features/chatbot/presentation/controllers/chat_controller.dart';
 
 import '../../features/auth/data/datasources/preferences_remote_data_source.dart';
 import '../../features/auth/data/repositories/preferences_repository.dart';
@@ -53,6 +55,25 @@ Future<void> initDependencies() async {
 
 
   print('DependencyInjection: ✅ Dependencies initialized');
+}
+
+
+Future<void> registerChatbotDependencies() async {
+  // Register Gemini service with API key
+  final geminiApiKey = const String.fromEnvironment(
+    'GEMINI_API_KEY',
+    defaultValue:
+        'AIzaSyAvEtQjkAjwld1rTx4EtPXJ97iM1_5CqT8', // Replace with your actual API key when not using --dart-define
+  );
+
+  getIt.registerLazySingleton<GeminiService>(
+    () => GeminiService(apiKey: geminiApiKey, modelName: 'gemini-1.5-pro',),
+  );
+
+  // Register chat controller
+  getIt.registerLazySingleton<ChatController>(
+    () => ChatController(geminiService: getIt<GeminiService>()),
+  );
 }
 
 Future<void> _initPreferencesFeature() async {
