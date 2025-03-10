@@ -30,7 +30,6 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     
     print('[2025-03-02 19:21:51] DashboardPage: ✨ Initializing'
-          '\n└─ User: raednas'
           '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
     
     // Check for notifications and preferences when dashboard loads
