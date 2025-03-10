@@ -6,6 +6,7 @@ import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
 import 'package:the_boost/features/auth/presentation/widgets/investment_filters.dart';
 import 'package:the_boost/features/auth/presentation/widgets/investment_grid.dart';
@@ -53,6 +54,8 @@ class _InvestPageState extends State<InvestPage> {
                             ),
                             const SizedBox(height: AppDimensions.paddingL),
                             _buildInvestmentContent(state, bloc),
+                            const SizedBox(height: AppDimensions.paddingXL),
+                            _buildChatbotSection(context),
                           ],
                         )
                       : Row(
@@ -64,7 +67,13 @@ class _InvestPageState extends State<InvestPage> {
                             ),
                             const SizedBox(width: AppDimensions.paddingL),
                             Expanded(
-                              child: _buildInvestmentContent(state, bloc),
+                              child: Column(
+                                children: [
+                                  _buildInvestmentContent(state, bloc),
+                                  const SizedBox(height: AppDimensions.paddingXL),
+                                  _buildChatbotSection(context),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -158,6 +167,62 @@ class _InvestPageState extends State<InvestPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildChatbotSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundGreen.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.support_agent,
+                color: AppColors.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "Need help with your investment decisions?",
+                style: AppTextStyles.h4,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.paddingM),
+          Text(
+            "Our Investment Assistant can help you understand tokenized land assets, investment strategies, and answer your specific questions.",
+            textAlign: TextAlign.center,
+            style: AppTextStyles.body2,
+          ),
+          const SizedBox(height: AppDimensions.paddingL),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.investmentAssistant);
+            },
+            icon: const Icon(Icons.support_agent),
+            label: const Text('Chat with Investment Assistant'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.paddingXL,
+                vertical: AppDimensions.paddingM,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

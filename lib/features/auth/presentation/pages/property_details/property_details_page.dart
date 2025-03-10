@@ -1,12 +1,14 @@
 // presentation/pages/property_details/property_details_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:the_boost/core/constants/colors.dart'; // Add this import
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/domain/entities/property.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart'; // Add this import
 import '../base_page.dart';
 import 'widgets/property_details_header.dart';
 import 'widgets/property_information.dart';
@@ -90,6 +92,23 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
                                   property: property,
                                   isAuthenticated: isAuthenticated,
                                 ),
+                                const SizedBox(height: AppDimensions.paddingL),
+                                
+                                // Investment Assistant Button for Mobile
+                                Center(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.pushNamed(context, AppRoutes.investmentAssistant);
+                                    },
+                                    icon: const Icon(Icons.support_agent),
+                                    label: const Text('Chat with Investment Assistant'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                
                                 const SizedBox(height: AppDimensions.paddingXL),
                                 PropertyGallery(property: property),
                                 const SizedBox(height: AppDimensions.paddingXL),
@@ -111,9 +130,28 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
                                     SizedBox(width: AppDimensions.paddingXL),
                                     Expanded(
                                       flex: 3,
-                                      child: InvestmentCalculator(
-                                        property: property,
-                                        isAuthenticated: isAuthenticated,
+                                      child: Column(
+                                        children: [
+                                          InvestmentCalculator(
+                                            property: property,
+                                            isAuthenticated: isAuthenticated,
+                                          ),
+                                          
+                                          // Investment Assistant Button for Desktop
+                                          const SizedBox(height: AppDimensions.paddingM),
+                                          ElevatedButton.icon(
+                                            onPressed: () {
+                                              Navigator.pushNamed(context, AppRoutes.investmentAssistant);
+                                            },
+                                            icon: const Icon(Icons.support_agent),
+                                            label: const Text('Chat with Investment Assistant'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.primary,
+                                              foregroundColor: Colors.white,
+                                              minimumSize: const Size(double.infinity, 48),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],

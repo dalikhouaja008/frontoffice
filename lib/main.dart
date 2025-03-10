@@ -11,6 +11,7 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 
+
 // Custom BlocObserver for debugging state changes
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -41,6 +42,7 @@ void main() async {
   
   // Initialize all dependencies
   await initDependencies();
+  await registerChatbotDependencies();
   
   // Initialize session by checking for existing login
   await _checkExistingSession();
