@@ -1,3 +1,4 @@
+// lib/core/services/secure_storage_service.dart
 import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -79,5 +80,47 @@ Future<void> saveTokens({
       _storage.delete(key: _accessTokenKey),
       _storage.delete(key: _refreshTokenKey),
     ]);
+  }
+  
+  // General purpose methods for working with secure storage
+  
+  Future<void> write({required String key, required String value}) async {
+    await _storage.write(key: key, value: value);
+  }
+Future<String?> read({required String key}) async {
+    final timestamp = '2025-03-09 10:35:22';
+    print('[$timestamp] 🔐 Attempting to read data'
+          '\n└─ Key: $key');
+
+    try {
+      final value = await _storage.read(key: key);
+      
+      print('[$timestamp] 🔑 Data retrieval result'
+            '\n└─ Key: $key'
+            '\n└─ Data exists: ${value != null}');
+
+      return value;
+    } catch (e) {
+      print('[$timestamp] ❌ Failed to read data'
+            '\n└─ Key: $key'
+            '\n└─ Error: $e');
+      return null;
+    }
+  }
+  
+  Future<void> delete({required String key}) async {
+    await _storage.delete(key: key);
+  }
+  
+  Future<bool> containsKey({required String key}) async {
+    return await _storage.containsKey(key: key);
+  }
+  
+  Future<Map<String, String>> readAll() async {
+    return await _storage.readAll();
+  }
+  
+  Future<void> deleteAll() async {
+    await _storage.deleteAll();
   }
 }

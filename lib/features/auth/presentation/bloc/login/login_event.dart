@@ -1,5 +1,7 @@
 part of 'login_bloc.dart';
 
+
+
 abstract class LoginEvent extends Equatable {
   @override
   List<Object> get props => [];
@@ -18,3 +20,4 @@ class LoginRequested extends LoginEvent {
 class LogoutRequested extends LoginEvent {}
 
 class CheckSession extends LoginEvent {}
+

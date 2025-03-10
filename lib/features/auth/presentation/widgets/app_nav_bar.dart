@@ -4,12 +4,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
+import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
+import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
+import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
+import 'package:the_boost/features/auth/presentation/widgets/notification_bell.dart';
+import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
+import 'dart:convert';
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -90,7 +96,17 @@ class AppNavBar extends StatelessWidget {
                 const SizedBox(width: AppDimensions.paddingM),
                 
                 if (isAuthenticated) 
-                  _buildUserMenu(context, user)
+                  Row(
+                    children: [
+                      NotificationBell(
+                        onOpenPreferences: () {
+                          _checkAndShowPreferences(context, user!);
+                        },
+                      ),
+                      const SizedBox(width: AppDimensions.paddingM),
+                      _buildUserMenu(context, user),
+                    ],
+                  )
                 else 
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -136,17 +152,20 @@ class AppNavBar extends StatelessWidget {
         _buildLogo(),
         Row(
           children: [
-            if (isAuthenticated)
+            if (isAuthenticated) ...[
+              NotificationBell(
+                onOpenPreferences: () {
+                  _checkAndShowPreferences(context, user!);
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.dashboard),
                 onPressed: () {
                   Navigator.pushNamed(context, AppRoutes.dashboard);
                 },
               ),
-              
-            if (isAuthenticated)
-              _buildUserMenuMobile(context, user)
-            else
+              _buildUserMenuMobile(context, user),
+            ] else
               TextButton(
                 onPressed: onLoginPressed ?? () {
                   Navigator.pushNamed(context, AppRoutes.auth);
@@ -170,6 +189,27 @@ class AppNavBar extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _checkAndShowPreferences(BuildContext context, User user) async {
+    final secureStorage = SecureStorageService();
+    final prefsJson = await secureStorage.read(key: 'user_preferences_${user.id}');
+    
+    if (prefsJson == null) {
+      // User hasn't set preferences yet, show the preferences alert
+      showDialog(
+        context: context,
+        builder: (context) => PreferencesAlertDialog(user: user),
+      );
+    } else {
+      // User already has preferences, navigate directly to the preferences screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserPreferencesScreen(user: user),
+        ),
+      );
+    }
   }
 
   Widget _buildLogo() {
@@ -270,6 +310,16 @@ class AppNavBar extends StatelessWidget {
           ),
         ),
         const PopupMenuItem(
+          value: 'preferences',
+          child: Row(
+            children: [
+              Icon(Icons.tune, color: Colors.black54),
+              SizedBox(width: AppDimensions.paddingM),
+              Text('Investment Preferences'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
           value: 'settings',
           child: Row(
             children: [
@@ -302,6 +352,11 @@ class AppNavBar extends StatelessWidget {
           case 'investments':
             // Navigate to investments page
             Navigator.pushNamed(context, AppRoutes.invest);
+            break;
+          case 'preferences':
+            if (user != null) {
+              _checkAndShowPreferences(context, user);
+            }
             break;
           case 'settings':
             // Navigate to settings page
@@ -411,6 +466,16 @@ class AppNavBar extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, AppRoutes.invest);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.tune, color: AppColors.primary),
+                  title: const Text('Investment Preferences'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (user != null) {
+                      _checkAndShowPreferences(context, user);
+                    }
                   },
                 ),
                 ListTile(
