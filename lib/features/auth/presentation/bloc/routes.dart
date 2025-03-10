@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/bloc/routes.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/features_pages.dart';

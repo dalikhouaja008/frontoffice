@@ -16,7 +16,6 @@ class InvestPage extends StatefulWidget {
   const InvestPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _InvestPageState createState() => _InvestPageState();
 }
 

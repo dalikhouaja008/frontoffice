@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import '../../domain/entities/property.dart';
 
-
 enum PropertyLoadingStatus { initial, loading, loaded, error }
 
 class PropertyController with ChangeNotifier {

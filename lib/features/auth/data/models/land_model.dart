@@ -1,5 +1,3 @@
-// models/land_model.dart
-
 enum LandType { AGRICULTURAL, RESIDENTIAL, INDUSTRIAL, COMMERCIAL }
 enum LandStatus { AVAILABLE, PENDING, SOLD }
 
