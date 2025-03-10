@@ -1,20 +1,21 @@
+// lib/features/auth/presentation/widgets/login_form.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
+import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
+import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
-import 'package:the_boost/features/auth/presentation/widgets/textfields/app_text_field.dart';
-import '../../../../../../core/constants/colors.dart';
-import '../../../../../../core/constants/dimensions.dart';
-import '../../../../../../core/constants/text_styles.dart';
-import '../../../../../../core/utils/input_validators.dart';
-import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
-import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
-import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
-import 'package:the_boost/features/auth/presentation/widgets/dialogs/otp_dialog.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/error_popup.dart';
+import 'package:the_boost/features/auth/presentation/widgets/dialogs/otp_dialog.dart';
+import 'package:the_boost/features/auth/presentation/widgets/textfields/app_text_field.dart';
+import 'package:the_boost/core/constants/colors.dart';
+import 'package:the_boost/core/constants/dimensions.dart';
+import 'package:the_boost/core/constants/text_styles.dart';
+import 'package:the_boost/core/utils/input_validators.dart';
 
 class LoginForm extends StatefulWidget {
   final Function updateView;
@@ -65,14 +66,13 @@ class _LoginFormState extends State<LoginForm> {
         '\n└─ User: raednas'
         '\n└─ Email: ${state.user.email}');
 
-    // Utiliser getIt pour obtenir le repository
+    // Get the repository from getIt
     final twoFactorAuthRepository = getIt<TwoFactorAuthRepository>();
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BlocProvider<TwoFactorAuthBloc>(
-        // Utilisez getIt ou créez une nouvelle instance avec le repository obtenu
         create: (context) => TwoFactorAuthBloc(
           repository: twoFactorAuthRepository,
         ),
@@ -85,13 +85,16 @@ class _LoginFormState extends State<LoginForm> {
 
               Navigator.of(dialogContext).pop();
 
-              // Utiliser la route constante pour la navigation
-              Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+              // Use the route constant for navigation and add a small delay to ensure the
+              // login state is properly updated before navigation
+              Future.delayed(Duration(milliseconds: 100), () {
+                Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
 
-              print(
-                  '[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
-                  '\n└─ User: raednas'
-                  '\n└─ Email: ${twoFactorState.user.email}');
+                print(
+                    '[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
+                    '\n└─ User: raednas'
+                    '\n└─ Email: ${twoFactorState.user.email}');
+              });
             } else if (twoFactorState is TwoFactorAuthError) {
               print('[2025-03-02 16:20:01] LoginForm: ❌ 2FA verification failed'
                   '\n└─ User: raednas'
@@ -126,8 +129,14 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
+    // Debug print to track form builds
+    print('[2025-03-02 15:58:06] LoginForm: 🔄 Building login form');
+    
     return BlocListener<LoginBloc, LoginState>(
       listener: (context, state) {
+        // Debug print to track state changes
+        print('[2025-03-02 15:58:06] LoginForm: 📣 Login state changed: ${state.runtimeType}');
+        
         if (state is LoginSuccess) {
           print('[2025-03-02 16:20:01] LoginForm: ✅ Login successful'
               '\n└─ User: raednas'
@@ -136,6 +145,7 @@ class _LoginFormState extends State<LoginForm> {
           _onLoginSuccess(state);
           print('[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
               '\n└─ Email: ${state.user.email}');
+
         } else if (state is LoginRequires2FA) {
           print('[2025-03-02 16:20:01] LoginForm: 🔐 2FA required'
               '\n└─ Email: ${state.user.email}');
@@ -335,7 +345,7 @@ class _LoginFormState extends State<LoginForm> {
         '\n└─ User: raednas'
         '\n└─ Email: ${_emailController.text.trim()}');
 
-    // Ne pas procéder si on est déjà en train de s'authentifier
+    // Don't proceed if already authenticating
     final state = context.read<LoginBloc>().state;
     if (state is LoginLoading) {
       return;

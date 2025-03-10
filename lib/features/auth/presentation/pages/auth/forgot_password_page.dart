@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:math'; // Import the dart:math library for min function
 
 class ForgotPasswordPage extends StatefulWidget {
   @override
@@ -29,7 +30,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
       vsync: this,
       duration: Duration(milliseconds: 500),
     );
-
   }
 
   @override
@@ -163,7 +163,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
           ),
           child: Center(
             child: Container(
-              width: isMobile ? size.width * 0.9 : min((size.width * 0.6) as int, 600).toDouble(),
+              width: isMobile ? size.width * 0.9 : min((size.width * 0.6).toInt(), 600).toDouble(),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(25),
@@ -646,30 +646,4 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
       },
     );
   }
-}
-
-// Helper function to avoid importing dart:math
-int min(int a, int b) {
-  return a < b ? a : b;
-}
-
-// For demonstration purpose only
-class ForgotPasswordDemo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TheBoost Password Reset',
-      theme: ThemeData(
-        primaryColor: Color(0xFF2E7D32),
-        scaffoldBackgroundColor: Colors.white,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: ForgotPasswordPage(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-void main() {
-  runApp(ForgotPasswordDemo());
 }

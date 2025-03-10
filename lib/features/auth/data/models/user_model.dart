@@ -1,4 +1,6 @@
+// lib/features/auth/data/models/user_model.dart
 import 'package:the_boost/features/auth/domain/entities/user.dart';
+import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
 
 class UserModel extends User {
   final String accessToken;
@@ -15,6 +17,7 @@ class UserModel extends User {
     bool isTwoFactorEnabled = false,
     required DateTime createdAt,
     required DateTime updatedAt,
+    UserPreferences? preferences,
   }) : super(
           id: id,
           username: username,
@@ -24,44 +27,62 @@ class UserModel extends User {
           isTwoFactorEnabled: isTwoFactorEnabled,
           createdAt: createdAt,
           updatedAt: updatedAt,
+          preferences: preferences,
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    // Check if the user data is nested inside a 'user' field or at the root
+    final userData = json.containsKey('user') ? json['user'] : json;
+
+    // Parse preferences if they exist
+    UserPreferences? userPrefs;
+    if (userData['preferences'] != null) {
+      userPrefs = UserPreferences.fromJson(userData['preferences']);
+    }
+  
     return UserModel(
-      id: json['user']['_id'] ?? "",
-      username: json['user']['username'] ?? "Unknown",
-      email: json['user']['email'] ?? "",
-      role: json['user']['role'] ?? 'user',
+      id: userData['_id'] ?? "",
+      username: userData['username'] ?? "Unknown",
+      email: userData['email'] ?? "",
+      role: userData['role'] ?? 'user',
       accessToken: json['accessToken'] ?? "",
       refreshToken: json['refreshToken'] ?? "",
-      twoFactorSecret: json['user']['twoFactorSecret'],
-      isTwoFactorEnabled: json['user']['isTwoFactorEnabled'] ?? false,
-      createdAt: json['user']['createdAt'] != null 
-          ? DateTime.parse(json['user']['createdAt']) 
+      twoFactorSecret: userData['twoFactorSecret'],
+      isTwoFactorEnabled: userData['isTwoFactorEnabled'] ?? false,
+      createdAt: userData['createdAt'] != null 
+          ? DateTime.parse(userData['createdAt']) 
           : DateTime.now(),
-      updatedAt: json['user']['updatedAt'] != null 
-          ? DateTime.parse(json['user']['updatedAt']) 
+      updatedAt: userData['updatedAt'] != null 
+          ? DateTime.parse(userData['updatedAt']) 
           : DateTime.now(),
+      preferences: userPrefs,
     );
   }
 
   Map<String, dynamic> toJson() {
+    final Map<String, dynamic> userData = {
+      '_id': id,
+      'username': username,
+      'email': email,
+      'role': role,
+      'twoFactorSecret': twoFactorSecret,
+      'isTwoFactorEnabled': isTwoFactorEnabled,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+
+    if (preferences != null) {
+      userData['preferences'] = preferences!.toJson();
+    }
+
     return {
-      'user': {
-        '_id': id,
-        'username': username,
-        'email': email,
-        'role': role,
-        'twoFactorSecret': twoFactorSecret,
-        'isTwoFactorEnabled': isTwoFactorEnabled,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      },
+      'user': userData,
       'accessToken': accessToken,
       'refreshToken': refreshToken,
     };
   }
 
+  @override
   UserModel copyWith({
     String? id,
     String? username,
@@ -73,6 +94,7 @@ class UserModel extends User {
     bool? isTwoFactorEnabled,
     DateTime? createdAt,
     DateTime? updatedAt,
+    UserPreferences? preferences,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -85,6 +107,7 @@ class UserModel extends User {
       isTwoFactorEnabled: isTwoFactorEnabled ?? this.isTwoFactorEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      preferences: preferences ?? this.preferences,
     );
   }
 

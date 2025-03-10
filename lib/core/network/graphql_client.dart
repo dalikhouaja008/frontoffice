@@ -44,10 +44,12 @@ class GraphQLService {
       getToken: () => 'Bearer $token',
     );
 
+
     final httpLink = HttpLink(
       _graphqlEndpoint,
       defaultHeaders: _getDefaultHeaders(),
     );
+
     
     print('GraphQLService: 🔗 Setting up GraphQL link'
           '\n└─ Authorization: Bearer ${token.length > 10 ? "${token.substring(0, 10)}..." : token}'
@@ -70,6 +72,7 @@ class GraphQLService {
   }
 
   static GraphQLClient get client {
+
     print('GraphQLService: 🌐 Creating unauthenticated client'
           '\n└─ Endpoint: $_graphqlEndpoint');
 
@@ -77,6 +80,7 @@ class GraphQLService {
       _graphqlEndpoint,
       defaultHeaders: _getDefaultHeaders(),
     );
+
 
     return GraphQLClient(
       link: httpLink,

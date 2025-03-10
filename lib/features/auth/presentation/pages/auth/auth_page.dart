@@ -1,8 +1,8 @@
+// lib/features/auth/presentation/pages/auth/auth_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
-import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
@@ -37,8 +37,8 @@ class _AuthPageState extends State<AuthPage>
       end: 90,
     ).animate(_animationController);
 
-    print('[2025-03-02 15:53:02] AuthPage: 🔄 Initializing'
-        '\n└─ User: raednas');
+
+    print('[2025-03-02 15:53:02] AuthPage: 🔄 Initializing');
   }
 
   @override
@@ -53,8 +53,8 @@ class _AuthPageState extends State<AuthPage>
     });
     isLogin ? _animationController.reverse() : _animationController.forward();
 
-    print('[2025-03-02 15:53:02] AuthPage: 🔄 Switching view'
-        '\n└─ User: raednas'
+
+    print(' AuthPage: 🔄 Switching view'
         '\n└─ Current view: ${isLogin ? 'Login' : 'Signup'}');
   }
 
@@ -62,6 +62,7 @@ class _AuthPageState extends State<AuthPage>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isMobile = ResponsiveHelper.isMobile(context);
+
     return BlocListener<LoginBloc, LoginState>(
         listener: (context, state) {
           print('[${DateTime.now()}] AuthPage: 🎧 Login state changed'
@@ -71,20 +72,9 @@ class _AuthPageState extends State<AuthPage>
             print('[${DateTime.now()}] AuthPage: ✅ Login successful'
                 '\n└─ Username: ${state.user.username}');
 
-            // Forcer une reconstruction de l'AppNavBar
-            Future.microtask(() {
-              if (context.mounted) {
-                final navBarContext =
-                    context.findAncestorStateOfType<NavigatorState>()?.context;
-                if (navBarContext != null) {
-                  print(
-                      '[${DateTime.now()}] AuthPage: 🔄 Forcing AppNavBar rebuild');
-                  (navBarContext as Element).markNeedsBuild();
-                }
-              }
-            });
-
-            Navigator.of(context).pushReplacementNamed('/dashboard');
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacementNamed(context, '/dashboard');
+          });
           } else if (state is LoginFailure) {
             print('[${DateTime.now()}] AuthPage: ❌ Login failed'
                 '\n└─ Error: ${state.error}');
@@ -98,6 +88,7 @@ class _AuthPageState extends State<AuthPage>
           key: const ValueKey('AuthPage'),
           appBar: const PreferredSize(
             preferredSize: Size.fromHeight(70),
+
             child: AppNavBar(
               currentRoute: '/auth',
             ),
@@ -143,6 +134,7 @@ class _AuthPageState extends State<AuthPage>
                               AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 500),
                                 child: isLogin
+
                                     ? BlocProvider<LoginBloc>(
                                         create: (context) => getIt<LoginBloc>(),
                                         child: LoginForm(
@@ -172,6 +164,7 @@ class _AuthPageState extends State<AuthPage>
                                         AppDimensions.radiusXXL),
                                     bottomLeft: Radius.circular(
                                         AppDimensions.radiusXXL),
+
                                   ),
                                 ),
                                 child: Column(
@@ -187,6 +180,7 @@ class _AuthPageState extends State<AuthPage>
                                           return Transform(
                                             alignment: Alignment.center,
                                             transform: Matrix4.rotationY(
+
                                                 _animationTextRotate.value *
                                                     (3.1415927 / 180)),
                                             child: Text(
@@ -214,6 +208,7 @@ class _AuthPageState extends State<AuthPage>
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 500),
                                 child: isLogin
+
                                     ? BlocProvider<LoginBloc>(
                                         create: (context) => getIt<LoginBloc>(),
                                         child: LoginForm(
@@ -235,6 +230,7 @@ class _AuthPageState extends State<AuthPage>
               ),
             ),
           ),
+
         )
     );
   }
@@ -252,7 +248,7 @@ class _AuthPageState extends State<AuthPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLogo(isWhite: true),
+                _buildLogo(isWhite: true, isSmall: true),
                 const SizedBox(height: 10),
                 const Text(
                   'Land Investment via Tokenization',
@@ -270,8 +266,7 @@ class _AuthPageState extends State<AuthPage>
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/');
-              print('[2025-03-02 15:53:02] AuthPage: 🏠 Navigating to Home'
-                  '\n└─ User: raednas');
+              print('[2025-03-02 15:53:02] AuthPage: 🏠 Navigating to Home');
             },
           ),
           ListTile(
@@ -280,8 +275,8 @@ class _AuthPageState extends State<AuthPage>
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/features');
-              print('[2025-03-02 15:53:02] AuthPage: 🚀 Navigating to Features'
-                  '\n└─ User: raednas');
+
+              print('[2025-03-02 15:53:02] AuthPage: 🚀 Navigating to Features');
             },
           ),
           ListTile(
@@ -290,9 +285,9 @@ class _AuthPageState extends State<AuthPage>
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/how-it-works');
+
               print(
-                  '[2025-03-02 15:53:02] AuthPage: ❓ Navigating to How It Works'
-                  '\n└─ User: raednas');
+                  '[2025-03-02 15:53:02] AuthPage: ❓ Navigating to How It Works');
             },
           ),
           ListTile(
@@ -301,8 +296,8 @@ class _AuthPageState extends State<AuthPage>
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/invest');
-              print('[2025-03-02 15:53:02] AuthPage: 💰 Navigating to Invest'
-                  '\n└─ User: raednas');
+
+              print('[2025-03-02 15:53:02] AuthPage: 💰 Navigating to Invest');
             },
           ),
           ListTile(
@@ -312,8 +307,8 @@ class _AuthPageState extends State<AuthPage>
               Navigator.pop(context);
               Navigator.pushNamed(context, '/learn-more');
               print(
-                  '[2025-03-02 15:53:02] AuthPage: 📚 Navigating to Learn More'
-                  '\n└─ User: raednas');
+                  '[2025-03-02 15:53:02] AuthPage: 📚 Navigating to Learn More');
+
             },
           ),
           const Divider(),
@@ -324,6 +319,7 @@ class _AuthPageState extends State<AuthPage>
               onTap: () {
                 Navigator.pop(context);
                 updateView();
+
                 print('[2025-03-02 15:53:02] AuthPage: 👤 Switching to Sign Up'
                     '\n└─ User: raednas');
               },
@@ -335,8 +331,9 @@ class _AuthPageState extends State<AuthPage>
               onTap: () {
                 Navigator.pop(context);
                 updateView();
-                print('[2025-03-02 15:53:02] AuthPage: 🔑 Switching to Login'
-                    '\n└─ User: raednas');
+
+                print('[2025-03-02 15:53:02] AuthPage: 🔑 Switching to Login');
+
               },
             ),
         ],
@@ -344,20 +341,20 @@ class _AuthPageState extends State<AuthPage>
     );
   }
 
-  Widget _buildLogo({bool isWhite = false}) {
+  Widget _buildLogo({bool isWhite = false, bool isSmall = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
           Icons.landscape,
           color: isWhite ? Colors.white : AppColors.primary,
-          size: 40,
+          size: isSmall ? 30 : 40,
         ),
         const SizedBox(width: 10),
         Text(
           'TheBoost',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: isSmall ? 24 : 32,
             fontWeight: FontWeight.bold,
             color: isWhite ? Colors.white : AppColors.primary,
           ),

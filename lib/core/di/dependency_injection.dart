@@ -1,7 +1,11 @@
+// lib/core/di/dependency_injection.dart
 import 'package:get_it/get_it.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
+import 'package:the_boost/core/services/notification_service.dart';
+import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
+import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/property_repository_impl.dart';
@@ -28,6 +32,9 @@ Future<void> initDependencies() async {
   getIt.registerLazySingleton<SecureStorageService>(
       () => SecureStorageService());
   getIt.registerLazySingleton<GraphQLClient>(() => GraphQLService.client);
+  getIt.registerLazySingleton<SessionService>(() => SessionService());
+  getIt.registerLazySingleton<NotificationService>(() => NotificationService());
+  getIt.registerLazySingleton<PreferencesService>(() => PreferencesService());
 
   //=== Features ===//
   await _initAuthFeature();
@@ -75,6 +82,7 @@ Future<void> _initAuthFeature() async {
   getIt.registerFactory<LoginBloc>(() => LoginBloc(
         loginUseCase: getIt<LoginUseCase>(),
         secureStorage: getIt<SecureStorageService>(),
+        sessionService: getIt<SessionService>(),
       ));
 
   getIt.registerFactory<SignUpBloc>(() => SignUpBloc(

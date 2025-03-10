@@ -1,5 +1,7 @@
 part of 'login_bloc.dart';
 
+
+
 abstract class LoginEvent extends Equatable {
   @override
   List<Object> get props => [];
@@ -15,8 +17,10 @@ class LoginRequested extends LoginEvent {
   List<Object> get props => [email, password];
 }
 
-class LogoutRequested extends LoginEvent {
-   LogoutRequested();
+class LogoutRequested extends LoginEvent {}
+
+class CheckSession extends LoginEvent {}
+
 
   @override
   List<Object> get props => [];
