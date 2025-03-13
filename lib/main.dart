@@ -10,6 +10,8 @@ import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
+import 'features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+
 
 // Custom BlocObserver for debugging state changes
 class SimpleBlocObserver extends BlocObserver {
@@ -41,6 +43,7 @@ void main() async {
   
   // Initialize all dependencies
   await initDependencies();
+  await registerChatbotDependencies();
   
   // Initialize session by checking for existing login
   await _checkExistingSession();
@@ -101,6 +104,9 @@ class TheBoostApp extends StatelessWidget {
         BlocProvider<PropertyBloc>(
           create: (_) => getIt<PropertyBloc>(),
         ),
+         BlocProvider<PreferencesBloc>(
+      create: (_) => getIt<PreferencesBloc>(),
+    ),
       ],
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, state) {

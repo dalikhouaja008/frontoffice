@@ -3,204 +3,88 @@ import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
-import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 
 class PreferencesAlertDialog extends StatelessWidget {
   final User user;
-  
+
   const PreferencesAlertDialog({
     Key? key,
     required this.user,
   }) : super(key: key);
 
+  Widget _buildPreferenceItem(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimensions.paddingS),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: AppDimensions.paddingS),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Dialog(
+    return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
       ),
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      child: _buildDialogContent(context),
-    );
-  }
-
-  Widget _buildDialogContent(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.paddingL),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.rectangle,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 10.0,
-            offset: const Offset(0.0, 10.0),
-          ),
+      title: Row(
+        children: [
+          Icon(Icons.tune, color: AppColors.primary),
+          const SizedBox(width: AppDimensions.paddingS),
+          const Text('Set Your Preferences'),
         ],
       ),
-      child: Column(
+      content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
-          const SizedBox(height: AppDimensions.paddingL),
-          _buildBody(),
-          const SizedBox(height: AppDimensions.paddingXL),
-          _buildFooter(context),
+          const Text(
+            'Customize your investment preferences to get notified about lands that match your criteria.',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: AppDimensions.paddingM),
+          const Text(
+            'You can set:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: AppDimensions.paddingS),
+          _buildPreferenceItem(Icons.category, 'Land types you\'re interested in'),
+          _buildPreferenceItem(Icons.attach_money, 'Price range for investments'),
+          _buildPreferenceItem(Icons.location_on, 'Preferred locations'),
+          _buildPreferenceItem(Icons.notifications, 'Notification preferences'),
         ],
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        CircleAvatar(
-          backgroundColor: AppColors.backgroundGreen,
-          radius: 40,
-          child: Icon(
-            Icons.tune,
-            color: AppColors.primary,
-            size: 40,
-          ),
-        ),
-        const SizedBox(height: AppDimensions.paddingM),
-        Text(
-          'Set Your Land Preferences',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBody() {
-    return Column(
-      children: [
-        Text(
-          'Help us find the perfect land investments for you by setting your preferences.',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppDimensions.paddingL),
-        _buildPreferenceItem(
-          icon: Icons.category,
-          title: 'Land Types',
-          description: 'Select types of land you\'re interested in.',
-        ),
-        _buildPreferenceItem(
-          icon: Icons.paid,
-          title: 'Price Range',
-          description: 'Set your investment budget.',
-        ),
-        _buildPreferenceItem(
-          icon: Icons.location_on,
-          title: 'Locations',
-          description: 'Choose your preferred areas.',
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildPreferenceItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppDimensions.paddingM),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppDimensions.paddingS),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundGreen,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-            ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: AppDimensions.paddingM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                Text(
-                  description,
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildFooter(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
+      actions: [
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text(
-            'Later',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: const Text('Later'),
         ),
         ElevatedButton(
           onPressed: () {
             Navigator.of(context).pop();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserPreferencesScreen(user: user),
-              ),
+            Navigator.of(context).pushNamed(
+              AppRoutes.preferences,
+              arguments: user,
             );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.paddingL,
-              vertical: AppDimensions.paddingM,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-            ),
+            foregroundColor: Colors.white,
           ),
-          child: Text(
-            'Set Preferences',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: const Text('Set Preferences'),
         ),
       ],
     );

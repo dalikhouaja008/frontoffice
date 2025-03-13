@@ -1,4 +1,6 @@
+// lib/features/auth/data/datasources/preferences_remote_data_source_impl.dart
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/features/auth/data/graphql/preferences_queries.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
@@ -11,43 +13,44 @@ abstract class PreferencesRemoteDataSource {
 }
 
 class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
-  final GraphQLClient _client;
   final SecureStorageService _secureStorage;
 
   PreferencesRemoteDataSourceImpl({
-    required GraphQLClient client,
     required SecureStorageService secureStorage,
-  }) : _client = client, _secureStorage = secureStorage;
+  }) : _secureStorage = secureStorage;
 
   @override
   Future<UserPreferences?> getUserPreferences() async {
     final String? accessToken = await _secureStorage.getAccessToken();
     if (accessToken == null) {
-      print('PreferencesRemoteDataSource: ❌ No access token found');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ No access token found');
       return null;
     }
 
     try {
+      // Get authenticated GraphQL client
+      final GraphQLClient client = GraphQLService.getClientWithToken(accessToken);
+
       final QueryOptions options = QueryOptions(
         document: gql(PreferencesQueries.getUserPreferences),
         fetchPolicy: FetchPolicy.networkOnly,
       );
 
-      final QueryResult result = await _client.query(options);
+      final QueryResult result = await client.query(options);
 
       if (result.hasException) {
-        print('PreferencesRemoteDataSource: ❌ GraphQL error fetching preferences');
+        print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ GraphQL error fetching preferences');
         print(result.exception.toString());
         return null;
       }
 
       final data = result.data?['getUserPreferences'];
       if (data == null) {
-        print('PreferencesRemoteDataSource: ℹ️ No preferences found');
+        print('[${DateTime.now()}] PreferencesRemoteDataSource: ℹ️ No preferences found');
         return null;
       }
 
-      print('PreferencesRemoteDataSource: ✅ Preferences fetched successfully');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ✅ Preferences fetched successfully');
       
       // Convert from API format to domain entity
       return UserPreferences(
@@ -64,7 +67,7 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
         lastUpdated: DateTime.parse(data['lastUpdated']),
       );
     } catch (e) {
-      print('PreferencesRemoteDataSource: ❌ Error fetching preferences: $e');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ Error fetching preferences: $e');
       return null;
     }
   }
@@ -73,11 +76,14 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
   Future<UserPreferences> updateUserPreferences(UserPreferences preferences) async {
     final String? accessToken = await _secureStorage.getAccessToken();
     if (accessToken == null) {
-      print('PreferencesRemoteDataSource: ❌ No access token found');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ No access token found');
       throw Exception('Authentication required');
     }
 
     try {
+      // Get authenticated GraphQL client
+      final GraphQLClient client = GraphQLService.getClientWithToken(accessToken);
+
       final MutationOptions options = MutationOptions(
         document: gql(PreferencesQueries.updateUserPreferences),
         variables: {
@@ -94,21 +100,21 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
         },
       );
 
-      final QueryResult result = await _client.mutate(options);
+      final QueryResult result = await client.mutate(options);
 
       if (result.hasException) {
-        print('PreferencesRemoteDataSource: ❌ GraphQL error updating preferences');
+        print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ GraphQL error updating preferences');
         print(result.exception.toString());
         throw Exception('Failed to update preferences: ${result.exception.toString()}');
       }
 
       final data = result.data?['updateUserPreferences'];
       if (data == null) {
-        print('PreferencesRemoteDataSource: ❌ No data returned after update');
+        print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ No data returned after update');
         throw Exception('Failed to update preferences');
       }
 
-      print('PreferencesRemoteDataSource: ✅ Preferences updated successfully');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ✅ Preferences updated successfully');
       
       // Convert from API format to domain entity
       return UserPreferences(
@@ -125,7 +131,7 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
         lastUpdated: DateTime.parse(data['lastUpdated']),
       );
     } catch (e) {
-      print('PreferencesRemoteDataSource: ❌ Error updating preferences: $e');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ Error updating preferences: $e');
       throw Exception('Failed to update preferences: $e');
     }
   }
@@ -133,30 +139,33 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
   @override
   Future<List<LandType>> getAvailableLandTypes() async {
     try {
+      // Get GraphQL client (doesn't need authentication)
+      final GraphQLClient client = GraphQLService.client;
+
       final QueryOptions options = QueryOptions(
         document: gql(PreferencesQueries.getAvailableLandTypes),
         fetchPolicy: FetchPolicy.networkOnly,
       );
 
-      final QueryResult result = await _client.query(options);
+      final QueryResult result = await client.query(options);
 
       if (result.hasException) {
-        print('PreferencesRemoteDataSource: ❌ GraphQL error fetching land types');
+        print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ GraphQL error fetching land types');
         print(result.exception.toString());
         return LandType.values;  // Return defaults if error
       }
 
       final data = result.data?['getAvailableLandTypes'] as List<dynamic>?;
       if (data == null || data.isEmpty) {
-        print('PreferencesRemoteDataSource: ❌ No land types returned');
+        print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ No land types returned');
         return LandType.values;  // Return defaults if no data
       }
 
-      print('PreferencesRemoteDataSource: ✅ Land types fetched successfully');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ✅ Land types fetched successfully');
       
       return data.map((type) => _stringToLandType(type.toString())).toList();
     } catch (e) {
-      print('PreferencesRemoteDataSource: ❌ Error fetching land types: $e');
+      print('[${DateTime.now()}] PreferencesRemoteDataSource: ❌ Error fetching land types: $e');
       return LandType.values;  // Return defaults if error
     }
   }

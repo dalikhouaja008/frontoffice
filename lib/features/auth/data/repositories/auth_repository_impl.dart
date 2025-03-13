@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:the_boost/features/auth/domain/entities/login_response.dart';
+import '../../domain/entities/grpd_consent.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
@@ -51,7 +52,7 @@ class AuthRepositoryImpl implements AuthRepository {
   
 
   @override
-  Future<Either<String, User>> signUp(String username, String email, String password, String role, String? publicKey) async {
+  Future<Either<String, User>> signUp(String username, String email, String password, String role, String? publicKey,GDPRConsent gdprConsent) async {
     try {
       final user = await remoteDataSource.signUp(username, email, password, role, publicKey);
       return Right(user);

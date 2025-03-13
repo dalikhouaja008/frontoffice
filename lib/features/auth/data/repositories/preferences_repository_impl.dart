@@ -1,3 +1,4 @@
+// lib/features/auth/data/repositories/preferences_repository_impl.dart
 import 'package:the_boost/features/auth/data/datasources/preferences_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
@@ -14,7 +15,7 @@ class PreferencesRepositoryImpl implements PreferencesRepository {
       final remotePrefs = await _remoteDataSource.getUserPreferences();
       return remotePrefs;
     } catch (e) {
-      print('PreferencesRepository: ❌ Error fetching preferences: $e');
+      print('[${DateTime.now()}] PreferencesRepository: ❌ Error fetching preferences: $e');
       // Return default preferences if remote fetch fails
       return UserPreferences.defaultPreferences();
     }
@@ -26,7 +27,7 @@ class PreferencesRepositoryImpl implements PreferencesRepository {
       final updatedPrefs = await _remoteDataSource.updateUserPreferences(preferences);
       return updatedPrefs;
     } catch (e) {
-      print('PreferencesRepository: ❌ Error saving preferences: $e');
+      print('[${DateTime.now()}] PreferencesRepository: ❌ Error saving preferences: $e');
       rethrow;
     }
   }
@@ -36,7 +37,7 @@ class PreferencesRepositoryImpl implements PreferencesRepository {
     try {
       return await _remoteDataSource.getAvailableLandTypes();
     } catch (e) {
-      print('PreferencesRepository: ❌ Error fetching land types: $e');
+      print('[${DateTime.now()}] PreferencesRepository: ❌ Error fetching land types: $e');
       // Return default land types if remote fetch fails
       return LandType.values;
     }

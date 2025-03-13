@@ -1,6 +1,8 @@
 // presentation/pages/home/home_page.dart
 import 'package:flutter/material.dart';
+import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import '../../widgets/hero_section.dart';
 import '../../widgets/features_grid.dart';
 import '../../widgets/steps_section.dart';
@@ -12,20 +14,38 @@ class HomePage extends StatelessWidget {
     return BasePage(
       title: 'Home',
       currentRoute: '/',
-      body: Column(
-        children: [
-          _buildHeroSection(context),
-          _buildFeaturesSection(context),
-          _buildHowItWorksSection(context),
-          _buildAdvantagesSection(context),
-          _buildTestimonialsSection(context),
-          _buildFaqSection(context),
-          _buildCallToActionSection(context),
-        ],
-      ),
-    );
+      body: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeroSection(context),
+                  _buildFeaturesSection(context),
+                  _buildHowItWorksSection(context),
+                  _buildAdvantagesSection(context),
+                  _buildTestimonialsSection(context),
+                  _buildFaqSection(context),
+                  _buildCallToActionSection(context),
+                ],
+              ),
+            ),
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.investmentAssistant);
+                },
+                icon: const Icon(Icons.support_agent),
+                label: const Text('Get Investment Help'),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
   }
-
   Widget _buildHeroSection(BuildContext context) {
     return HeroSection(
       title: 'Invest in Land\nThe Smart Way',

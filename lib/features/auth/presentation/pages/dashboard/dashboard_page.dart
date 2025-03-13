@@ -12,6 +12,9 @@ import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/rec
 import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 
+import '../../../../../core/di/dependency_injection.dart';
+import '../../../../../core/services/land_matching_service.dart';
+
 class DashboardPage extends StatefulWidget {
   final User? user;
   
@@ -38,23 +41,60 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  Future<void> _checkPreferencesAndNotifications() async {
+  
+
+   Future<void> _checkPreferencesAndNotifications() async {
     if (widget.user == null) return;
+    
+    print('[2025-03-02 19:21:51] DashboardPage: 🔍 Checking user preferences'
+          '\n└─ User: ${widget.user!.username}');
     
     // First check if user has set preferences
     final hasPreferences = await _preferencesService.hasPreferences(widget.user!.id);
     
     // If not, show preferences setup dialog
     if (!hasPreferences && mounted) {
+      print('[2025-03-02 19:21:51] DashboardPage: ⚠️ No preferences found, showing dialog'
+            '\n└─ User: ${widget.user!.username}');
+            
       await Future.delayed(const Duration(seconds: 1));
-      showDialog(
-        context: context,
-        builder: (context) => PreferencesAlertDialog(user: widget.user!),
-      );
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => PreferencesAlertDialog(user: widget.user!),
+        );
+      }
+    } else {
+      print('[2025-03-02 19:21:51] DashboardPage: ✅ User has preferences'
+            '\n└─ User: ${widget.user!.username}');
     }
     
+    // Start land matching service for this user
+    final landMatchingService = getIt<LandMatchingService>();
+    landMatchingService.startPeriodicMatching(widget.user!);
+    
     // Check for new land notifications
-    _preferencesService.checkForNewLandNotifications(widget.user!);
+    final matchingLands = await landMatchingService.findMatchingLands(widget.user!);
+    
+    if (matchingLands.isNotEmpty && mounted) {
+      print('[2025-03-02 19:21:51] DashboardPage: 🔔 Found ${matchingLands.length} matching lands'
+            '\n└─ User: ${widget.user!.username}');
+            
+      // Show a snackbar to alert user about new matches
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Found ${matchingLands.length} new properties matching your preferences!'),
+          action: SnackBarAction(
+            label: 'View',
+            onPressed: () {
+              _navigateToInvest(context);
+            },
+          ),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   @override
