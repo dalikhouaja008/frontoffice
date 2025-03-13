@@ -117,6 +117,16 @@ class _LoginFormState extends State<LoginForm> {
     );
   }
 
+  void _onLoginSuccess(LoginSuccess state) {
+    print('[${DateTime.now().toIso8601String()}] LoginForm: ✅ Login successful'
+        '\n└─ User: ${state.user.email}'
+        '\n└─ Session ID: ${state.sessionId}'
+        '\n└─ Device: ${state.deviceInfo?.device ?? "Unknown"}');
+
+    // Naviguer vers le dashboard
+    Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Debug print to track form builds
@@ -132,30 +142,24 @@ class _LoginFormState extends State<LoginForm> {
               '\n└─ User: raednas'
               '\n└─ Email: ${state.user.email}');
 
-          // Use a small delay to ensure state is properly propagated
-          Future.delayed(Duration(milliseconds: 100), () {
-            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-            
-            print('[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
-                '\n└─ User: raednas'
-                '\n└─ Email: ${state.user.email}');
-          });
+          _onLoginSuccess(state);
+          print('[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
+              '\n└─ Email: ${state.user.email}');
+
         } else if (state is LoginRequires2FA) {
           print('[2025-03-02 16:20:01] LoginForm: 🔐 2FA required'
-              '\n└─ User: raednas'
               '\n└─ Email: ${state.user.email}');
 
           _show2FADialog(context, state);
         } else if (state is LoginFailure) {
           print('[2025-03-02 16:20:01] LoginForm: ❌ Login failed'
-              '\n└─ User: raednas'
               '\n└─ Error: ${state.error}');
 
           _showErrorDialog(context, state.error);
         }
       },
       child: Padding(
-        padding: EdgeInsets.all(AppDimensions.paddingXL),
+        padding: const EdgeInsets.all(AppDimensions.paddingXL),
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -164,7 +168,7 @@ class _LoginFormState extends State<LoginForm> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 MediaQuery.of(context).size.width < 768
-                    ? SizedBox(height: AppDimensions.paddingL)
+                    ? const SizedBox(height: AppDimensions.paddingL)
                     : const SizedBox(height: 0),
                 Center(
                   child: Text(
@@ -172,7 +176,7 @@ class _LoginFormState extends State<LoginForm> {
                     style: AppTextStyles.h2,
                   ),
                 ),
-                SizedBox(height: AppDimensions.paddingXL),
+                const SizedBox(height: AppDimensions.paddingXL),
 
                 // Email field
                 AppTextField(
@@ -182,7 +186,7 @@ class _LoginFormState extends State<LoginForm> {
                   keyboardType: TextInputType.emailAddress,
                   controller: _emailController,
                 ),
-                SizedBox(height: AppDimensions.paddingL),
+                const SizedBox(height: AppDimensions.paddingL),
 
                 // Password field
                 AppTextField(
@@ -203,7 +207,7 @@ class _LoginFormState extends State<LoginForm> {
                     ),
                   ),
                 ),
-                SizedBox(height: AppDimensions.paddingS),
+                const SizedBox(height: AppDimensions.paddingS),
 
                 // Forgot password link
                 Align(
@@ -212,7 +216,7 @@ class _LoginFormState extends State<LoginForm> {
                     onPressed: () {
                       Navigator.pushNamed(context, '/forgot-password');
                     },
-                    child: Text(
+                    child: const Text(
                       "Forgot Password?",
                       style: TextStyle(
                         color: AppColors.primary,
@@ -227,7 +231,7 @@ class _LoginFormState extends State<LoginForm> {
                   builder: (context, state) {
                     if (state is LoginFailure) {
                       return Container(
-                        padding: EdgeInsets.all(AppDimensions.paddingM),
+                        padding: const EdgeInsets.all(AppDimensions.paddingM),
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.1),
                           borderRadius:
@@ -235,12 +239,12 @@ class _LoginFormState extends State<LoginForm> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline, color: Colors.red),
-                            SizedBox(width: AppDimensions.paddingS),
+                            const Icon(Icons.error_outline, color: Colors.red),
+                            const SizedBox(width: AppDimensions.paddingS),
                             Expanded(
                               child: Text(
                                 state.error,
-                                style: TextStyle(color: Colors.red),
+                                style: const TextStyle(color: Colors.red),
                               ),
                             ),
                           ],
@@ -250,7 +254,7 @@ class _LoginFormState extends State<LoginForm> {
                     return SizedBox(height: AppDimensions.paddingS);
                   },
                 ),
-                SizedBox(height: AppDimensions.paddingL),
+                const SizedBox(height: AppDimensions.paddingM),
 
                 // Remember me checkbox
                 Row(

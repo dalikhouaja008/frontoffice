@@ -21,3 +21,15 @@ class LogoutRequested extends LoginEvent {}
 
 class CheckSession extends LoginEvent {}
 
+
+  @override
+  List<Object> get props => [];
+}
+
+class InitializeAuth extends LoginEvent {
+  @override
+  List<Object> get props => [];
+
+  @override
+  String toString() => 'InitializeAuth';
+}
