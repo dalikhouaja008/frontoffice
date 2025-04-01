@@ -918,4 +918,42 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         return Icons.store;
     }
   }
+
+///////////////////////////////////////////////////////////////// 
+    @override
+  State<UserPreferencesScreen> createState() => _UserPreferencesScreenState();
+}
+
+  List<LandType> _selectedLandTypes = [];
+  List<String> _selectedLocations = [];
+  double _minPrice = 0;
+  double _maxPrice = 1000000;
+  bool _notificationsEnabled = true;
+
+  /// Check if a land matches user preferences
+bool _landMatchesPreferences(Land land, UserPreferences preferences) {
+  // Ensure maxPrice is not null (default to infinity if null)
+  final maxPrice = preferences.maxPrice ?? double.infinity;
+
+  // Check land type
+  if (!preferences.preferredLandTypes.contains(land.type)) return false;
+
+  // Check price range
+  if (land.price == null || land.price < preferences.minPrice || land.price > maxPrice) {
+    return false;
+  }
+
+  // Check location (substring match)
+  if (preferences.preferredLocations.isNotEmpty) {
+    bool locationMatch = false;
+    for (final String location in preferences.preferredLocations) {
+      if (land.location.toLowerCase().contains(location.toLowerCase())) {
+        locationMatch = true;
+        break;
+      }
+    }
+    if (!locationMatch) return false;
+  }
+
+  return true;
 }

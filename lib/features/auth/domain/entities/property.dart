@@ -13,7 +13,7 @@ class Property {
   final String imageUrl;
   final bool isFeatured;
 
-  Property({
+  const Property({
     required this.id,
     required this.title,
     required this.location,
@@ -26,6 +26,6 @@ class Property {
     required this.availableTokens,
     required this.fundingPercentage,
     required this.imageUrl,
-    this.isFeatured = false,
+    this.isFeatured = false, // Optional with default value
   });
 }

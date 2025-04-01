@@ -1,10 +1,8 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:the_boost/core/constants/constants.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
-import 'package:the_boost/features/auth/data/datasources/static_lands.dart';
 import 'package:the_boost/features/auth/presentation/widgets/Menu/app_menu.dart';
 import 'package:the_boost/features/auth/presentation/widgets/Menu/widgets/securityBadge.dart';
 import 'package:the_boost/features/auth/presentation/widgets/catalogue/filter_bar.dart';
@@ -12,6 +10,7 @@ import 'package:the_boost/features/auth/presentation/widgets/catalogue/land_card
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/two_factor_dialog.dart';
 import 'package:the_boost/features/auth/presentation/widgets/footer/app_footer.dart';
 import '../../domain/entities/user.dart';
+import 'package:the_boost/core/services/land_service.dart'; // Import your LandService
 
 class HomeScreen extends StatefulWidget {
   final User? user;
@@ -31,13 +30,17 @@ class _HomeScreenState extends State<HomeScreen> {
   int selectedIndex = 0;
   String currentDateTime = '';
 
+  // Reference to LandService for fetching lands dynamically
+  final LandService _landService = LandService();
+
+  // Filter logic for lands
   List<Land> get filteredLands {
     return _lands.where((land) {
       final matchesType = _selectedType == null || land.type == _selectedType;
       final matchesStatus =
           _selectedStatus == null || land.status == _selectedStatus;
       final matchesQuery = _searchQuery.isEmpty ||
-          land.name.toLowerCase().contains(_searchQuery.toLowerCase());
+          land.title.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesType && matchesStatus && matchesQuery;
     }).toList();
   }
@@ -51,8 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadLands();
     _startTimeUpdate();
 
-    // Vérification de 2FA et affichage du dialogue si nécessaire
-    if (!widget.user!.isTwoFactorEnabled) {
+    // Show 2FA dialog if 2FA is not enabled
+    if (widget.user != null && !widget.user!.isTwoFactorEnabled) {
       print('HomeScreen: 🔔 Scheduling 2FA dialog');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _show2FADialog();
@@ -60,38 +63,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Show 2FA dialog
   void _show2FADialog() {
-    if (widget.user == null) {
-      return;
-    } else {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => TwoFactorDialog(
-          user: widget.user,
-          onSkip: () {
-            Navigator.of(context).pop(); // Ferme le dialogue
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                  'Vous pouvez activer la 2FA à tout moment via le menu de sécurité',
-                ),
-                action: SnackBarAction(
-                  label: 'Activer',
-                  onPressed: _show2FADialog,
-                ),
+    if (widget.user == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => TwoFactorDialog(
+        user: widget.user!,
+        onSkip: () {
+          Navigator.of(context).pop(); // Close the dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Vous pouvez activer la 2FA à tout moment via le menu de sécurité',
               ),
-            );
-          },
-        ),
-      );
-    }
+              action: SnackBarAction(
+                label: 'Activer',
+                onPressed: _show2FADialog,
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
+  // Update the current date and time every second
   void _startTimeUpdate() {
-    // Mise à jour initiale
     _updateDateTime();
-    // Mise à jour toutes les secondes
     Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         _updateDateTime();
@@ -116,10 +117,11 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Column(
             children: [
-              // Menu avec utilisateur authentifié
+              // App Menu
               AppMenu(
                 user: widget.user,
-                on2FAButtonPressed: widget.user != null ? _show2FADialog : null,
+                on2FAButtonPressed:
+                    widget.user != null ? _show2FADialog : null,
                 selectedIndex: selectedIndex,
                 onMenuItemSelected: (index) {
                   setState(() {
@@ -141,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         children: [
-                          // FilterBar
+                          // Filter Bar
                           Container(
                             padding: const EdgeInsets.all(kDefaultPadding),
                             decoration: BoxDecoration(
@@ -159,6 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               selectedStatus: _selectedStatus,
                             ),
                           ),
+
                           // Grid Content
                           Expanded(
                             child: _isLoading
@@ -181,8 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // Badge de sécurité si 2FA non activé
-          if (!widget.user!.isTwoFactorEnabled)
+          // Security Badge if 2FA is not enabled
+          if (widget.user != null && !widget.user!.isTwoFactorEnabled)
             const Positioned(
               top: 90,
               right: 16,
@@ -193,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Build the grid of lands
   Widget _buildLandGrid(List<Land> lands, BoxConstraints constraints) {
     if (lands.isEmpty) {
       return Center(
@@ -230,25 +234,34 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       itemCount: lands.length,
       itemBuilder: (context, index) {
+        final land = lands[index];
         return LandCard(
-          land: lands[index],
-          onTap: () {},
+          land: land,
+          onTap: () {
+            // Navigate to the land details screen
+            Navigator.pushNamed(
+              context,
+              '/land-details',
+              arguments: land.id,
+            );
+          },
         );
       },
     );
   }
 
+  // Load lands dynamically from the backend
   Future<void> _loadLands() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      final lands = StaticLandsData.getLands();
+      // Fetch lands from the backend
+      final fetchedLands = await _landService.fetchLands();
 
       setState(() {
-        _lands = lands;
+        _lands = fetchedLands;
         _isLoading = false;
       });
     } catch (e) {

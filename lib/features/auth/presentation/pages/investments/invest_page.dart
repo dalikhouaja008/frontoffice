@@ -3,8 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
+import 'package:the_boost/features/auth/domain/repositories/land_repository.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
+import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
@@ -13,79 +16,69 @@ import 'package:the_boost/features/auth/presentation/widgets/investment_grid.dar
 import 'package:the_boost/features/auth/presentation/widgets/investment_header.dart';
 import 'package:get_it/get_it.dart';
 
-class InvestPage extends StatefulWidget {
-  const InvestPage({super.key});
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:the_boost/core/constants/colors.dart';
+import 'package:the_boost/core/constants/dimensions.dart';
+import 'package:the_boost/core/constants/text_styles.dart';
+class InvestPage extends StatelessWidget {
+  const InvestPage({Key? key}) : super(key: key);
 
-  @override
-  // ignore: library_private_types_in_public_api
-  _InvestPageState createState() => _InvestPageState();
-}
-
-class _InvestPageState extends State<InvestPage> {
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveHelper.isMobile(context);
-
-    return BlocProvider(
-      create: (context) => PropertyBloc(
-        getPropertiesUseCase: GetIt.instance<GetPropertiesUseCase>(),
-      )..add(LoadProperties()),
-      child: BlocBuilder<PropertyBloc, PropertyState>(
-        builder: (context, state) {
-          final bloc = context.read<PropertyBloc>();
-          
-          return BasePage(
-            title: 'Investment Opportunities',
-            currentRoute: '/invest',
-            body: Column(
-              children: [
-                InvestmentHeader(),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
-                    vertical: AppDimensions.paddingL,
-                  ),
-                  child: isMobile
-                      ? Column(
-                          children: [
-                            InvestmentFilters(
-                              bloc: bloc,
-                              isMobile: true,
-                            ),
-                            const SizedBox(height: AppDimensions.paddingL),
-                            _buildInvestmentContent(state, bloc),
-                            const SizedBox(height: AppDimensions.paddingXL),
-                            _buildChatbotSection(context),
-                          ],
-                        )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InvestmentFilters(
-                              bloc: bloc,
-                              isMobile: false,
-                            ),
-                            const SizedBox(width: AppDimensions.paddingL),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  _buildInvestmentContent(state, bloc),
-                                  const SizedBox(height: AppDimensions.paddingXL),
-                                  _buildChatbotSection(context),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ],
-            ),
-          );
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Investment Opportunities'),
+      ),
+      body: BlocProvider(
+        create: (context) {
+          print('[${DateTime.now()}] InvestPage: Initializing LandBloc...');
+          final bloc = LandBloc(getIt<LandRepository>());
+          bloc.add(LoadLands()); // Trigger the loading of lands
+          return bloc;
         },
+        child: BlocConsumer<LandBloc, LandState>(
+          listener: (context, state) {
+            if (state is LandError) {
+              print('[${DateTime.now()}] InvestPage: Error state received: ${state.message}');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is LandLoading) {
+              print('[${DateTime.now()}] InvestPage: Loading state...');
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is LandLoaded) {
+              print('[${DateTime.now()}] InvestPage: Loaded state with ${state.lands.length} lands.');
+              if (state.lands.isEmpty) {
+                return const Center(child: Text('No lands available'));
+              }
+              return ListView.builder(
+                itemCount: state.lands.length,
+                itemBuilder: (context, index) {
+                  final land = state.lands[index];
+                  return ListTile(
+                    title: Text(land.title),
+                    subtitle: Text('\$${land.price} - ${land.location}'),
+                  );
+                },
+              );
+            } else if (state is LandError) {
+              print('[${DateTime.now()}] InvestPage: Error state: ${state.message}');
+              return Center(child: Text(state.message));
+            } else {
+              print('[${DateTime.now()}] InvestPage: Default state (no lands available).');
+              return const Center(child: Text('No lands available'));
+            }
+          },
+        ),
       ),
     );
   }
 
+  /// Builds the investment content based on the current state
   Widget _buildInvestmentContent(PropertyState state, PropertyBloc bloc) {
     if (state is PropertyLoading) {
       return const Center(
@@ -139,13 +132,14 @@ class _InvestPageState extends State<InvestPage> {
     }
   }
 
+  /// Builds the header for the investment section
   Widget _buildInvestmentHeader(int propertyCount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           "$propertyCount Investment Opportunities",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -170,6 +164,7 @@ class _InvestPageState extends State<InvestPage> {
     );
   }
 
+  /// Builds the chatbot section for investment assistance
   Widget _buildChatbotSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingL),

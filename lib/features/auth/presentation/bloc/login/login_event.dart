@@ -24,7 +24,10 @@ class CheckSession extends LoginEvent {}
 
   @override
   List<Object> get props => [];
-}
+
+  @override
+  String toString() => 'CheckSession';
+
 
 class InitializeAuth extends LoginEvent {
   @override

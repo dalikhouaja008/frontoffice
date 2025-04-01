@@ -24,4 +24,6 @@ class ApiService {
       },
     );
   }
+
+  get(String s) {}
 }

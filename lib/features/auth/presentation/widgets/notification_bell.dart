@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/notification_service.dart';
 import 'package:the_boost/features/auth/domain/entities/notification.dart';
 import 'package:provider/provider.dart';
@@ -21,7 +22,8 @@ class NotificationBell extends StatefulWidget {
 class _NotificationBellState extends State<NotificationBell> {
   int _unreadCount = 0;
   bool _isLoading = true;
-  final NotificationService _notificationService = NotificationService();
+  //final NotificationService _notificationService = NotificationService();
+  final NotificationService _notificationService = getIt<NotificationService>();
   
   @override
   void initState() {

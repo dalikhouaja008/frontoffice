@@ -26,7 +26,7 @@ class FeatureCard extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       height: height,
-      padding:const  EdgeInsets.all(AppDimensions.paddingL),
+      padding: const EdgeInsets.all(AppDimensions.paddingL),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -34,38 +34,40 @@ class FeatureCard extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: EdgeInsets.all(AppDimensions.paddingM),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundGreen,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        child: SingleChildScrollView( // Added to prevent overflow
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.paddingM),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundGreen,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                ),
+                child: Icon(
+                  icon,
+                  color: AppColors.primary,
+                  size: 28,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.primary,
-                size: 28,
+              const SizedBox(height: AppDimensions.paddingL),
+              Text(
+                title,
+                style: AppTextStyles.h4,
               ),
-            ),
-            SizedBox(height: AppDimensions.paddingL),
-            Text(
-              title,
-              style: AppTextStyles.h4,
-            ),
-            SizedBox(height: AppDimensions.paddingS),
-            Text(
-              description,
-              style: AppTextStyles.body3,
-            ),
-          ],
+              const SizedBox(height: AppDimensions.paddingS),
+              Text(
+                description,
+                style: AppTextStyles.body3,
+              ),
+            ],
+          ),
         ),
       ),
     );

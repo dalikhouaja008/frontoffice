@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
