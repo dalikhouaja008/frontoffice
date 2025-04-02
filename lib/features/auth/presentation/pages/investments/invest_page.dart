@@ -5,6 +5,7 @@ import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
+import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/domain/repositories/land_repository.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
@@ -24,56 +25,167 @@ import 'package:the_boost/core/constants/text_styles.dart';
 class InvestPage extends StatelessWidget {
   const InvestPage({Key? key}) : super(key: key);
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Investment Opportunities'),
+        backgroundColor: AppColors.primary,
       ),
-      body: BlocProvider(
-        create: (context) {
-          print('[${DateTime.now()}] InvestPage: Initializing LandBloc...');
-          final bloc = LandBloc(getIt<LandRepository>());
-          bloc.add(LoadLands()); // Trigger the loading of lands
-          return bloc;
-        },
-        child: BlocConsumer<LandBloc, LandState>(
-          listener: (context, state) {
-            if (state is LandError) {
-              print('[${DateTime.now()}] InvestPage: Error state received: ${state.message}');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
-            }
-          },
-          builder: (context, state) {
-            if (state is LandLoading) {
-              print('[${DateTime.now()}] InvestPage: Loading state...');
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is LandLoaded) {
-              print('[${DateTime.now()}] InvestPage: Loaded state with ${state.lands.length} lands.');
-              if (state.lands.isEmpty) {
-                return const Center(child: Text('No lands available'));
-              }
-              return ListView.builder(
-                itemCount: state.lands.length,
-                itemBuilder: (context, index) {
-                  final land = state.lands[index];
-                  return ListTile(
-                    title: Text(land.title),
-                    subtitle: Text('\$${land.price} - ${land.location}'),
-                  );
+      body: Row(
+        children: [
+          // Sidebar for filters
+          Container(
+            width: 250,
+            color: AppColors.backgroundLight,
+            child: _buildSidebar(context),
+          ),
+          // Main content
+          Expanded(
+            child: BlocProvider(
+              create: (context) {
+                final bloc = LandBloc(getIt<LandRepository>());
+                bloc.add(LoadLands());
+                return bloc;
+              },
+              child: BlocConsumer<LandBloc, LandState>(
+                listener: (context, state) {
+                  if (state is LandError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(state.message)),
+                    );
+                  }
                 },
-              );
-            } else if (state is LandError) {
-              print('[${DateTime.now()}] InvestPage: Error state: ${state.message}');
-              return Center(child: Text(state.message));
-            } else {
-              print('[${DateTime.now()}] InvestPage: Default state (no lands available).');
-              return const Center(child: Text('No lands available'));
-            }
-          },
-        ),
+                builder: (context, state) {
+                  if (state is LandLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is LandLoaded) {
+                    if (state.lands.isEmpty) {
+                      return const Center(child: Text('No lands available'));
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.all(AppDimensions.paddingM),
+                      child: GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3, // Smaller cards with 3 columns
+                          crossAxisSpacing: AppDimensions.paddingS,
+                          mainAxisSpacing: AppDimensions.paddingS,
+                          childAspectRatio: 4 / 3, // Adjusted aspect ratio
+                        ),
+                        itemCount: state.lands.length,
+                        itemBuilder: (context, index) {
+                          final land = state.lands[index];
+                          return _buildLandCard(land);
+                        },
+                      ),
+                    );
+                  } else if (state is LandError) {
+                    return Center(child: Text(state.message));
+                  } else {
+                    return const Center(child: Text('No lands available'));
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the sidebar for filtering lands
+  Widget _buildSidebar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppDimensions.paddingM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Filters',
+            style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: AppDimensions.paddingM),
+          Text(
+            'Status',
+            style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.bold),
+          ),
+          CheckboxListTile(
+            title: const Text('Available'),
+            value: true, // Replace with actual filter state
+            onChanged: (value) {
+              // Handle filter logic
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Sold'),
+            value: false, // Replace with actual filter state
+            onChanged: (value) {
+              // Handle filter logic
+            },
+          ),
+          const SizedBox(height: AppDimensions.paddingM),
+          Text(
+            'Price Range',
+            style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Slider(
+            value: 50000, // Replace with actual filter state
+            min: 0,
+            max: 1000000,
+            divisions: 20,
+            label: '\$50000',
+            onChanged: (value) {
+              // Handle filter logic
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a single land card
+  Widget _buildLandCard(Land land) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+      ),
+      elevation: 2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusS)),
+                image: DecorationImage(
+                  image: NetworkImage(land.imageUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppDimensions.paddingXS),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  land.title,
+                  style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppDimensions.paddingS), // Replace with a valid padding value
+                Text(
+                  '\$${land.price} - ${land.location}',
+                  style: AppTextStyles.body3.copyWith(color: AppColors.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -31,7 +31,6 @@ class AppRoutes {
   static const String propertyDetails = '/property-details';
   static const String forgotPassword = '/forgot-password';
   static const String investmentAssistant = '/investment-assistant';
-
   static const String preferences = '/preferences';
 
 

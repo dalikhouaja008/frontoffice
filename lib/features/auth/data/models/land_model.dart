@@ -16,6 +16,7 @@ class Land {
   final DateTime createdAt;
   final DateTime updatedAt;
   final double price;
+  final String imageUrl;
 
   const Land({
     required this.id,
@@ -32,6 +33,7 @@ class Land {
     required this.createdAt,
     required this.updatedAt,
     required this.price,
+    required this.imageUrl,
   });
 
   factory Land.fromJson(Map<String, dynamic> json) {
@@ -55,7 +57,8 @@ class Land {
       imageCIDs: List<String>.from(json['imageCIDs'] ?? []),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      price: json['price'] != null ? (json['price'] as num).toDouble() : 0.0, // Default price to 0.0 if null
+      price: json['price'] != null ? (json['price'] as num).toDouble() : 0.0,
+      imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/150', // URL par défaut
     );
   }
 
@@ -75,6 +78,7 @@ class Land {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'price': price,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -93,6 +97,7 @@ class Land {
     DateTime? createdAt,
     DateTime? updatedAt,
     double? price,
+    String? imageUrl,
   }) {
     return Land(
       id: id ?? this.id,
@@ -109,6 +114,7 @@ class Land {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }
