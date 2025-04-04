@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
-import 'package:the_boost/features/auth/data/repositories/land_repository_impl.dart';
 import 'package:the_boost/features/auth/domain/repositories/land_repository.dart';
 
 part 'land_event.dart';
@@ -12,6 +11,7 @@ class LandBloc extends Bloc<LandEvent, LandState> {
   LandBloc(this._landRepository) : super(LandInitial()) {
     on<LoadLands>(_onLoadLands);
     on<LoadLandById>(_onLoadLandById);
+    on<NavigateToLandDetails>(_onNavigateToLandDetails);
   }
 
   Future<void> _onLoadLands(LoadLands event, Emitter<LandState> emit) async {
@@ -43,5 +43,12 @@ class LandBloc extends Bloc<LandEvent, LandState> {
       print('[${DateTime.now()}] LandBloc: ❌ Error loading land by ID: $e');
       emit(LandError('Failed to load land: $e'));
     }
+  }
+
+  void _onNavigateToLandDetails(
+    NavigateToLandDetails event,
+    Emitter<LandState> emit,
+  ) {
+    emit(NavigatingToLandDetails(event.land));
   }
 }

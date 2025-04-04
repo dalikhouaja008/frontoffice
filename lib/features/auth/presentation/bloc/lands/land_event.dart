@@ -9,3 +9,8 @@ class LoadLandById extends LandEvent {
 
   LoadLandById(this.landId);
 }
+
+class NavigateToLandDetails extends LandEvent {
+  final Land land;
+  NavigateToLandDetails(this.land);
+}

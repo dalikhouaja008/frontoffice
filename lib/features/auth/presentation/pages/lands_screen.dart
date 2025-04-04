@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/services/land_service.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
+import 'package:the_boost/features/auth/presentation/pages/land_detail_screen.dart';
+import 'package:the_boost/features/auth/presentation/widgets/catalogue/land_card.dart';
 
 class LandsScreen extends StatefulWidget {
   const LandsScreen({Key? key}) : super(key: key);
@@ -13,6 +15,7 @@ class _LandsScreenState extends State<LandsScreen> {
   final LandService landService = LandService();
   List<Land> lands = [];
   String? errorMessage;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -22,37 +25,61 @@ class _LandsScreenState extends State<LandsScreen> {
 
   Future<void> fetchLands() async {
     try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+      
       final fetchedLands = await landService.fetchLands();
       setState(() {
         lands = fetchedLands;
-        errorMessage = null; // Clear any previous error
+        isLoading = false;
       });
     } catch (e) {
       setState(() {
-        errorMessage = 'Error fetching lands: $e';
+        errorMessage = 'Erreur lors du chargement des terrains: $e';
+        isLoading = false;
       });
       print('Error fetching lands: $e');
     }
   }
 
+  void _navigateToDetails(Land land) {
+    print('Navigating to details for land: ${land.title}');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => LandDetailsScreen(land: land),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Lands')),
-      body: errorMessage != null
-          ? Center(child: Text(errorMessage!))
-          : lands.isEmpty
-              ? Center(child: Text('No lands available'))
+      appBar: AppBar(
+        title: const Text('Terrains disponibles'),
+        elevation: 0,
+      ),
+      body: RefreshIndicator(
+        onRefresh: fetchLands,
+        child: isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+            ? Center(child: Text(errorMessage!))
+            : lands.isEmpty
+              ? const Center(child: Text('Aucun terrain disponible'))
               : ListView.builder(
+                  padding: const EdgeInsets.all(8),
                   itemCount: lands.length,
                   itemBuilder: (context, index) {
                     final land = lands[index];
-                    return ListTile(
-                      title: Text(land.title),
-                      subtitle: Text(land.location),
+                    return LandCard(
+                      land: land,
+                      onTap: () => _navigateToDetails(land),
                     );
                   },
                 ),
+      ),
     );
   }
 }

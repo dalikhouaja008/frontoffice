@@ -96,36 +96,27 @@ class LandCard extends StatelessWidget {
     );
   }
 
-  /// Builds the image section with fallback handling
   Widget _buildImage() {
-    if (land.imageCIDs.isNotEmpty) {
-      return Image.network(
-        land.imageCIDs.first, // Use the first image CID
-        height: 160,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          // Fallback image in case of an error
-          return Image.asset(
-            'assets/images/placeholder.png', // Replace with your placeholder image
-            height: 160,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          );
-        },
-      );
-    } else {
-      // No images available, show placeholder
-      return Image.asset(
-        'assets/images/placeholder.png', // Replace with your placeholder image
-        height: 160,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    }
+    return Image.network(
+      land.imageUrl,
+      height: 160,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          height: 160,
+          width: double.infinity,
+          color: Colors.grey[300],
+          child: const Icon(
+            Icons.image_not_supported,
+            size: 50,
+            color: Colors.grey,
+          ),
+        );
+      },
+    );
   }
 
-  /// Builds a styled chip for displaying labels
   Widget _buildChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -144,7 +135,6 @@ class LandCard extends StatelessWidget {
     );
   }
 
-  /// Returns the localized label for the land type
   String _getLandTypeLabel(LandType type) {
     switch (type) {
       case LandType.AGRICULTURAL:
@@ -158,7 +148,6 @@ class LandCard extends StatelessWidget {
     }
   }
 
-  /// Returns the localized label for the land status
   String _getLandStatusLabel(LandStatus status) {
     switch (status) {
       case LandStatus.AVAILABLE:
@@ -170,7 +159,6 @@ class LandCard extends StatelessWidget {
     }
   }
 
-  /// Returns the color associated with the land status
   Color _getStatusColor(LandStatus status) {
     switch (status) {
       case LandStatus.AVAILABLE:

@@ -23,3 +23,8 @@ class LandError extends LandState {
 
   LandError(this.message);
 }
+
+class NavigatingToLandDetails extends LandState {
+  final Land land;
+  NavigatingToLandDetails(this.land);
+}
