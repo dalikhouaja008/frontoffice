@@ -21,14 +21,14 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Recharger les terrains avant de retourner à la page précédente
+        // Reload lands before returning to previous page
         context.read<LandBloc>().add(LoadLands());
         return true;
       },
       child: Scaffold(
         body: Column(
           children: [
-            // Même barre de navigation que l'écran invest
+            // Same navigation bar as invest screen
             const AppNavBar(
               currentRoute: '/invest',
             ),
@@ -37,7 +37,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Image Section avec bouton retour
+                    // Image Section with back button
                     Stack(
                       children: [
                         Container(
@@ -58,7 +58,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
                             },
                           ),
                         ),
-                        // Bouton retour
+                        // Back button
                         Positioned(
                           top: 20,
                           left: 20,
@@ -70,7 +70,6 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
                             child: IconButton(
                               icon: const Icon(Icons.arrow_back),
                               onPressed: () {
-                                // Recharger les terrains avant de retourner
                                 context.read<LandBloc>().add(LoadLands());
                                 Navigator.pop(context);
                               },
@@ -85,20 +84,13 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // En-tête avec titre et prix
                           _buildHeaderSection(context),
                           const SizedBox(height: 24),
-
-                          // Informations principales
                           _buildMainInfoSection(context),
                           const SizedBox(height: 24),
-
-                          // Localisation
                           if (widget.land.latitude != null && widget.land.longitude != null)
                             _buildLocationSection(context),
                           const SizedBox(height: 24),
-
-                          // Détails supplémentaires
                           _buildAdditionalInfoSection(context),
                         ],
                       ),
@@ -129,7 +121,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${NumberFormat.currency(locale: 'fr_TN', symbol: 'TND').format(widget.land.price)}',
+              NumberFormat.currency(locale: 'en_US', symbol: '\D''\T').format(widget.land.price),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
@@ -150,24 +142,24 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Informations principales',
+              'Main Information',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
               Icons.location_on,
-              'Emplacement',
+              'Location',
               widget.land.location,
             ),
             _buildInfoRow(
               Icons.category,
               'Type',
-              _getTypeInFrench(widget.land.type),
+              _getTypeInEnglish(widget.land.type),
             ),
             _buildInfoRow(
               Icons.info_outline,
-              'Statut',
-              _getStatusInFrench(widget.land.status),
+              'Status',
+              _getStatusInEnglish(widget.land.status),
             ),
             if (widget.land.description != null && widget.land.description!.isNotEmpty)
               _buildInfoRow(
@@ -190,7 +182,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Coordonnées GPS',
+              'GPS Coordinates',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
@@ -219,23 +211,23 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Informations supplémentaires',
+              'Additional Information',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
               Icons.calendar_today,
-              'Date de création',
+              'Creation Date',
               _formatDate(widget.land.createdAt),
             ),
             _buildInfoRow(
               Icons.update,
-              'Dernière mise à jour',
+              'Last Update',
               _formatDate(widget.land.updatedAt),
             ),
             _buildInfoRow(
               Icons.person_outline,
-              'ID du propriétaire',
+              'Owner ID',
               widget.land.ownerId,
             ),
           ],
@@ -279,30 +271,30 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return DateFormat('dd/MM/yyyy HH:mm').format(date);
+    return DateFormat('MM/dd/yyyy HH:mm').format(date);
   }
 
-  String _getTypeInFrench(LandType type) {
+  String _getTypeInEnglish(LandType type) {
     switch (type) {
       case LandType.AGRICULTURAL:
-        return 'Agricole';
+        return 'Agricultural';
       case LandType.RESIDENTIAL:
-        return 'Résidentiel';
+        return 'Residential';
       case LandType.INDUSTRIAL:
-        return 'Industriel';
+        return 'Industrial';
       case LandType.COMMERCIAL:
         return 'Commercial';
     }
   }
 
-  String _getStatusInFrench(LandStatus status) {
+  String _getStatusInEnglish(LandStatus status) {
     switch (status) {
       case LandStatus.AVAILABLE:
-        return 'Disponible';
+        return 'Available';
       case LandStatus.PENDING:
-        return 'En attente';
+        return 'Pending';
       case LandStatus.SOLD:
-        return 'Vendu';
+        return 'Sold';
     }
   }
 }

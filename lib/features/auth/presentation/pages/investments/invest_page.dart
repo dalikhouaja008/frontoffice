@@ -15,6 +15,7 @@ import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
 import 'package:the_boost/features/auth/presentation/pages/land_detail_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/app_nav_bar.dart';
 import 'package:the_boost/features/auth/presentation/widgets/catalogue/land_card.dart';
+import 'package:the_boost/features/auth/presentation/widgets/invest_filters.dart';
 import 'package:the_boost/features/auth/presentation/widgets/investment_filters.dart';
 import 'package:the_boost/features/auth/presentation/widgets/investment_grid.dart';
 import 'package:the_boost/features/auth/presentation/widgets/investment_header.dart';
@@ -56,7 +57,20 @@ class _InvestPageState extends State<InvestPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+  return BlocProvider(
+    create: (context) => _landBloc..add(LoadLands()),
+    child: BlocListener<LandBloc, LandState>(
+      listener: (context, state) {
+        if (state is LandError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+    child: Scaffold(
       body: Column(
         children: [
           const AppNavBar(
@@ -68,7 +82,15 @@ class _InvestPageState extends State<InvestPage> {
                 Container(
                   width: 250,
                   color: AppColors.backgroundLight,
-                  child: _buildSidebar(context),
+                  child: BlocProvider.value(
+                    value: _landBloc,
+                    child: InvestFilters(
+                      onFiltersChanged: (filters) {
+                        // Cette méthode n'est plus nécessaire car nous utilisons
+                        // directement le bloc dans InvestFilters
+                      },
+                    ),
+                  ),
                 ),
                 Expanded(
                   child: BlocProvider.value(
@@ -102,9 +124,10 @@ class _InvestPageState extends State<InvestPage> {
           ),
         ],
       ),
-    );
-  }
-
+    ),
+  ),
+  );
+}
   Widget _buildLandGrid(BuildContext context, List<Land> lands) {
     if (lands.isEmpty) {
       return const Center(child: Text('No lands available'));
@@ -136,65 +159,16 @@ class _InvestPageState extends State<InvestPage> {
 
   /// Builds the sidebar for filtering lands
   Widget _buildSidebar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.paddingM),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Filters',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.paddingM),
-          Text(
-            'Status',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          CheckboxListTile(
-            title: const Text('Available'),
-            value: true, // Replace with actual filter state
-            onChanged: (value) {
-              // Handle filter logic
-            },
-          ),
-          CheckboxListTile(
-            title: const Text('Sold'),
-            value: false, // Replace with actual filter state
-            onChanged: (value) {
-              // Handle filter logic
-            },
-          ),
-          const SizedBox(height: AppDimensions.paddingM),
-          Text(
-            'Price Range',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          Slider(
-            value: 50000, // Replace with actual filter state
-            min: 0,
-            max: 1000000,
-            divisions: 20,
-            label: '\$50000',
-            onChanged: (value) {
-              // Handle filter logic
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  return Container(
+    width: 280,
+    color: AppColors.backgroundLight,
+    child: InvestFilters(
+      onFiltersChanged: (filters) {
+        _landBloc.add(FilterLands(filters));
+      },
+    ),
+  );
+}
 
   /// Builds a single land card
   Widget _buildLandCard(Land land) {
