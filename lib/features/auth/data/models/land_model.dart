@@ -1,16 +1,26 @@
-enum LandType { AGRICULTURAL, RESIDENTIAL, INDUSTRIAL, COMMERCIAL }
-enum LandStatus { AVAILABLE, PENDING, SOLD }
+enum LandType {
+  RESIDENTIAL,
+  COMMERCIAL,
+  INDUSTRIAL,
+  AGRICULTURAL
+}
+
+enum LandStatus {
+  AVAILABLE,
+  SOLD,
+  RESERVED
+}
 
 class Land {
   final String id;
   final String title;
-  final String? description;
+  final String description;
   final String location;
+  final String ownerId;
+  final double latitude;
+  final double longitude;
   final LandType type;
   final LandStatus status;
-  final String ownerId;
-  final double? latitude;
-  final double? longitude;
   final List<String> ipfsCIDs;
   final List<String> imageCIDs;
   final DateTime createdAt;
@@ -21,42 +31,63 @@ class Land {
   const Land({
     required this.id,
     required this.title,
-    this.description,
+    required this.description,
     required this.location,
+    required this.ownerId,
+    required this.latitude,
+    required this.longitude,
     required this.type,
     required this.status,
-    required this.ownerId,
-    this.latitude,
-    this.longitude,
-    this.ipfsCIDs = const [],
-    this.imageCIDs = const [],
+    required this.ipfsCIDs,
+    required this.imageCIDs,
     required this.createdAt,
     required this.updatedAt,
     required this.price,
     required this.imageUrl,
   });
 
+static LandType _parseType(String? type) {
+    switch (type?.toUpperCase()) {
+      case 'RESIDENTIAL':
+        return LandType.RESIDENTIAL;
+      case 'COMMERCIAL':
+        return LandType.COMMERCIAL;
+      case 'INDUSTRIAL':
+        return LandType.INDUSTRIAL;
+      case 'AGRICULTURAL':
+        return LandType.AGRICULTURAL;
+      default:
+        return LandType.RESIDENTIAL;
+    }
+  }
+
+  static LandStatus _parseStatus(String? status) {
+    switch (status?.toUpperCase()) {
+      case 'SOLD':
+        return LandStatus.SOLD;
+      case 'RESERVED':
+        return LandStatus.RESERVED;
+      case 'AVAILABLE':
+      default:
+        return LandStatus.AVAILABLE;
+    }
+  }
+  
   factory Land.fromJson(Map<String, dynamic> json) {
     return Land(
-      id: json['_id'] as String, // Corrected to map `_id` to `id`
-      title: json['title'] as String,
-      description: json['description'] as String?,
-      location: json['location'] as String,
-      type: LandType.values.firstWhere(
-        (e) => e.toString() == 'LandType.${json['type']}',
-        orElse: () => LandType.RESIDENTIAL,
-      ),
-      status: LandStatus.values.firstWhere(
-        (e) => e.toString() == 'LandStatus.${json['status']}',
-        orElse: () => LandStatus.AVAILABLE,
-      ),
-      ownerId: json['ownerId'] as String,
-      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
-      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
+      id: json['_id'] ?? json['id'],
+      title: json['title'],
+      description: json['description'] ?? '',
+      location: json['location'],
+      ownerId: json['ownerId'],
+      latitude: (json['latitude'] ?? 0.0).toDouble(),
+      longitude: (json['longitude'] ?? 0.0).toDouble(),
+      type: _parseType(json['type']),
+      status: _parseStatus(json['status']),
       ipfsCIDs: List<String>.from(json['ipfsCIDs'] ?? []),
       imageCIDs: List<String>.from(json['imageCIDs'] ?? []),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
       price: json['price'] != null ? (json['price'] as num).toDouble() : 0.0,
       imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/150', // URL par défaut
     );

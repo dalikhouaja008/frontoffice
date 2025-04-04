@@ -277,24 +277,24 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
   String _getTypeInEnglish(LandType type) {
     switch (type) {
       case LandType.AGRICULTURAL:
-        return 'Agricultural';
+        return 'AGRICULTURAL';
       case LandType.RESIDENTIAL:
-        return 'Residential';
+        return 'RESIDENTIAL';
       case LandType.INDUSTRIAL:
-        return 'Industrial';
+        return 'INDUSTRIAL';
       case LandType.COMMERCIAL:
-        return 'Commercial';
+        return 'COMMERCIAL';
     }
   }
 
   String _getStatusInEnglish(LandStatus status) {
     switch (status) {
       case LandStatus.AVAILABLE:
-        return 'Available';
-      case LandStatus.PENDING:
-        return 'Pending';
+        return 'AVAILABLE';
+      case LandStatus.RESERVED:
+        return 'RESERVED';
       case LandStatus.SOLD:
-        return 'Sold';
+        return 'SOLD';
     }
   }
 }

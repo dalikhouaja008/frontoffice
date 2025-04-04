@@ -138,24 +138,24 @@ class LandCard extends StatelessWidget {
   String _getLandTypeLabel(LandType type) {
     switch (type) {
       case LandType.AGRICULTURAL:
-        return 'Agricole';
+        return 'AGRICULTURAL';
       case LandType.RESIDENTIAL:
-        return 'Résidentiel';
+        return 'RESIDENTIAL';
       case LandType.INDUSTRIAL:
-        return 'Industriel';
+        return 'INDUSTRIAL';
       case LandType.COMMERCIAL:
-        return 'Commercial';
+        return 'COMMERCIAL';
     }
   }
 
   String _getLandStatusLabel(LandStatus status) {
     switch (status) {
       case LandStatus.AVAILABLE:
-        return 'Disponible';
-      case LandStatus.PENDING:
-        return 'En attente';
+        return 'AVAILABLE';
+      case LandStatus.RESERVED:
+        return 'RESERVED';
       case LandStatus.SOLD:
-        return 'Vendu';
+        return 'SOLD';
     }
   }
 
@@ -163,7 +163,7 @@ class LandCard extends StatelessWidget {
     switch (status) {
       case LandStatus.AVAILABLE:
         return Colors.green;
-      case LandStatus.PENDING:
+      case LandStatus.RESERVED:
         return Colors.orange;
       case LandStatus.SOLD:
         return Colors.red;

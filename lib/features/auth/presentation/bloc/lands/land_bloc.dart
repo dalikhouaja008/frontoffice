@@ -19,17 +19,28 @@ class LandBloc extends Bloc<LandEvent, LandState> {
   }
 
   Future<void> _onLoadLands(LoadLands event, Emitter<LandState> emit) async {
-    emit(LandLoading());
-    try {
-      print('[${DateTime.now()}] LandBloc: Loading lands...');
-      final lands = await _landRepository.fetchLands();
-      print('[${DateTime.now()}] LandBloc: ✅ Lands loaded successfully: $lands');
-      emit(LandLoaded(lands));
-    } catch (e) {
-      print('[${DateTime.now()}] LandBloc: ❌ Error loading lands: $e');
-      emit(LandError('Failed to load lands: $e'));
+  emit(LandLoading());
+  try {
+    print('[${DateTime.now()}] Loading lands...');
+    _allLands = await _landRepository.fetchLands();
+    
+    // Logs pour le débogage
+    print('[${DateTime.now()}] Loaded ${_allLands.length} lands');
+    print('Types available: ${_allLands.map((l) => l.type).toSet()}');
+    print('Statuses available: ${_allLands.map((l) => l.status).toSet()}');
+    
+    // Imprimez quelques détails sur chaque terrain
+    for (var land in _allLands) {
+      print('Land: ${land.title}, Type: ${land.type}, Status: ${land.status}');
     }
+    
+    emit(LandLoaded(_allLands));
+  } catch (e, stackTrace) {
+    print('[${DateTime.now()}] Error loading lands: $e');
+    print('Stack trace: $stackTrace');
+    emit(LandError('Failed to load lands: $e'));
   }
+}
 
   Future<void> _onLoadLandById(LoadLandById event, Emitter<LandState> emit) async {
     emit(LandLoading());
@@ -109,66 +120,65 @@ class LandBloc extends Bloc<LandEvent, LandState> {
     }
   }
 
-   void _onApplyFilters(ApplyFilters event, Emitter<LandState> emit) {
-    try {
-      print('[${DateTime.now()}] Applying filters in bloc');
-      if (_allLands.isEmpty) {
-        print('[${DateTime.now()}] No lands loaded yet, loading lands first');
-        add(LoadLands());
-        return;
-      }
+  void _onApplyFilters(ApplyFilters event, Emitter<LandState> emit) {
+  try {
+    print('[${DateTime.now()}] Applying filters in bloc');
+    print('All lands count: ${_allLands.length}');
+    print('Selected types: ${event.selectedTypes}');
+    print('Selected statuses: ${event.selectedStatuses}');
 
-      final filteredLands = _allLands.where((land) {
-        // Filter by type
-        if (event.selectedTypes.isNotEmpty &&
-            !event.selectedTypes.contains(land.type)) {
-          return false;
-        }
-
-        // Filter by status
-        if (event.selectedStatuses.isNotEmpty &&
-            !event.selectedStatuses.contains(land.status)) {
-          return false;
-        }
-
-        // Filter by price
-        if (land.price < event.priceRange.start ||
-            land.price > event.priceRange.end) {
-          return false;
-        }
-
-        // Filter by search query
-        if (event.searchQuery.isNotEmpty) {
-          final query = event.searchQuery.toLowerCase();
-          return land.title.toLowerCase().contains(query) ||
-              land.location.toLowerCase().contains(query) ||
-              (land.description?.toLowerCase().contains(query) ?? false);
-        }
-
-        return true;
-      }).toList();
-
-      // Sort the results
-      switch (event.sortBy) {
-        case 'price_asc':
-          filteredLands.sort((a, b) => a.price.compareTo(b.price));
-          break;
-        case 'price_desc':
-          filteredLands.sort((a, b) => b.price.compareTo(a.price));
-          break;
-        case 'newest':
-        default:
-          filteredLands.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          break;
-      }
-
-      print('[${DateTime.now()}] Filtered lands: ${filteredLands.length} lands');
-      emit(LandLoaded(filteredLands));
-    } catch (e) {
-      print('[${DateTime.now()}] Error applying filters: $e');
-      emit(LandError('Error applying filters: $e'));
+    // Si aucun filtre n'est sélectionné, afficher tous les terrains
+    if (event.selectedTypes.isEmpty && event.selectedStatuses.isEmpty) {
+      print('[${DateTime.now()}] No filters selected, showing all lands');
+      emit(LandLoaded(_allLands));
+      return;
     }
+
+    // Imprimez les types de tous les terrains pour le débogage
+    print('Available types in lands: ${_allLands.map((l) => l.type).toSet()}');
+    print('Available statuses in lands: ${_allLands.map((l) => l.status).toSet()}');
+
+    var filteredLands = _allLands.where((land) {
+      print('Checking land: ${land.title}, Type: ${land.type}, Status: ${land.status}');
+
+      // Vérifie le type seulement si des types sont sélectionnés
+      bool matchesType = event.selectedTypes.isEmpty || 
+                        event.selectedTypes.contains(land.type);
+      
+      // Vérifie le statut seulement si des statuts sont sélectionnés
+      bool matchesStatus = event.selectedStatuses.isEmpty || 
+                          event.selectedStatuses.contains(land.status);
+
+      // Vérifie la recherche si une requête est présente
+      bool matchesSearch = event.searchQuery.isEmpty ||
+          land.title.toLowerCase().contains(event.searchQuery.toLowerCase()) ||
+          land.location.toLowerCase().contains(event.searchQuery.toLowerCase()) ||
+          land.description.toLowerCase().contains(event.searchQuery.toLowerCase());
+
+      print('matchesType: $matchesType, matchesStatus: $matchesStatus, matchesSearch: $matchesSearch');
+
+      return matchesType && matchesStatus && matchesSearch;
+    }).toList();
+
+    // Tri des résultats
+    switch (event.sortBy) {
+      case 'newest':
+        filteredLands.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case 'price_asc':
+        filteredLands.sort((a, b) => 0); // À implémenter quand le prix sera ajouté
+        break;
+      case 'price_desc':
+        filteredLands.sort((a, b) => 0); // À implémenter quand le prix sera ajouté
+        break;
+    }
+
+    print('[${DateTime.now()}] Filtered lands count: ${filteredLands.length}');
+    emit(LandLoaded(filteredLands));
+  } catch (e, stackTrace) {
+    print('[${DateTime.now()}] Error applying filters: $e');
+    print('Stack trace: $stackTrace');
+    emit(LandError('Error applying filters: $e'));
   }
-
-
+}
 }

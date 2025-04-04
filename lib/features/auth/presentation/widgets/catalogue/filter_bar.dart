@@ -103,7 +103,7 @@ class FilterBar extends StatelessWidget {
     switch (status) {
       case LandStatus.AVAILABLE:
         return 'Disponible';
-      case LandStatus.PENDING:
+      case LandStatus.RESERVED:
         return 'En attente';
       case LandStatus.SOLD:
         return 'Vendu';
