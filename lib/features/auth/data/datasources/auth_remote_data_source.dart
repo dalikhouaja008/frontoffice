@@ -49,7 +49,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           _id
           email
           username
-          role
+          
         }
       }
     }
@@ -271,7 +271,7 @@ Future<LoginResponse> verifyLoginOtp(
             _id
             email
             username
-            role
+            
             isTwoFactorEnabled
           }
         }

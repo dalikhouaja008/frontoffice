@@ -46,11 +46,11 @@ Future<void> initDependencies() async {
   getIt.registerLazySingleton<NotificationService>(() => NotificationService());
   getIt.registerLazySingleton<PreferencesService>(() => PreferencesService());
 
-  //=== Features ===//
+  
   await _initAuthFeature();
   await _initPropertyFeature();
-  await _initPreferencesFeature(); // Add this line
-  await _initPreferencesFeature(); // Add this line
+  await _initPreferencesFeature();
+  await _initPreferencesFeature(); 
 
 
 
