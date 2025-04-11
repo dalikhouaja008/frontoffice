@@ -10,6 +10,7 @@ import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/features_pages.dart';
 import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
 
+import '../../../investment/presentation/pages/investment_map_screen.dart';
 import '../pages/auth/auth_page.dart';
 import '../pages/auth/forgot_password_page.dart';
 import '../pages/dashboard/dashboard_page.dart';
@@ -31,6 +32,7 @@ class AppRoutes {
   static const String propertyDetails = '/property-details';
   static const String forgotPassword = '/forgot-password';
   static const String investmentAssistant = '/investment-assistant';
+  static const String investmentMap = '/investment-map';
 
   static const String preferences = '/preferences';
 
@@ -51,6 +53,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => InvestPage());
       case learnMore:
         return MaterialPageRoute(builder: (_) => LearnMorePage());
+        case investmentMap:
+        return MaterialPageRoute(builder: (_) => InvestmentMapScreen());
       case propertyDetails:
         final String propertyId = settings.arguments as String;
         return MaterialPageRoute(

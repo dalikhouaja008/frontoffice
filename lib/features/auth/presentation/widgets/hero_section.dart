@@ -6,6 +6,8 @@ import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
 
+import '../bloc/routes.dart';
+
 
 class HeroSection extends StatelessWidget {
   final String title;
@@ -61,65 +63,90 @@ class HeroSection extends StatelessWidget {
   }
   
   List<Widget> _buildHeroContent(BuildContext context, bool isMobile) {
-    return [
-      Expanded(
-        flex: 5,
-        child: Column(
-          crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              textAlign: isMobile ? TextAlign.center : TextAlign.left,
-              style: AppTextStyles.h1.copyWith(
-                fontSize: isMobile ? 32 : 48,
-                height: 1.2,
-              ),
+  return [
+    Expanded(
+      flex: 5,
+      child: Column(
+        crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            textAlign: isMobile ? TextAlign.center : TextAlign.left,
+            style: AppTextStyles.h1.copyWith(
+              fontSize: isMobile ? 32 : 48,
+              height: 1.2,
             ),
-            SizedBox(height: 24),
-            Text(
-              subtitle,
-              textAlign: isMobile ? TextAlign.center : TextAlign.left,
-              style: AppTextStyles.body1.copyWith(
-                fontSize: isMobile ? 16 : 18,
-              ),
+          ),
+          SizedBox(height: 24),
+          Text(
+            subtitle,
+            textAlign: isMobile ? TextAlign.center : TextAlign.left,
+            style: AppTextStyles.body1.copyWith(
+              fontSize: isMobile ? 16 : 18,
             ),
-            const SizedBox(height: 32),
-            Row(
+          ),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              if (primaryButtonText != null)
+                AppButton(
+                  text: primaryButtonText!,
+                  onPressed: onPrimaryButtonPressed ?? () {},
+                  type: ButtonType.primary,
+                ),
+              const SizedBox(width: 16),
+              if (secondaryButtonText != null)
+                AppButton(
+                  text: secondaryButtonText!,
+                  onPressed: onSecondaryButtonPressed ?? () {},
+                  type: ButtonType.outline,
+                ),
+            ],
+          ),
+          // Add map button with icon here
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.investmentMap),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
               children: [
-                if (primaryButtonText != null)
-                  AppButton(
-                    text: primaryButtonText!,
-                    onPressed: onPrimaryButtonPressed ?? () {},
-                    type: ButtonType.primary,
+                Icon(
+                  Icons.map,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Explore Interactive Map',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
-                const SizedBox(width: 16),
-                if (secondaryButtonText != null)
-                  AppButton(
-                    text: secondaryButtonText!,
-                    onPressed: onSecondaryButtonPressed ?? () {},
-                    type: ButtonType.outline,
-                  ),
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      if (!isMobile) const SizedBox(width: 40),
-      if (image != null && !isMobile)
-        Expanded(
-          flex: 5,
-          child: image!,
-        ),
-      if (image != null && isMobile) 
-        const SizedBox(height: 40),
-      if (image != null && isMobile)
-        SizedBox(
-          width: double.infinity,
-          height: 300,
-          child: image,
-        ),
-    ];
-  }
+    ),
+    if (!isMobile) const SizedBox(width: 40),
+    if (image != null && !isMobile)
+      Expanded(
+        flex: 5,
+        child: image!,
+      ),
+    if (image != null && isMobile) 
+      const SizedBox(height: 40),
+    if (image != null && isMobile)
+      SizedBox(
+        width: double.infinity,
+        height: 300,
+        child: image,
+      ),
+  ];
+}
 }

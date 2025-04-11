@@ -97,35 +97,38 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildFeaturesSection(BuildContext context) {
-    return FeaturesGrid(
-      title: 'Key Features',
-      subtitle: 'Everything you need to invest in land assets with confidence',
-      features: [
-        FeatureItem(
-          icon: Icons.token,
-          title: 'Asset Tokenization',
-          description: 'Convert land ownership into digital tokens for fractional investing and easier transfers.'
-        ),
-        FeatureItem(
-          icon: Icons.swap_horiz,
-          title: 'Buy & Sell Tokens',
-          description: 'Trade land tokens easily through our intuitive platform with minimal fees.'
-        ),
-        FeatureItem(
-          icon: Icons.security,
-          title: 'Blockchain Security',
-          description: 'Secure all transactions and ownership records with immutable blockchain technology.'
-        ),
-        FeatureItem(
-          icon: Icons.show_chart,
-          title: 'Market Analytics',
-          description: 'Access detailed market data and trends to make informed investment decisions.'
-        ),
-      ],
-      crossAxisCount: 4,
-      childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.2 : 1.0,
-    );
-  }
+  return FeaturesGrid(
+    title: 'Key Features',
+    subtitle: 'Everything you need to invest in land assets with confidence',
+    features: [
+      FeatureItem(
+        icon: Icons.token,
+        title: 'Asset Tokenization',
+        description: 'Convert land ownership into digital tokens for fractional investing and easier transfers.'
+      ),
+      FeatureItem(
+        icon: Icons.swap_horiz,
+        title: 'Buy & Sell Tokens',
+        description: 'Trade land tokens easily through our intuitive platform with minimal fees.'
+      ),
+      FeatureItem(
+        icon: Icons.security,
+        title: 'Blockchain Security',
+        description: 'Secure all transactions and ownership records with immutable blockchain technology.'
+      ),
+      FeatureItem(
+        icon: Icons.map,
+        title: 'Interactive Map',
+        description: 'Explore available properties visually and discover investment hotspots with our interactive map.',
+        onTap: () {
+          Navigator.pushNamed(context, AppRoutes.investmentMap);
+        },
+      ),
+    ],
+    crossAxisCount: 4,
+    childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.2 : 1.0,
+  );
+}
 
   Widget _buildHowItWorksSection(BuildContext context) {
     return StepsSection(
