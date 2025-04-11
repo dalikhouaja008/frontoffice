@@ -1,26 +1,19 @@
-// widgets/land_card.dart
-
+// lib/features/auth/presentation/widgets/catalogue/land_card.dart
 import 'package:flutter/material.dart';
+import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
-
 
 class LandCard extends StatelessWidget {
   final Land land;
   final VoidCallback onTap;
 
-  const LandCard({
-    Key? key,
-    required this.land,
-    required this.onTap,
-  }) : super(key: key);
+  const LandCard({Key? key, required this.land, required this.onTap}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -29,12 +22,23 @@ class LandCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.asset(
-                land.imageUrl,
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+              child: land.imageCIDs.isNotEmpty
+                  ? Image.network(
+                      land.imageCIDs[0],
+                      height: 160,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 160,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported, size: 50),
+                      ),
+                    )
+                  : Container(
+                      height: 160,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.image_not_supported, size: 50),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.all(12),
@@ -42,51 +46,38 @@ class LandCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    land.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    land.title,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     land.location,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${land.surface.toStringAsFixed(0)} m²',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '${land.price.toStringAsFixed(0)} DT',
+                        '${land.pricePerToken} DT/token',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: AppColors.primary,
                         ),
+                      ),
+                      Text(
+                        '${land.totalTokens} tokens',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildChip(_getLandTypeLabel(land.type), Colors.blue),
-                      const SizedBox(width: 8),
-                      _buildChip(_getLandStatusLabel(land.status), _getStatusColor(land.status)),
-                    ],
-                  ),
+                  _buildChip('Surface: ${land.surface}m²', Colors.blue),
                 ],
               ),
             ),
@@ -105,47 +96,8 @@ class LandCard extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 12,
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500),
       ),
     );
-  }
-
-  String _getLandTypeLabel(LandType type) {
-    switch (type) {
-      case LandType.AGRICULTURAL:
-        return 'Agricole';
-      case LandType.RESIDENTIAL:
-        return 'Résidentiel';
-      case LandType.INDUSTRIAL:
-        return 'Industriel';
-      case LandType.COMMERCIAL:
-        return 'Commercial';
-    }
-  }
-
-  String _getLandStatusLabel(LandStatus status) {
-    switch (status) {
-      case LandStatus.AVAILABLE:
-        return 'Disponible';
-      case LandStatus.PENDING:
-        return 'En attente';
-      case LandStatus.SOLD:
-        return 'Vendu';
-    }
-  }
-
-  Color _getStatusColor(LandStatus status) {
-    switch (status) {
-      case LandStatus.AVAILABLE:
-        return Colors.green;
-      case LandStatus.PENDING:
-        return Colors.orange;
-      case LandStatus.SOLD:
-        return Colors.red;
-    }
   }
 }

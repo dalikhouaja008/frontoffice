@@ -93,36 +93,40 @@ class UserNotification {
   factory UserNotification.landMatch(Land land) {
     return UserNotification(
       id: 'land_match_${land.id}_${DateTime.now().millisecondsSinceEpoch}',
-      title: 'New Land Match: ${land.name}',
-      message: 'We found a new land in ${land.location} that matches your preferences.',
+      title: 'New Match: ${land.title}',
+      message: 'Found a new land at ${land.location} matching your preferences.',
       type: NotificationType.MATCH_PREFERENCES,
       createdAt: DateTime.now(),
       landId: land.id,
       additionalData: {
-        'landName': land.name,
-        'landType': land.type.toString().split('.').last,
-        'price': land.price,
+        'landTitle': land.title,
+        'price': land.totalPrice,
         'location': land.location,
+        'status': land.status.name,
+        'ownerId': land.ownerId,
+        'imageCIDs': land.imageCIDs,
       },
     );
   }
 
   // Factory for creating price drop notifications
   factory UserNotification.priceDrop(Land land, double previousPrice) {
-    final priceDropPercentage = ((previousPrice - land.price) / previousPrice * 100).toStringAsFixed(1);
-    
+    final priceDropPercentage = ((previousPrice - land.totalPrice) / previousPrice * 100).toStringAsFixed(1);
     return UserNotification(
       id: 'price_drop_${land.id}_${DateTime.now().millisecondsSinceEpoch}',
-      title: 'Price Drop: ${land.name}',
-      message: 'The price of ${land.name} has dropped by $priceDropPercentage%.',
+      title: 'Price Drop: ${land.title}',
+      message:
+          'Price for ${land.title} dropped by $priceDropPercentage% (from \$${previousPrice.toStringAsFixed(2)} to \$${land.totalPrice.toStringAsFixed(2)}).',
       type: NotificationType.PRICE_DROP,
       createdAt: DateTime.now(),
       landId: land.id,
       additionalData: {
-        'landName': land.name,
+        'landTitle': land.title,
         'previousPrice': previousPrice,
-        'newPrice': land.price,
+        'newPrice': land.totalPrice,
         'dropPercentage': priceDropPercentage,
+        'location': land.location,
+        'status': land.status.name,
       },
     );
   }

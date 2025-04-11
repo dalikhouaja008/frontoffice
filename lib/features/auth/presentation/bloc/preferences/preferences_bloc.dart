@@ -21,7 +21,6 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
   }) : super(PreferencesInitial()) {
     on<LoadPreferences>(_onLoadPreferences);
     on<SavePreferences>(_onSavePreferences);
-    on<LoadLandTypes>(_onLoadLandTypes);
   }
 
   Future<void> _onLoadPreferences(
@@ -64,34 +63,6 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     } catch (e) {
       print('[${DateTime.now()}] PreferencesBloc: ❌ Error saving preferences: $e');
       emit(PreferencesError(message: 'Failed to save preferences: $e'));
-    }
-  }
-
-  Future<void> _onLoadLandTypes(
-    LoadLandTypes event,
-    Emitter<PreferencesState> emit,
-  ) async {
-    print('[${DateTime.now()}] PreferencesBloc: 🔄 Loading land types');
-    
-    try {
-      final landTypes = await getLandTypesUseCase.execute();
-      
-      print('[${DateTime.now()}] PreferencesBloc: ✅ Land types loaded successfully');
-      
-      // Preserve current state while adding land types
-      if (state is PreferencesLoaded) {
-        final currentState = state as PreferencesLoaded;
-        emit(currentState.copyWith(availableLandTypes: landTypes));
-      } else {
-        emit(LandTypesLoaded(landTypes: landTypes));
-      }
-    } catch (e) {
-      print('[${DateTime.now()}] PreferencesBloc: ❌ Error loading land types: $e');
-      
-      // Don't change current state if land types loading fails
-      if (!(state is PreferencesError)) {
-        emit(PreferencesError(message: 'Failed to load land types: $e'));
-      }
     }
   }
 }

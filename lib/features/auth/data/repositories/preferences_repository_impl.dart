@@ -32,14 +32,5 @@ class PreferencesRepositoryImpl implements PreferencesRepository {
     }
   }
   
-  @override
-  Future<List<LandType>> getAvailableLandTypes() async {
-    try {
-      return await _remoteDataSource.getAvailableLandTypes();
-    } catch (e) {
-      print('[${DateTime.now()}] PreferencesRepository: ❌ Error fetching land types: $e');
-      // Return default land types if remote fetch fails
-      return LandType.values;
-    }
-  }
+
 }

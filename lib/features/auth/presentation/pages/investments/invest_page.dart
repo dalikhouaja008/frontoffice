@@ -1,227 +1,125 @@
+// lib/features/auth/presentation/pages/investments/invest_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
-import 'package:the_boost/core/constants/text_styles.dart';
-import 'package:the_boost/core/utils/responsive_helper.dart';
-import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
-import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
-import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
-import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
-import 'package:the_boost/features/auth/presentation/widgets/investment_filters.dart';
-import 'package:the_boost/features/auth/presentation/widgets/investment_grid.dart';
-import 'package:the_boost/features/auth/presentation/widgets/investment_header.dart';
-import 'package:get_it/get_it.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
+import 'package:the_boost/features/auth/data/models/land_model.dart';
+import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
+import 'package:the_boost/features/auth/presentation/pages/land_detail_screen.dart';
+import 'package:the_boost/features/auth/presentation/widgets/app_nav_bar.dart';
+import 'package:the_boost/features/auth/presentation/widgets/catalogue/land_card.dart';
+import 'package:the_boost/features/auth/presentation/widgets/invest_filters.dart';
 
-class InvestPage extends StatefulWidget {
-  const InvestPage({super.key});
+class InvestPage extends StatelessWidget {
+  const InvestPage({Key? key}) : super(key: key);
 
-  @override
-  // ignore: library_private_types_in_public_api
-  _InvestPageState createState() => _InvestPageState();
-}
-
-class _InvestPageState extends State<InvestPage> {
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveHelper.isMobile(context);
-
+    print('[${DateTime.now()}] InvestPage: 🔄 Building InvestPage');
     return BlocProvider(
-      create: (context) => PropertyBloc(
-        getPropertiesUseCase: GetIt.instance<GetPropertiesUseCase>(),
-      )..add(LoadProperties()),
-      child: BlocBuilder<PropertyBloc, PropertyState>(
-        builder: (context, state) {
-          final bloc = context.read<PropertyBloc>();
-          
-          return BasePage(
-            title: 'Investment Opportunities',
-            currentRoute: '/invest',
-            body: Column(
-              children: [
-                InvestmentHeader(),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
-                    vertical: AppDimensions.paddingL,
-                  ),
-                  child: isMobile
-                      ? Column(
-                          children: [
-                            InvestmentFilters(
-                              bloc: bloc,
-                              isMobile: true,
-                            ),
-                            const SizedBox(height: AppDimensions.paddingL),
-                            _buildInvestmentContent(state, bloc),
-                            const SizedBox(height: AppDimensions.paddingXL),
-                            _buildChatbotSection(context),
-                          ],
-                        )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InvestmentFilters(
-                              bloc: bloc,
-                              isMobile: false,
-                            ),
-                            const SizedBox(width: AppDimensions.paddingL),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  _buildInvestmentContent(state, bloc),
-                                  const SizedBox(height: AppDimensions.paddingXL),
-                                  _buildChatbotSection(context),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildInvestmentContent(PropertyState state, PropertyBloc bloc) {
-    if (state is PropertyLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    } else if (state is PropertyError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      create: (context) {
+        print('[${DateTime.now()}] InvestPage: 🚀 Creating LandBloc');
+        final bloc = getIt<LandBloc>();
+        print('[${DateTime.now()}] InvestPage: 🚀 Adding LoadLands event');
+        bloc.add(LoadLands());
+        return bloc;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Invest'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: Column(
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.red,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading properties',
-              style: AppTextStyles.h3,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.message,
-              style: AppTextStyles.body2,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                bloc.add(LoadProperties());
+            const AppNavBar(currentRoute: '/invest'),
+            InvestFilters(
+              onFiltersChanged: (filters) {
+                print('[${DateTime.now()}] InvestPage: Filters changed: $filters');
               },
-              child: const Text('Retry'),
+            ),
+            Expanded(
+              child: BlocListener<LandBloc, LandState>(
+                listener: (context, state) {
+                  print('[${DateTime.now()}] InvestPage: BlocListener - State: $state');
+                  if (state is LandError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: ${state.message}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  } else if (state is NavigatingToLandDetails) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => LandDetailsScreen(land: state.land),
+                      ),
+                    );
+                  }
+                },
+                child: BlocBuilder<LandBloc, LandState>(
+                  builder: (context, state) {
+                    print('[${DateTime.now()}] InvestPage: BlocBuilder - State: $state');
+                    if (state is LandLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (state is LandLoaded) {
+                      print('[${DateTime.now()}] InvestPage: Lands loaded: ${state.lands.length}');
+                      return _buildLandGrid(context, state.lands);
+                    } else if (state is LandError) {
+                      return const Center(
+                        child: Text(
+                          'Failed to load lands',
+                          style: TextStyle(color: Colors.red, fontSize: 18),
+                        ),
+                      );
+                    }
+                    return const Center(
+                      child: Text(
+                        'No lands available',
+                        style: TextStyle(color: Colors.black, fontSize: 18),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ],
         ),
-      );
-    } else if (state is PropertyLoaded) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInvestmentHeader(state.filteredProperties.length),
-          const SizedBox(height: AppDimensions.paddingM),
-          InvestmentGrid(
-            properties: state.filteredProperties,
-          ),
-        ],
-      );
-    } else {
-      return const Center(
-        child: Text('No properties found'),
-      );
-    }
-  }
-
-  Widget _buildInvestmentHeader(int propertyCount) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          "$propertyCount Investment Opportunities",
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        DropdownButton<String>(
-          value: 'Featured',
-          onChanged: (String? value) {},
-          items: ['Featured', 'Newest', 'Highest Return', 'Lowest Risk']
-              .map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          underline: Container(
-            height: 2,
-            color: AppColors.primary,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildChatbotSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.paddingL),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundGreen.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.support_agent,
-                color: AppColors.primary,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                "Need help with your investment decisions?",
-                style: AppTextStyles.h4,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.paddingM),
-          Text(
-            "Our Investment Assistant can help you understand tokenized land assets, investment strategies, and answer your specific questions.",
-            textAlign: TextAlign.center,
-            style: AppTextStyles.body2,
-          ),
-          const SizedBox(height: AppDimensions.paddingL),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.investmentAssistant);
+  Widget _buildLandGrid(BuildContext context, List<Land> lands) {
+    if (lands.isEmpty) {
+      return const Center(
+        child: Text(
+          'No lands available after filtering',
+          style: TextStyle(color: Colors.black, fontSize: 18),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(AppDimensions.paddingM),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: AppDimensions.paddingS,
+          mainAxisSpacing: AppDimensions.paddingS,
+          childAspectRatio: 3 / 4,
+        ),
+        itemCount: lands.length,
+        itemBuilder: (context, index) {
+          final land = lands[index];
+          return LandCard(
+            land: land,
+            onTap: () {
+              print('[${DateTime.now()}] InvestPage: Navigating to land details: ${land.id}');
+              context.read<LandBloc>().add(NavigateToLandDetails(land));
             },
-            icon: const Icon(Icons.support_agent),
-            label: const Text('Chat with Investment Assistant'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.paddingXL,
-                vertical: AppDimensions.paddingM,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

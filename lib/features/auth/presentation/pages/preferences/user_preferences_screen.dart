@@ -37,7 +37,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   final PreferencesService _preferencesService = PreferencesService();
   
   // Selected values for UI
-   List<LandType> _selectedLandTypes = [];
    List<String> _selectedLocations = [];
   double _minPrice = 0;
   double _maxPrice = 1000000;
@@ -81,8 +80,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       if (prefs != null) {
         setState(() {
           _preferences = prefs;
-          _selectedLandTypes.clear();
-          _selectedLandTypes.addAll(prefs.preferredLandTypes);
           _selectedLocations.clear();
           _selectedLocations.addAll(prefs.preferredLocations);
           _minPrice = prefs.minPrice;
@@ -95,8 +92,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         final defaultPrefs = UserPreferences.defaultPreferences();
         setState(() {
           _preferences = defaultPrefs;
-          _selectedLandTypes.clear();
-          _selectedLandTypes.addAll(defaultPrefs.preferredLandTypes);
           _selectedLocations.clear();
           _selectedLocations.addAll(defaultPrefs.preferredLocations);
           _minPrice = defaultPrefs.minPrice;
@@ -111,8 +106,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       final defaultPrefs = UserPreferences.defaultPreferences();
       setState(() {
         _preferences = defaultPrefs;
-        _selectedLandTypes.clear();
-        _selectedLandTypes.addAll(defaultPrefs.preferredLandTypes);
         _selectedLocations.clear();
         _selectedLocations.addAll(defaultPrefs.preferredLocations);
       });
@@ -143,7 +136,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       
       try {
         final updatedPreferences = UserPreferences(
-          preferredLandTypes: _selectedLandTypes,
           minPrice: _minPrice,
           maxPrice: _maxPrice,
           preferredLocations: _selectedLocations,
@@ -192,17 +184,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         ),
       );
     }
-  }
-  
-  void _toggleLandType(LandType type) {
-    setState(() {
-      if (_selectedLandTypes.contains(type)) {
-        _selectedLandTypes.remove(type);
-      } else {
-        _selectedLandTypes.add(type);
-      }
-      _hasChanges = true;
-    });
   }
   
   void _addLocation() {
@@ -325,7 +306,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                   !_arePreferencesEqual(_preferences!, state.preferences)) {
                 setState(() {
                   _preferences = state.preferences;
-                  _selectedLandTypes = List.from(state.preferences.preferredLandTypes);
                   _selectedLocations = List.from(state.preferences.preferredLocations);
                   _minPrice = state.preferences.minPrice;
                   _maxPrice = state.preferences.maxPrice == double.infinity ? 1000000 : state.preferences.maxPrice;
@@ -381,8 +361,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                                 children: [
                                   _buildInfoCard(),
                                   const SizedBox(height: AppDimensions.paddingL),
-                                  _buildLandTypeSection(),
-                                  const SizedBox(height: AppDimensions.paddingXL),
                                   _buildPriceRangeSection(),
                                   const SizedBox(height: AppDimensions.paddingXL),
                                   _buildLocationsSection(),
@@ -409,14 +387,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   
   // Helper method to compare two preferences objects
   bool _arePreferencesEqual(UserPreferences a, UserPreferences b) {
-    if (a.preferredLandTypes.length != b.preferredLandTypes.length) return false;
     if (a.preferredLocations.length != b.preferredLocations.length) return false;
-    
-    // Compare land types
-    for (final type in a.preferredLandTypes) {
-      if (!b.preferredLandTypes.contains(type)) return false;
-    }
-    
     // Compare locations
     for (final location in a.preferredLocations) {
       if (!b.preferredLocations.contains(location)) return false;
@@ -477,79 +448,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       ),
     );
   }
-  
-  Widget _buildLandTypeSection() {
-    // Validate land types selection
-    bool isValid = _selectedLandTypes.isNotEmpty;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Land Types',
-              style: AppTextStyles.h4,
-            ),
-            if (!isValid) ...[
-              const SizedBox(width: 8),
-              const Text(
-                '* Required',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Select the types of land you\'re interested in',
-          style: TextStyle(
-            color: Colors.black54,
-          ),
-        ),
-        const SizedBox(height: AppDimensions.paddingM),
-        FocusTraversalGroup(
-          child: Wrap(
-            spacing: AppDimensions.paddingS,
-            runSpacing: AppDimensions.paddingS,
-            children: LandType.values.map((type) {
-              final isSelected = _selectedLandTypes.contains(type);
-              return Tooltip(
-                message: _getLandTypeName(type),
-                child: FilterChip(
-                  label: Text(_getLandTypeName(type)),
-                  selected: isSelected,
-                  onSelected: (selected) => _toggleLandType(type),
-                  selectedColor: AppColors.primary.withOpacity(0.2),
-                  checkmarkColor: AppColors.primary,
-                  backgroundColor: Colors.grey.shade200,
-                  avatar: Icon(
-                    _getLandTypeIcon(type),
-                    color: isSelected ? AppColors.primary : Colors.grey,
-                    size: 18,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        if (!isValid) ...[
-          const SizedBox(height: 8),
-          const Text(
-            'Please select at least one land type',
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-  
+
   Widget _buildPriceRangeSection() {
     final formatCurrency = (double value) => '\$${value.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
     
@@ -872,50 +771,15 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   
   Widget _buildSaveButton() {
     return ElevatedButton(
-      child: Text(_isSaving ? 'Saving...' : 'Save Preferences'),
+      onPressed: _isSaving ? null : _savePreferences,
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
         minimumSize: const Size(double.infinity, 50),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      onPressed: (_isSaving || !_validateForm()) 
-          ? null 
-          : () { _savePreferences(); },
+      child: Text(_isSaving ? 'Saving...' : 'Save Preferences'),
     );
-  }
-  
-  bool _validateForm() {
-    // Basic validation for required fields
-    return _selectedLandTypes.isNotEmpty;
-  }
-  
-  String _getLandTypeName(LandType type) {
-    switch (type) {
-      case LandType.AGRICULTURAL:
-        return 'Agricultural';
-      case LandType.RESIDENTIAL:
-        return 'Residential';
-      case LandType.INDUSTRIAL:
-        return 'Industrial';
-      case LandType.COMMERCIAL:
-        return 'Commercial';
-    }
-  }
-  
-  IconData _getLandTypeIcon(LandType type) {
-    switch (type) {
-      case LandType.AGRICULTURAL:
-        return Icons.grass;
-      case LandType.RESIDENTIAL:
-        return Icons.home;
-      case LandType.INDUSTRIAL:
-        return Icons.factory;
-      case LandType.COMMERCIAL:
-        return Icons.store;
-    }
   }
 }

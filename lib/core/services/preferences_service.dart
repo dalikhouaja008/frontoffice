@@ -1,6 +1,7 @@
 // lib/core/services/preferences_service.dart
 import 'dart:convert';
 import 'package:the_boost/core/di/dependency_injection.dart';
+import 'package:the_boost/core/services/land_service.dart';
 import 'package:the_boost/core/services/notification_service.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
@@ -9,12 +10,12 @@ import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
 import 'package:the_boost/features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
-import 'package:the_boost/features/auth/data/datasources/static_lands.dart';
 
 class PreferencesService {
   final SecureStorageService _storageService;
   final NotificationService _notificationService;
-  
+  final LandService _landService;
+
   // Cache for preferences to avoid excessive API calls
   UserPreferences? _cachedPreferences;
   String? _cachedUserId;
@@ -26,8 +27,11 @@ class PreferencesService {
   PreferencesService({
     SecureStorageService? storageService,
     NotificationService? notificationService,
+    LandService? landService,
   }) : _storageService = storageService ?? SecureStorageService(),
-       _notificationService = notificationService ?? NotificationService();
+       _notificationService = notificationService ?? getIt<NotificationService>(),
+       _landService = landService ?? getIt<LandService>();
+
   
   // Key for storing user preferences
   String _getPreferencesKey(String userId) => 'user_preferences_$userId';
@@ -64,7 +68,6 @@ class PreferencesService {
           
           print('[${DateTime.now()}] PreferencesService: ✅ Preferences loaded from API'
               '\n└─ User ID: $userId'
-              '\n└─ Land Types: ${remotePrefs.preferredLandTypes.length}'
               '\n└─ Price Range: \$${remotePrefs.minPrice.toInt()}-\$${remotePrefs.maxPrice == double.infinity ? "∞" : remotePrefs.maxPrice.toInt()}'
               '\n└─ Locations: ${remotePrefs.preferredLocations.join(", ")}');
           
@@ -106,6 +109,15 @@ class PreferencesService {
           '\n└─ Error: $e');
     }
   }
+
+  bool _matchesPreferences(Land land, UserPreferences preferences) {
+    final landPrice = land.totalPrice;
+    return landPrice >= preferences.minPrice &&
+        (preferences.maxPrice == double.infinity || landPrice <= preferences.maxPrice) &&
+        (preferences.preferredLocations.isEmpty ||
+            preferences.preferredLocations.any(
+                (loc) => land.location.toLowerCase().contains(loc.toLowerCase())));
+  }
   
   // Get preferences from local backup
   Future<UserPreferences?> _getLocalBackup(String userId) async {
@@ -122,7 +134,6 @@ class PreferencesService {
       
       print('[${DateTime.now()}] PreferencesService: ✅ Local backup loaded'
           '\n└─ User ID: $userId'
-          '\n└─ Land Types: ${preferences.preferredLandTypes.length}'
           '\n└─ Price Range: \$${preferences.minPrice.toInt()}-\$${preferences.maxPrice == double.infinity ? "∞" : preferences.maxPrice.toInt()}'
           '\n└─ Locations: ${preferences.preferredLocations.join(", ")}');
       
@@ -140,7 +151,6 @@ class PreferencesService {
     try {
       print('[${DateTime.now()}] PreferencesService: 🌐 Saving preferences to API'
           '\n└─ User ID: $userId'
-          '\n└─ Land Types: ${preferences.preferredLandTypes.length}'
           '\n└─ Price Range: \$${preferences.minPrice.toInt()}-\$${preferences.maxPrice == double.infinity ? "∞" : preferences.maxPrice.toInt()}'
           '\n└─ Locations: ${preferences.preferredLocations.join(", ")}');
       
@@ -229,63 +239,21 @@ class PreferencesService {
   
   // Check for lands that match preferences and send notifications
   Future<void> _checkForMatchingLands(String userId, UserPreferences preferences) async {
-    // Skip if notifications are disabled
-    if (!preferences.notificationsEnabled) {
-      return;
-    }
-    
+    if (!preferences.notificationsEnabled) return;
+
     try {
-      // Get all lands from static data
-      // In a real app, this would be an API call
-      final lands = StaticLandsData.getLands();
-      
-      // Filter lands based on preferences
-      final matchingLands = lands.where((land) {
-        // Check land type
-        if (!preferences.preferredLandTypes.contains(land.type)) {
-          return false;
-        }
-        
-        // Check price range
-        if (land.price < preferences.minPrice || 
-            (preferences.maxPrice != double.infinity && land.price > preferences.maxPrice)) {
-          return false;
-        }
-        
-        // Check location (simple substring match)
-        if (preferences.preferredLocations.isNotEmpty) {
-          bool locationMatch = false;
-          for (final location in preferences.preferredLocations) {
-            if (land.location.toLowerCase().contains(location.toLowerCase())) {
-              locationMatch = true;
-              break;
-            }
-          }
-          if (!locationMatch) return false;
-        }
-        
-        return true;
-      }).toList();
-      
-      // Create notifications for matching lands
+      final lands = await _landService.fetchLands();
+      final matchingLands = lands.where((land) => _matchesPreferences(land, preferences)).toList();
+
       for (final land in matchingLands) {
         final notification = UserNotification.landMatch(land);
         await _notificationService.addNotification(notification);
-        
-        print('[${DateTime.now()}] PreferencesService: 🔔 Created land match notification'
+        print('[${DateTime.now()}] PreferencesService: 🔔 Notification created'
             '\n└─ User ID: $userId'
-            '\n└─ Land: ${land.name}'
-            '\n└─ Land Type: ${land.type}'
-            '\n└─ Price: ${land.price}'
-            '\n└─ Location: ${land.location}');
-      }
-      
-      if (matchingLands.isNotEmpty) {
-        print('[${DateTime.now()}] PreferencesService: ✅ Found ${matchingLands.length} matching lands'
-            '\n└─ User ID: $userId');
+            '\n└─ Land: ${land.title}');
       }
     } catch (e) {
-      print('[${DateTime.now()}] PreferencesService: ❌ Error checking matching lands'
+      print('[${DateTime.now()}] PreferencesService: ❌ Error checking matches'
           '\n└─ User ID: $userId'
           '\n└─ Error: $e');
     }
