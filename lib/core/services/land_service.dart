@@ -1,5 +1,6 @@
 // lib/core/services/land_service.dart
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'dart:io';
@@ -26,7 +27,7 @@ class LandService {
       status: LandValidationStatus.VALIDATED,
       landtype: LandType.RESIDENTIAL,
       ipfsCIDs: ["QmX1"],
-      imageCIDs: ["QmY1"],
+      imageCIDs: ['assets/1.jpg'],
       blockchainTxHash: "0xabc123",
       blockchainLandId: "67cc49c20984a92a5c99917e",
       validations: [
@@ -76,7 +77,7 @@ class LandService {
       status: LandValidationStatus.PENDING_VALIDATION,
       landtype: LandType.AGRICULTURAL,
       ipfsCIDs: ["QmX2"],
-      imageCIDs: ["QmY2"],
+      imageCIDs: ['assets/2.jpg'],
       blockchainTxHash: "0xdef456",
       blockchainLandId: "67cc4a5b0984a92a5c999182",
       validations: [
@@ -126,7 +127,7 @@ class LandService {
       status: LandValidationStatus.PARTIALLY_VALIDATED,
       landtype: LandType.COMMERCIAL,
       ipfsCIDs: ["QmX3"],
-      imageCIDs: ["QmY3"],
+      imageCIDs: ['assets/3.jpg'],
       blockchainTxHash: "0xghi789",
       blockchainLandId: "67ce32d669b63f67974cdd4b",
       validations: [
@@ -183,7 +184,7 @@ class LandService {
       status: LandValidationStatus.REJECTED,
       landtype: LandType.INDUSTRIAL,
       ipfsCIDs: ["QmX4"],
-      imageCIDs: ["QmY4"],
+      imageCIDs: ['assets/4.jpg'],
       blockchainTxHash: "0xjkl012",
       blockchainLandId: "67ebfb5412ccc9f26c3e721e",
       validations: [
@@ -233,7 +234,7 @@ class LandService {
       status: LandValidationStatus.VALIDATED,
       landtype: LandType.COMMERCIAL,
       ipfsCIDs: ["QmX5"],
-      imageCIDs: ["QmY5"],
+      imageCIDs: ['assets/5.jpg'],
       blockchainTxHash: "0xmno345",
       blockchainLandId: "67f024f3ce1890bd59ff31bf",
       validations: [
