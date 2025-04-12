@@ -38,7 +38,7 @@ class LandBloc extends Bloc<LandEvent, LandState> {
   }
 
   void _onApplyFilters(ApplyFilters event, Emitter<LandState> emit) {
-    print('[${DateTime.now()}] LandBloc: 🚀 Applying filters: ${event.priceRange}, ${event.searchQuery}, ${event.sortBy}');
+    print('[${DateTime.now()}] LandBloc: 🚀 Applying filters: ${event.priceRange}, ${event.searchQuery}, ${event.sortBy}, ${event.landType}, ${event.validationStatus}, ${event.amenities}');
     if (_allLands.isEmpty) {
       print('[${DateTime.now()}] LandBloc: ❌ No lands loaded yet');
       emit(LandError(message: 'No lands loaded yet'));
@@ -49,7 +49,14 @@ class LandBloc extends Bloc<LandEvent, LandState> {
       final matchesPrice = land.totalPrice >= event.priceRange.start && land.totalPrice <= event.priceRange.end;
       final matchesQuery = event.searchQuery.isEmpty ||
           land.title.toLowerCase().contains(event.searchQuery.toLowerCase());
-      return matchesPrice && matchesQuery;
+      final matchesLandType = event.landType == null || land.landtype == event.landType;
+      final matchesValidationStatus = event.validationStatus == null || land.status == event.validationStatus;
+      final matchesAmenities = event.amenities.entries.every((entry) {
+        if (!entry.value) return true; // If amenity is not selected, skip filter
+        return land.amenities[entry.key] == true;
+      });
+
+      return matchesPrice && matchesQuery && matchesLandType && matchesValidationStatus && matchesAmenities;
     }).toList();
 
     if (event.sortBy == 'price_asc') {

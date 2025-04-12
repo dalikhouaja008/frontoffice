@@ -11,8 +11,70 @@ import 'package:the_boost/features/auth/presentation/widgets/app_nav_bar.dart';
 import 'package:the_boost/features/auth/presentation/widgets/catalogue/land_card.dart';
 import 'package:the_boost/features/auth/presentation/widgets/invest_filters.dart';
 
-class InvestPage extends StatelessWidget {
+class InvestPage extends StatefulWidget {
   const InvestPage({Key? key}) : super(key: key);
+
+  @override
+  _InvestPageState createState() => _InvestPageState();
+}
+
+class _InvestPageState extends State<InvestPage> {
+  List<Land> _filteredLands = [];
+  List<Land> _allLands = [];
+
+  void _applyFilters(Map<String, dynamic> filters) {
+    setState(() {
+      _filteredLands = _allLands.where((land) {
+        // Price Range Filter
+        double landPrice = land.totalPrice;
+        if (filters['priceRange'] != null) {
+          double minPrice = filters['priceRange']['min'];
+          double maxPrice = filters['priceRange']['max'];
+          if (landPrice < minPrice || landPrice > maxPrice) return false;
+        }
+
+        // Land Type Filter
+        if (filters['landType'] != null && filters['landType'] != land.landtype.name) {
+          return false;
+        }
+
+        // Validation Status Filter
+        if (filters['validationStatus'] != null && filters['validationStatus'] != land.status.name) {
+          return false;
+        }
+
+        // Amenities Filter
+        if (filters['amenities'] != null) {
+          Map<String, bool> selectedAmenities = filters['amenities'];
+          for (var entry in selectedAmenities.entries) {
+            if (entry.value && (land.amenities[entry.key] != true)) {
+              return false;
+            }
+          }
+        }
+
+        return true;
+      }).toList();
+
+      // Sort By Filter
+      if (filters['sortBy'] != null) {
+        switch (filters['sortBy']) {
+          case 'price_asc':
+            _filteredLands.sort((a, b) => a.totalPrice.compareTo(b.totalPrice));
+            break;
+          case 'price_desc':
+            _filteredLands.sort((a, b) => b.totalPrice.compareTo(a.totalPrice));
+            break;
+          case 'title_asc':
+            _filteredLands.sort((a, b) => a.title.compareTo(b.title));
+            break;
+          case 'title_desc':
+            _filteredLands.sort((a, b) => b.title.compareTo(a.title));
+            break;
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,54 +96,85 @@ class InvestPage extends StatelessWidget {
         body: Column(
           children: [
             const AppNavBar(currentRoute: '/invest'),
-            InvestFilters(
-              onFiltersChanged: (filters) {
-                print('[${DateTime.now()}] InvestPage: Filters changed: $filters');
-              },
-            ),
             Expanded(
-              child: BlocListener<LandBloc, LandState>(
-                listener: (context, state) {
-                  print('[${DateTime.now()}] InvestPage: BlocListener - State: $state');
-                  if (state is LandError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: ${state.message}'),
-                        backgroundColor: Colors.red,
+              child: Row(
+                children: [
+                  // Sidebar with Filters
+                  InvestFilters(
+                    onFiltersChanged: _applyFilters,
+                    onClose: () {}, // No-op since it's not a drawer
+                  ),
+                  // Main Content (Lands Grid)
+                  Expanded(
+                    child: BlocListener<LandBloc, LandState>(
+                      listener: (context, state) {
+                        print('[${DateTime.now()}] InvestPage: BlocListener - State: $state');
+                        if (state is LandError) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: ${state.message}'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        } else if (state is NavigatingToLandDetails) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => LandDetailsScreen(land: state.land),
+                            ),
+                          );
+                        } else if (state is LandLoaded) {
+                          setState(() {
+                            _allLands = state.lands;
+                            _filteredLands = state.lands;
+                          });
+                        }
+                      },
+                      child: BlocBuilder<LandBloc, LandState>(
+                        builder: (context, state) {
+                          print('[${DateTime.now()}] InvestPage: BlocBuilder - State: $state');
+                          if (state is LandLoading) {
+                            return const Center(child: CircularProgressIndicator());
+                          } else if (state is LandLoaded) {
+                            print('[${DateTime.now()}] InvestPage: Lands loaded: ${state.lands.length}');
+                            return _buildLandGrid(context, _filteredLands);
+                          } else if (state is LandError) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    'Failed to load lands',
+                                    style: TextStyle(color: Colors.red, fontSize: 18),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    state.message,
+                                    style: const TextStyle(color: Colors.black54, fontSize: 14),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      context.read<LandBloc>().add(LoadLands());
+                                    },
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const Center(
+                            child: Text(
+                              'No lands available',
+                              style: TextStyle(color: Colors.black, fontSize: 18),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  } else if (state is NavigatingToLandDetails) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => LandDetailsScreen(land: state.land),
-                      ),
-                    );
-                  }
-                },
-                child: BlocBuilder<LandBloc, LandState>(
-                  builder: (context, state) {
-                    print('[${DateTime.now()}] InvestPage: BlocBuilder - State: $state');
-                    if (state is LandLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (state is LandLoaded) {
-                      print('[${DateTime.now()}] InvestPage: Lands loaded: ${state.lands.length}');
-                      return _buildLandGrid(context, state.lands);
-                    } else if (state is LandError) {
-                      return const Center(
-                        child: Text(
-                          'Failed to load lands',
-                          style: TextStyle(color: Colors.red, fontSize: 18),
-                        ),
-                      );
-                    }
-                    return const Center(
-                      child: Text(
-                        'No lands available',
-                        style: TextStyle(color: Colors.black, fontSize: 18),
-                      ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -14,10 +14,16 @@ class ApplyFilters extends LandEvent {
   final RangeValues priceRange;
   final String searchQuery;
   final String sortBy;
+  final LandType? landType;
+  final LandValidationStatus? validationStatus;
+  final Map<String, bool> amenities;
 
   ApplyFilters({
     required this.priceRange,
     required this.searchQuery,
     required this.sortBy,
+    this.landType,
+    this.validationStatus,
+    required this.amenities,
   });
 }

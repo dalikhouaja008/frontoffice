@@ -4,7 +4,8 @@ import 'package:equatable/equatable.dart';
 enum LandValidationStatus {
   PENDING_VALIDATION('Pending Validation'),
   VALIDATED('Validated'),
-  REJECTED('Rejected');
+  REJECTED('Rejected'),
+  PARTIALLY_VALIDATED('Partially Validated');
 
   const LandValidationStatus(this.displayName);
   final String displayName;
@@ -14,11 +15,24 @@ enum LandValidationStatus {
 }
 
 enum ValidatorType {
-  GOVERNMENT('Government'),
-  NOTARY('Notary'),
-  SURVEYOR('Surveyor');
+  NOTAIRE('Notaire'),
+  GEOMETRE('Geometre'),
+  EXPERT_JURIDIQUE('Expert Juridique');
 
   const ValidatorType(this.displayName);
+  final String displayName;
+
+  @override
+  String toString() => displayName;
+}
+
+enum LandType {
+  AGRICULTURAL('Agricultural'),
+  RESIDENTIAL('Residential'),
+  COMMERCIAL('Commercial'),
+  INDUSTRIAL('Industrial');
+
+  const LandType(this.displayName);
   final String displayName;
 
   @override
@@ -43,7 +57,10 @@ class ValidationEntry extends Equatable {
   factory ValidationEntry.fromJson(Map<String, dynamic> json) {
     return ValidationEntry(
       validator: json['validator'] as String? ?? '',
-      validatorType: ValidatorType.values[json['validatorType'] as int? ?? 0],
+      validatorType: ValidatorType.values.firstWhere(
+        (e) => e.name == (json['validatorType'] as String? ?? 'NOTAIRE'),
+        orElse: () => ValidatorType.NOTAIRE,
+      ),
       timestamp: json['timestamp'] as int? ?? 0,
       isValidated: json['isValidated'] as bool? ?? false,
       cidComments: json['cidComments'] as String? ?? '',
@@ -52,7 +69,7 @@ class ValidationEntry extends Equatable {
 
   Map<String, dynamic> toJson() => {
         'validator': validator,
-        'validatorType': validatorType.index,
+        'validatorType': validatorType.name,
         'timestamp': timestamp,
         'isValidated': isValidated,
         'cidComments': cidComments,
@@ -74,19 +91,21 @@ class Land extends Equatable {
   final String? description;
   final String location;
   final double surface;
-  final int totalTokens;
-  final String pricePerToken;
+  final int? totalTokens;
+  final String? pricePerToken;
+  final String? priceland;
   final String ownerId;
   final String ownerAddress;
   final double? latitude;
   final double? longitude;
   final LandValidationStatus status;
+  final LandType landtype;
   final List<String> ipfsCIDs;
   final List<String> imageCIDs;
-  final String? metadataCID;
   final String? blockchainTxHash;
   final String blockchainLandId;
   final List<ValidationEntry> validations;
+  final Map<String, bool> amenities;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -96,37 +115,41 @@ class Land extends Equatable {
     this.description,
     required this.location,
     required this.surface,
-    required this.totalTokens,
-    required this.pricePerToken,
+    this.totalTokens,
+    this.pricePerToken,
+    this.priceland,
     required this.ownerId,
     required this.ownerAddress,
     this.latitude,
     this.longitude,
     required this.status,
+    required this.landtype,
     required this.ipfsCIDs,
     required this.imageCIDs,
-    this.metadataCID,
     this.blockchainTxHash,
     required this.blockchainLandId,
     required this.validations,
+    required this.amenities,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory Land.fromJson(Map<String, dynamic> json) {
     return Land(
-      id: json['_id'] as String? ?? '',
+      id: json['_id'] as String? ?? json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       description: json['description'] as String?,
       location: json['location'] as String? ?? '',
-      surface: (json['surface'] as num?)?.toDouble() ?? 0.0,
-      totalTokens: json['totalTokens'] as int? ?? 0,
-      pricePerToken: json['pricePerToken'] as String? ?? '0',
+      surface: (json['surface'] as num?)?.toDouble() ?? 1000.0,
+      totalTokens: json['totalTokens'] as int?,
+      pricePerToken: json['pricePerToken'] as String?,
+      priceland: json['priceland'] as String?,
       ownerId: json['ownerId'] as String? ?? '',
-      ownerAddress: json['ownerAddress'] as String? ?? '',
+      ownerAddress: json['ownerAddress'] as String? ?? '0x0000000000000000000000000000000000000000',
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       status: _parseStatus(json['status']),
+      landtype: _parseLandType(json['landtype']),
       ipfsCIDs: (json['ipfsCIDs'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
@@ -135,13 +158,34 @@ class Land extends Equatable {
               ?.map((e) => e as String)
               .toList() ??
           [],
-      metadataCID: json['metadataCID'] as String?,
       blockchainTxHash: json['blockchainTxHash'] as String?,
-      blockchainLandId: json['blockchainLandId'] as String? ?? '',
+      blockchainLandId: json['blockchainLandId'] as String? ?? json['_id'] as String? ?? '',
       validations: (json['validations'] as List<dynamic>?)
               ?.map((v) => ValidationEntry.fromJson(v as Map<String, dynamic>))
               .toList() ??
           [],
+      amenities: (json['amenities'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, value as bool),
+          ) ??
+          {
+            'electricity': false,
+            'gas': false,
+            'water': false,
+            'sewer': false,
+            'internet': false,
+            'roadAccess': false,
+            'publicTransport': false,
+            'pavedRoad': false,
+            'buildingPermit': false,
+            'boundaryMarkers': false,
+            'drainage': false,
+            'floodRisk': false,
+            'rainwaterCollection': false,
+            'fenced': false,
+            'trees': false,
+            'wellWater': false,
+            'flatTerrain': false,
+          },
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
     );
@@ -155,17 +199,19 @@ class Land extends Equatable {
         'surface': surface,
         'totalTokens': totalTokens,
         'pricePerToken': pricePerToken,
+        'priceland': priceland,
         'ownerId': ownerId,
         'ownerAddress': ownerAddress,
         'latitude': latitude,
         'longitude': longitude,
         'status': status.name,
+        'landtype': landtype.name,
         'ipfsCIDs': ipfsCIDs,
         'imageCIDs': imageCIDs,
-        'metadataCID': metadataCID,
         'blockchainTxHash': blockchainTxHash,
         'blockchainLandId': blockchainLandId,
         'validations': validations.map((v) => v.toJson()).toList(),
+        'amenities': amenities,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -180,7 +226,20 @@ class Land extends Equatable {
     return LandValidationStatus.PENDING_VALIDATION;
   }
 
-  double get totalPrice => (double.tryParse(pricePerToken) ?? 0) * totalTokens.toDouble();
+  static LandType _parseLandType(dynamic landtype) {
+    if (landtype is String) {
+      return LandType.values.firstWhere(
+        (e) => e.name.toUpperCase() == landtype.toUpperCase(),
+        orElse: () => LandType.AGRICULTURAL,
+      );
+    }
+    return LandType.AGRICULTURAL;
+  }
+
+  double get totalPrice {
+    if (pricePerToken == null || totalTokens == null) return 0.0;
+    return (double.tryParse(pricePerToken!) ?? 0) * totalTokens!.toDouble();
+  }
 
   @override
   List<Object?> get props => [
@@ -191,17 +250,19 @@ class Land extends Equatable {
         surface,
         totalTokens,
         pricePerToken,
+        priceland,
         ownerId,
         ownerAddress,
         latitude,
         longitude,
         status,
+        landtype,
         ipfsCIDs,
         imageCIDs,
-        metadataCID,
         blockchainTxHash,
         blockchainLandId,
         validations,
+        amenities,
         createdAt,
         updatedAt,
       ];
