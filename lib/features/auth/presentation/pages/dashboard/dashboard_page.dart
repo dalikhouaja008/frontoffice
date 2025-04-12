@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/pages/dashboard/dashboard_page.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
@@ -6,10 +5,8 @@ import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
-import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/dashboard_stats.dart';
-import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/investment_portfolio.dart';
-import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/recent_activity.dart';
 import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
+import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/recent_activity.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 
 import '../../../../../core/di/dependency_injection.dart';
@@ -17,47 +14,44 @@ import '../../../../../core/services/land_matching_service.dart';
 
 class DashboardPage extends StatefulWidget {
   final User? user;
-  
+
   const DashboardPage({super.key, this.user});
 
   @override
-  // ignore: library_private_types_in_public_api
   _DashboardPageState createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
   final PreferencesService _preferencesService = PreferencesService();
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     print('[2025-03-02 19:21:51] DashboardPage: ✨ Initializing'
-          '\n└─ User: raednas'
-          '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
-    
+        '\n└─ User: ${widget.user?.username ?? 'Unknown'}'
+        '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
+
     // Check for notifications and preferences when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPreferencesAndNotifications();
     });
   }
 
-  
-
-   Future<void> _checkPreferencesAndNotifications() async {
+  Future<void> _checkPreferencesAndNotifications() async {
     if (widget.user == null) return;
-    
+
     print('[2025-03-02 19:21:51] DashboardPage: 🔍 Checking user preferences'
-          '\n└─ User: ${widget.user!.username}');
-    
+        '\n└─ User: ${widget.user!.username}');
+
     // First check if user has set preferences
     final hasPreferences = await _preferencesService.hasPreferences(widget.user!.id);
-    
+
     // If not, show preferences setup dialog
     if (!hasPreferences && mounted) {
       print('[2025-03-02 19:21:51] DashboardPage: ⚠️ No preferences found, showing dialog'
-            '\n└─ User: ${widget.user!.username}');
-            
+          '\n└─ User: ${widget.user!.username}');
+
       await Future.delayed(const Duration(seconds: 1));
       if (mounted) {
         showDialog(
@@ -67,20 +61,20 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     } else {
       print('[2025-03-02 19:21:51] DashboardPage: ✅ User has preferences'
-            '\n└─ User: ${widget.user!.username}');
+          '\n└─ User: ${widget.user!.username}');
     }
-    
+
     // Start land matching service for this user
     final landMatchingService = getIt<LandMatchingService>();
     landMatchingService.startPeriodicMatching(widget.user!);
-    
+
     // Check for new land notifications
     final matchingLands = await landMatchingService.findMatchingLands(widget.user!);
-    
+
     if (matchingLands.isNotEmpty && mounted) {
       print('[2025-03-02 19:21:51] DashboardPage: 🔔 Found ${matchingLands.length} matching lands'
-            '\n└─ User: ${widget.user!.username}');
-            
+          '\n└─ User: ${widget.user!.username}');
+
       // Show a snackbar to alert user about new matches
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -101,16 +95,15 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    
+
     return BasePage(
-      title: 'Dashboard',
+      title: 'DASHBOARD',
       currentRoute: '/dashboard',
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildDashboardHeader(context, widget.user),
             const SizedBox(height: AppDimensions.paddingL),
-            
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
@@ -118,40 +111,9 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DashboardStats(),
+                  _buildInvestmentStats(),
                   const SizedBox(height: AppDimensions.paddingXL),
-                  
-                  SectionTitle(title: "Your Portfolio"),
-                  const SizedBox(height: AppDimensions.paddingL),
-                  InvestmentPortfolio(),
-                  const SizedBox(height: AppDimensions.paddingXL),
-                  
-                  SectionTitle(title: "Recent Activity"),
-                  const SizedBox(height: AppDimensions.paddingL),
-                  RecentActivity(),
-                  const SizedBox(height: AppDimensions.paddingXL),
-                  
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SectionTitle(title: "Featured Properties"),
-                      TextButton(
-                        onPressed: () {
-                          _navigateToInvest(context);
-                        },
-                        child: const Text(
-                          "See all",
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppDimensions.paddingL),
-                  // Remplacez FeaturedProperties par un widget statique
-                  _buildEmptyFeaturedProperties(),
+                  const RecentActivity(),
                   const SizedBox(height: AppDimensions.paddingXXL),
                 ],
               ),
@@ -165,14 +127,14 @@ class _DashboardPageState extends State<DashboardPage> {
   void _navigateToInvest(BuildContext context) {
     try {
       print('[2025-03-02 19:21:51] DashboardPage: 🔄 Navigating to Invest page'
-            '\n└─ User: raednas');
-            
+          '\n└─ User: ${widget.user?.username ?? 'Unknown'}');
+
       Navigator.pushNamed(context, '/invest');
     } catch (e) {
       print('[2025-03-02 19:21:51] DashboardPage: ❌ Navigation error'
-            '\n└─ User: raednas'
-            '\n└─ Error: $e');
-            
+          '\n└─ User: ${widget.user?.username ?? 'Unknown'}'
+          '\n└─ Error: $e');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Navigation error: $e'),
@@ -184,8 +146,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildDashboardHeader(BuildContext context, User? user) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    final userName = user?.username.split(' ')[0] ?? 'Investor';
-    
+    // Use the username directly, capitalize the first letter, and handle null case
+    final userName = user?.username != null
+        ? user!.username[0].toUpperCase() + user.username.substring(1).toLowerCase()
+        : 'Investor';
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -193,104 +158,79 @@ class _DashboardPageState extends State<DashboardPage> {
         vertical: AppDimensions.paddingXL,
       ),
       decoration: const BoxDecoration(
-        color: AppColors.backgroundGreen,
+        color: Color(0xFFEFF7E7), // Light green background from screenshot
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(16),
+          bottomRight: Radius.circular(16),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Welcome back, $userName!",
-            style: AppTextStyles.h2.copyWith(
-              fontSize: isMobile ? 24 : 32,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.paddingS),
-          Text(
-            "Here's a summary of your investment portfolio",
-            style: AppTextStyles.body2,
-          ),
-          const SizedBox(height: AppDimensions.paddingL),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              ElevatedButton.icon(
-                icon: const Icon(Icons.search),
-                label: const Text("Discover Properties"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.paddingL,
-                    vertical: AppDimensions.paddingM,
-                  ),
+              Text(
+                "$userName, welcome in your dashboard !",
+                style: AppTextStyles.h2.copyWith(
+                  fontSize: isMobile ? 20 : 28,
+                  fontWeight: FontWeight.bold,
                 ),
-                onPressed: () => _navigateToInvest(context),
+              ),
+              Image.asset(
+                'assets/logo.png', 
+                height: 60,
               ),
             ],
           ),
+          
+          
         ],
       ),
     );
   }
-  
-  Widget _buildEmptyFeaturedProperties() {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Center(
+
+  Widget _buildInvestmentStats() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildStatCard(".............", "0 €"),
+        _buildStatCard("......", "0 €"),
+        _buildStatCard("........", "0 €"),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String title, String value) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFDDE8D5)), // Light green border
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.real_estate_agent,
-              size: 50,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: AppDimensions.paddingM),
             Text(
-              "Featured properties coming soon",
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
               ),
             ),
-            const SizedBox(height: AppDimensions.paddingM),
-            ElevatedButton(
-              onPressed: () => _navigateToInvest(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              child: const Text("View All Properties"),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-// Widget utilitaire pour les titres de section
-class SectionTitle extends StatelessWidget {
-  final String title;
-  
-  const SectionTitle({super.key, required this.title});
-  
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: AppTextStyles.h3,
     );
   }
 }

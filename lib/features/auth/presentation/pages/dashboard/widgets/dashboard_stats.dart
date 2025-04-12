@@ -1,8 +1,6 @@
-// presentation/pages/dashboard/widgets/dashboard_stats.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
-
 
 class DashboardStats extends StatelessWidget {
   @override

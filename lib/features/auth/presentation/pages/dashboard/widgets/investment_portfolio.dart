@@ -1,9 +1,7 @@
-// presentation/pages/dashboard/widgets/investment_portfolio.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
-
 
 class InvestmentPortfolio extends StatelessWidget {
   // Sample data - in a real app, this would come from your API/database
@@ -42,7 +40,7 @@ class InvestmentPortfolio extends StatelessWidget {
     },
   ];
 
-   InvestmentPortfolio({super.key});
+  InvestmentPortfolio({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,3 @@
-// presentation/pages/dashboard/widgets/featured_properties.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
