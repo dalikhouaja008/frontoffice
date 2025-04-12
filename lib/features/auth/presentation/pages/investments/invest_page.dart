@@ -88,11 +88,7 @@ class _InvestPageState extends State<InvestPage> {
         return bloc;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Invest'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-        ),
+        
         body: Column(
           children: [
             const AppNavBar(currentRoute: '/invest'),
