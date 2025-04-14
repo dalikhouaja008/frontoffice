@@ -14,6 +14,8 @@ class LandBloc extends Bloc<LandEvent, LandState> {
 
   LandBloc() : _landService = getIt<LandService>(), super(LandInitial()) {
     on<LoadLands>(_onLoadLands);
+    on<LoadLandsForUser>(_onLoadLandsForUser);
+    on<LoadLandTypes>(_onLoadLandTypes);
     on<NavigateToLandDetails>(_onNavigateToLandDetails);
     on<ApplyFilters>(_onApplyFilters);
   }
@@ -30,6 +32,30 @@ class LandBloc extends Bloc<LandEvent, LandState> {
       print('[${DateTime.now()}] LandBloc: ❌ Error loading lands: $e');
       emit(LandError(message: 'Failed to load lands: $e'));
     }
+  }
+
+  Future<void> _onLoadLandsForUser(LoadLandsForUser event, Emitter<LandState> emit) async {
+    print('[${DateTime.now()}] LandBloc: 🚀 Handling LoadLandsForUser event for user ${event.userId}');
+    emit(LandLoading());
+    try {
+      final lands = await _landService.fetchLandsForUser(event.userId, event.accessToken);
+      _allLands = lands;
+      print('[${DateTime.now()}] LandBloc: ✅ Loaded ${lands.length} lands for user ${event.userId}');
+      emit(LandLoaded(lands: lands));
+    } catch (e) {
+      print('[${DateTime.now()}] LandBloc: ❌ Error loading lands for user ${event.userId}: $e');
+      if (e.toString().contains('Invalid access token')) {
+        emit(LandUnauthenticated());
+      } else {
+        emit(LandError(message: 'Failed to load lands: $e'));
+      }
+    }
+  }
+
+  Future<void> _onLoadLandTypes(LoadLandTypes event, Emitter<LandState> emit) async {
+    print('[${DateTime.now()}] LandBloc: 🚀 Handling LoadLandTypes event');
+    // Placeholder for loading land types
+    // Emit a state if necessary
   }
 
   void _onNavigateToLandDetails(NavigateToLandDetails event, Emitter<LandState> emit) {

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/session_service.dart';
+import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
@@ -107,6 +108,9 @@ class TheBoostApp extends StatelessWidget {
          BlocProvider<PreferencesBloc>(
       create: (_) => getIt<PreferencesBloc>(),
     ),
+    BlocProvider<LandBloc>(
+          create: (context) => LandBloc(), // Provide LandBloc at the root
+        ),
       ],
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, state) {

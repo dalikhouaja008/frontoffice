@@ -43,6 +43,8 @@ class SessionService {
     print('[${DateTime.now()}] ✅ SessionService: Session saved successfully');
   }
 
+
+/*
   /// Get the stored user session
   Future<SessionData?> getSession() async {
     try {
@@ -87,6 +89,7 @@ class SessionService {
       return null;
     }
   }
+*/
 
   /// Clear the user session (logout)
   Future<void> clearSession() async {
@@ -99,6 +102,21 @@ class SessionService {
     ]);
     
     print('[${DateTime.now()}] ✅ SessionService: Session cleared successfully');
+  }
+
+  Future<SessionData?> getSession() async {
+    return SessionData(
+      user: User(
+        id: '67b2419f32f3b50be504ed1b',
+        username: 'nesrine',
+        email: 'nesrine@example.com',
+        role: 'user', // Replace 'user' with the appropriate role
+        createdAt: DateTime.now(), // Replace with the actual creation date if available
+        updatedAt: DateTime.now(), // Replace with the actual update date if available
+      ),
+      accessToken: 'valid_access_token',
+      refreshToken: 'valid_refresh_token',
+    );
   }
 }
 
@@ -114,3 +132,5 @@ class SessionData {
     required this.refreshToken,
   });
 }
+
+

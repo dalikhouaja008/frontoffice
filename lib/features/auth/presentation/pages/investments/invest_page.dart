@@ -205,7 +205,7 @@ class _InvestPageState extends State<InvestPage> {
             land: land,
             onTap: () {
               print('[${DateTime.now()}] InvestPage: Navigating to land details: ${land.id}');
-              context.read<LandBloc>().add(NavigateToLandDetails(land));
+              context.read<LandBloc>().add(NavigateToLandDetails(land: land));
             },
           );
         },

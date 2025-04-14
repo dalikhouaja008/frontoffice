@@ -1,7 +1,7 @@
+// lib/features/auth/presentation/pages/dashboard/widgets/recent_activity.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
-import 'package:the_boost/core/utils/responsive_helper.dart';
 
 class RecentActivity extends StatefulWidget {
   const RecentActivity({super.key});
@@ -11,39 +11,34 @@ class RecentActivity extends StatefulWidget {
 }
 
 class _RecentActivityState extends State<RecentActivity> {
-  String selectedPeriod = "All"; // Default period selection
-  double totalRevenue = 0.0; // Total revenue for the selected period
-
-  // Sample data for monthly revenue (in €) - in a real app, this would come from your API/database
-  final List<Map<String, dynamic>> monthlyRevenues = [
-    {'month': '2024-01', 'revenue': 0.0},
-    {'month': '2024-02', 'revenue': 0.0},
-    {'month': '2024-03', 'revenue': 0.0},
-    {'month': '2024-04', 'revenue': 0.0},
-    {'month': '2024-05', 'revenue': 0.0},
-    {'month': '2024-06', 'revenue': 0.0},
-    {'month': '2024-07', 'revenue': 0.0},
-    {'month': '2024-08', 'revenue': 0.0},
-    {'month': '2024-09', 'revenue': 0.0},
-    {'month': '2024-10', 'revenue': 0.0},
-    {'month': '2024-11', 'revenue': 0.0},
-    {'month': '2024-12', 'revenue': 0.0},
-    {'month': '2025-01', 'revenue': 0.0},
-    {'month': '2025-02', 'revenue': 0.0},
-    {'month': '2025-03', 'revenue': 0.0},
-    {'month': '2025-04', 'revenue': 0.0},
-  ];
+  String selectedPeriod = "All";
+  double totalRevenue = 0.0;
+  List<Map<String, dynamic>> monthlyRevenues = [];
 
   @override
   void initState() {
     super.initState();
+    _calculateMonthlyRevenue();
     _calculateTotalRevenue();
   }
 
-  void _calculateTotalRevenue() {
-    DateTime now = DateTime.now();
-    List<Map<String, dynamic>> filteredRevenues = [];
+  void _calculateMonthlyRevenue() {
+    monthlyRevenues.clear();
+    final now = DateTime(2025, 4, 13); // Current date as per your prompt
+    final startDate = DateTime(now.year - 1, now.month, now.day);
 
+    // Hardcode 12 months of revenue data
+    for (var i = 0; i < 12; i++) {
+      final month = DateTime(startDate.year, startDate.month + i);
+      final monthKey = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+      // Static revenue values that increase each month
+      final revenue = 50.0 + (i * 20.0); // Starts at 50, increases by 20 each month
+      monthlyRevenues.add({'month': monthKey, 'revenue': revenue});
+    }
+  }
+
+  void _calculateTotalRevenue() {
+    List<Map<String, dynamic>> filteredRevenues = [];
     if (selectedPeriod == "All") {
       filteredRevenues = monthlyRevenues;
     } else {
@@ -61,72 +56,74 @@ class _RecentActivityState extends State<RecentActivity> {
         default:
           monthsToShow = monthlyRevenues.length;
       }
-
       filteredRevenues = monthlyRevenues
           .asMap()
           .entries
-          .where((entry) =>
-              entry.key >= monthlyRevenues.length - monthsToShow)
+          .where((entry) => entry.key >= monthlyRevenues.length - monthsToShow)
           .map((entry) => entry.value)
           .toList();
     }
 
     setState(() {
-      totalRevenue = filteredRevenues.fold(
-          0.0, (sum, item) => sum + (item['revenue'] as double? ?? 0.0));
+      totalRevenue = filteredRevenues.fold(0.0, (sum, item) => sum + (item['revenue'] as double));
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Monthly Revenue",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Row(
-              children: [
-                _buildPeriodChip("3 Months", selectedPeriod == "3 Months"),
-                _buildPeriodChip("6 Months", selectedPeriod == "6 Months"),
-                _buildPeriodChip("1 Year", selectedPeriod == "1 Year"),
-                _buildPeriodChip("All", selectedPeriod == "All"),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppDimensions.paddingL),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFDDE8D5)),
-            borderRadius: BorderRadius.circular(12),
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.paddingL),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Total for the period: ${totalRevenue.toStringAsFixed(2)} €",
-                style: const TextStyle(
-                  fontSize: 16,
+              const Text(
+                "Monthly Revenue",
+                style: TextStyle(
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 200,
-                child: _buildRevenueChart(),
+              Row(
+                children: [
+                  _buildPeriodChip("3 Months", selectedPeriod == "3 Months"),
+                  _buildPeriodChip("6 Months", selectedPeriod == "6 Months"),
+                  _buildPeriodChip("1 Year", selectedPeriod == "1 Year"),
+                  _buildPeriodChip("All", selectedPeriod == "All"),
+                ],
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: AppDimensions.paddingL),
+          Text(
+            "Total for the period: ${totalRevenue.toStringAsFixed(2)} €",
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.paddingL),
+          SizedBox(
+            height: 200,
+            child: _buildRevenueChart(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -184,20 +181,26 @@ class _RecentActivityState extends State<RecentActivity> {
     startIndex = startIndex < 0 ? 0 : startIndex;
 
     for (int i = startIndex; i < monthlyRevenues.length; i++) {
-      final revenue = monthlyRevenues[i]['revenue'] as double? ?? 0.0;
-      final monthYear = monthlyRevenues[i]['month'] as String?;
-      if (monthYear == null) continue; // Skip if month is null
+      final revenue = monthlyRevenues[i]['revenue'] as double;
+      final monthYear = monthlyRevenues[i]['month'] as String;
       final parts = monthYear.split('-');
-      if (parts.length != 2) continue; // Skip if format is invalid
       final month = parts[1];
       final year = parts[0].substring(2);
       spots.add(FlSpot((i - startIndex).toDouble(), revenue));
       months.add("${_getMonthAbbreviation(month)} '$year");
     }
 
+    double maxY = spots.isNotEmpty
+        ? spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b) + 50
+        : 1000.0;
+    double minY = spots.isNotEmpty
+        ? spots.map((spot) => spot.y).reduce((a, b) => a < b ? a : b) - 50
+        : 0.0;
+    if (minY < 0) minY = 0;
+
     return LineChart(
       LineChartData(
-        gridData: const FlGridData(show: false),
+        gridData: const FlGridData(show: true, drawVerticalLine: false),
         titlesData: FlTitlesData(
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
@@ -205,7 +208,7 @@ class _RecentActivityState extends State<RecentActivity> {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text(
-                  value.toInt().toString(),
+                  '${value.toInt()} €',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 );
               },
@@ -238,7 +241,7 @@ class _RecentActivityState extends State<RecentActivity> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: const Color(0xFF6B4A7A), // Purple color
+            color: const Color(0xFF6B4A7A),
             barWidth: 2,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
@@ -249,10 +252,8 @@ class _RecentActivityState extends State<RecentActivity> {
         ],
         minX: 0,
         maxX: (spots.length - 1).toDouble(),
-        minY: 0,
-        maxY: spots.isNotEmpty
-            ? spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b) + 1
-            : 5,
+        minY: minY,
+        maxY: maxY,
       ),
     );
   }

@@ -1,53 +1,49 @@
+// lib/features/auth/presentation/pages/dashboard/widgets/investment_portfolio.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
+import 'package:the_boost/features/auth/data/models/land_model.dart';
 
 class InvestmentPortfolio extends StatelessWidget {
-  // Sample data - in a real app, this would come from your API/database
-  final List<Map<String, dynamic>> investments = [
-    {
-      'property': 'Urban Development Land - Downtown Metro',
-      'location': 'Phoenix, Arizona',
-      'investedAmount': 2500,
-      'currentValue': 2850,
-      'tokens': 50,
-      'changePercent': 14.0,
-    },
-    {
-      'property': 'Commercial District - Tech Corridor',
-      'location': 'Austin, Texas',
-      'investedAmount': 5000,
-      'currentValue': 6250,
-      'tokens': 50,
-      'changePercent': 25.0,
-    },
-    {
-      'property': 'Residential Development - Lakeside Community',
-      'location': 'Nashville, Tennessee',
-      'investedAmount': 3000,
-      'currentValue': 3450,
-      'tokens': 40,
-      'changePercent': 15.0,
-    },
-    {
-      'property': 'Agricultural Farmland - Riverside County',
-      'location': 'Riverside, California',
-      'investedAmount': 2000,
-      'currentValue': 2150,
-      'tokens': 200,
-      'changePercent': 7.5,
-    },
-  ];
+  final List<Land> lands;
 
-  InvestmentPortfolio({super.key});
+  const InvestmentPortfolio({super.key, required this.lands});
 
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    
+
+    if (lands.isEmpty) {
+      return const Center(
+        child: Text(
+          "No investments available",
+          style: TextStyle(color: Colors.black54),
+        ),
+      );
+    }
+
+    final investments = lands.asMap().entries.map((entry) {
+      final land = entry.value;
+      final index = entry.key;
+      final investedAmount = land.totalPrice;
+      final increasePercent = land.status == LandValidationStatus.VALIDATED
+          ? (10 + (index * 5) % 15).toDouble()
+          : 5.0;
+      final currentValue = investedAmount * (1 + increasePercent / 100);
+      return {
+        'property': land.title,
+        'location': land.location,
+        'investedAmount': investedAmount,
+        'currentValue': currentValue,
+        'tokens': land.totalTokens,
+        'changePercent': increasePercent,
+      };
+    }).toList();
+
     return Container(
       width: double.infinity,
+      margin: const EdgeInsets.only(top: AppDimensions.paddingL),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -55,28 +51,39 @@ class InvestmentPortfolio extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Table header
+          const Padding(
+            padding: EdgeInsets.all(AppDimensions.paddingL),
+            child: Text(
+              "Your Investment Portfolio",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
           Container(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.paddingL,
               vertical: AppDimensions.paddingM,
             ),
             decoration: BoxDecoration(
               color: AppColors.backgroundLight,
-              borderRadius: BorderRadius.vertical(
+              borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppDimensions.radiusM),
               ),
             ),
             child: isMobile
                 ? Row(
                     children: [
-                      Expanded(
+                      const Expanded(
                         flex: 2,
                         child: Text(
                           "Property",
@@ -90,7 +97,7 @@ class InvestmentPortfolio extends StatelessWidget {
                         child: Text(
                           "Value",
                           textAlign: TextAlign.right,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -100,7 +107,7 @@ class InvestmentPortfolio extends StatelessWidget {
                   )
                 : Row(
                     children: [
-                      Expanded(
+                      const Expanded(
                         flex: 3,
                         child: Text(
                           "Property",
@@ -114,7 +121,7 @@ class InvestmentPortfolio extends StatelessWidget {
                         child: Text(
                           "Invested",
                           textAlign: TextAlign.right,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -124,7 +131,7 @@ class InvestmentPortfolio extends StatelessWidget {
                         child: Text(
                           "Current Value",
                           textAlign: TextAlign.right,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -134,23 +141,21 @@ class InvestmentPortfolio extends StatelessWidget {
                         child: Text(
                           "Change",
                           textAlign: TextAlign.right,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
                       ),
-                      SizedBox(width: 60),
+                      const SizedBox(width: 60),
                     ],
                   ),
           ),
-          
-          // Table rows
           ListView.separated(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: investments.length,
-            separatorBuilder: (context, index) => Divider(height: 1),
+            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final investment = investments[index];
               return isMobile
@@ -163,13 +168,15 @@ class InvestmentPortfolio extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileInvestmentRow(BuildContext context, Map<String, dynamic> investment) {
+  Widget _buildMobileInvestmentRow(
+      BuildContext context, Map<String, dynamic> investment) {
     return InkWell(
       onTap: () {
-        // Navigate to investment details
+        final land = lands.firstWhere((l) => l.title == investment['property']);
+        Navigator.pushNamed(context, '/land-details', arguments: land);
       },
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.paddingL,
           vertical: AppDimensions.paddingM,
         ),
@@ -186,25 +193,25 @@ class InvestmentPortfolio extends StatelessWidget {
                     children: [
                       Text(
                         investment['property'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         investment['location'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         "${investment['tokens']} tokens",
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.primary,
                         ),
@@ -217,32 +224,32 @@ class InvestmentPortfolio extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        "\$${investment['currentValue']}",
-                        style: TextStyle(
+                        "${investment['currentValue'].toStringAsFixed(2)} €",
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        "\$${investment['investedAmount']} invested",
-                        style: TextStyle(
+                        "${investment['investedAmount'].toStringAsFixed(2)} € invested",
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.arrow_upward,
                             color: Colors.green,
                             size: 12,
                           ),
                           Text(
-                            "${investment['changePercent']}%",
-                            style: TextStyle(
+                            "${investment['changePercent'].toStringAsFixed(1)}%",
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
@@ -261,13 +268,15 @@ class InvestmentPortfolio extends StatelessWidget {
     );
   }
 
-  Widget _buildDesktopInvestmentRow(BuildContext context, Map<String, dynamic> investment) {
+  Widget _buildDesktopInvestmentRow(
+      BuildContext context, Map<String, dynamic> investment) {
     return InkWell(
       onTap: () {
-        // Navigate to investment details
+        final land = lands.firstWhere((l) => l.title == investment['property']);
+        Navigator.pushNamed(context, '/land-details', arguments: land);
       },
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.paddingL,
           vertical: AppDimensions.paddingM,
         ),
@@ -280,15 +289,15 @@ class InvestmentPortfolio extends StatelessWidget {
                 children: [
                   Text(
                     investment['property'],
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     "${investment['location']} • ${investment['tokens']} tokens",
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Colors.black54,
                     ),
@@ -298,18 +307,18 @@ class InvestmentPortfolio extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                "\$${investment['investedAmount']}",
+                "${investment['investedAmount'].toStringAsFixed(2)} €",
                 textAlign: TextAlign.right,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.black87,
                 ),
               ),
             ),
             Expanded(
               child: Text(
-                "\$${investment['currentValue']}",
+                "${investment['currentValue'].toStringAsFixed(2)} €",
                 textAlign: TextAlign.right,
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -319,15 +328,15 @@ class InvestmentPortfolio extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.arrow_upward,
                     color: Colors.green,
                     size: 16,
                   ),
                   Text(
-                    "${investment['changePercent']}%",
+                    "${investment['changePercent'].toStringAsFixed(1)}%",
                     textAlign: TextAlign.right,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.green,
                     ),
@@ -335,9 +344,9 @@ class InvestmentPortfolio extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: AppDimensions.paddingM),
+            const SizedBox(width: AppDimensions.paddingM),
             IconButton(
-              icon: Icon(Icons.more_vert),
+              icon: const Icon(Icons.more_vert),
               onPressed: () {
                 // Show options menu
               },

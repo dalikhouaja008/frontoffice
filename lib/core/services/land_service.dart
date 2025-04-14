@@ -312,4 +312,12 @@ class LandService {
       throw Exception('Error fetching land by ID: $e');
     }
   }
+
+  Future<List<Land>> fetchLandsForUser(String userId, String accessToken) async {
+    if (accessToken.isEmpty) {
+      throw Exception('Invalid access token');
+    }
+    final allLands = await fetchLands();
+    return allLands.where((land) => land.ownerId == userId).toList();
+  }
 }

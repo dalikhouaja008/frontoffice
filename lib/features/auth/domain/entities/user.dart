@@ -12,6 +12,7 @@ class User {
   final DateTime createdAt;
   final DateTime updatedAt;
   final UserPreferences? preferences;
+  final String token;
 
   User({
     required this.id,
@@ -23,6 +24,7 @@ class User {
     required this.createdAt,
     required this.updatedAt,
     this.preferences,
+    this.token = '',
   });
 
   // Ajout de la méthode fromJson
