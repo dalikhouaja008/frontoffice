@@ -14,8 +14,6 @@ class LandBloc extends Bloc<LandEvent, LandState> {
 
   LandBloc() : _landService = getIt<LandService>(), super(LandInitial()) {
     on<LoadLands>(_onLoadLands);
-    on<LoadLandsForUser>(_onLoadLandsForUser);
-    on<LoadLandTypes>(_onLoadLandTypes);
     on<NavigateToLandDetails>(_onNavigateToLandDetails);
     on<ApplyFilters>(_onApplyFilters);
   }
@@ -34,30 +32,6 @@ class LandBloc extends Bloc<LandEvent, LandState> {
     }
   }
 
-  Future<void> _onLoadLandsForUser(LoadLandsForUser event, Emitter<LandState> emit) async {
-    print('[${DateTime.now()}] LandBloc: 🚀 Handling LoadLandsForUser event for user ${event.userId}');
-    emit(LandLoading());
-    try {
-      final lands = await _landService.fetchLandsForUser(event.userId, event.accessToken);
-      _allLands = lands;
-      print('[${DateTime.now()}] LandBloc: ✅ Loaded ${lands.length} lands for user ${event.userId}');
-      emit(LandLoaded(lands: lands));
-    } catch (e) {
-      print('[${DateTime.now()}] LandBloc: ❌ Error loading lands for user ${event.userId}: $e');
-      if (e.toString().contains('Invalid access token')) {
-        emit(LandUnauthenticated());
-      } else {
-        emit(LandError(message: 'Failed to load lands: $e'));
-      }
-    }
-  }
-
-  Future<void> _onLoadLandTypes(LoadLandTypes event, Emitter<LandState> emit) async {
-    print('[${DateTime.now()}] LandBloc: 🚀 Handling LoadLandTypes event');
-    // Placeholder for loading land types
-    // Emit a state if necessary
-  }
-
   void _onNavigateToLandDetails(NavigateToLandDetails event, Emitter<LandState> emit) {
     print('[${DateTime.now()}] LandBloc: 🚀 Navigating to land details: ${event.land.id}');
     emit(NavigatingToLandDetails(land: event.land));
@@ -72,23 +46,34 @@ class LandBloc extends Bloc<LandEvent, LandState> {
     }
 
     var filteredLands = _allLands.where((land) {
-      final matchesPrice = land.totalPrice >= event.priceRange.start && land.totalPrice <= event.priceRange.end;
+      // Use a default value of 0 for totalPrice if null
+      final price = land.totalPrice ?? 0.0;
+      final matchesPrice = price >= event.priceRange.start && price <= event.priceRange.end;
       final matchesQuery = event.searchQuery.isEmpty ||
           land.title.toLowerCase().contains(event.searchQuery.toLowerCase());
-      final matchesLandType = event.landType == null || land.landtype == event.landType;
+      final matchesLandType = event.landType == null || (land.landtype?.name == event.landType);
       final matchesValidationStatus = event.validationStatus == null || land.status == event.validationStatus;
-      final matchesAmenities = event.amenities.entries.every((entry) {
-        if (!entry.value) return true; // If amenity is not selected, skip filter
-        return land.amenities[entry.key] == true;
-      });
+
+      final amenities = event.amenities;
+      final matchesAmenities = amenities == null ||
+          amenities.entries.every((entry) {
+            if (entry.value) {
+              return land.amenities != null && (land.amenities![entry.key] == true);
+            }
+            return true;
+          });
 
       return matchesPrice && matchesQuery && matchesLandType && matchesValidationStatus && matchesAmenities;
     }).toList();
 
     if (event.sortBy == 'price_asc') {
-      filteredLands.sort((a, b) => a.totalPrice.compareTo(b.totalPrice));
+      filteredLands.sort((a, b) => (a.totalPrice ?? 0.0).compareTo(b.totalPrice ?? 0.0));
     } else if (event.sortBy == 'price_desc') {
-      filteredLands.sort((a, b) => b.totalPrice.compareTo(a.totalPrice));
+      filteredLands.sort((a, b) => (b.totalPrice ?? 0.0).compareTo(a.totalPrice ?? 0.0));
+    } else if (event.sortBy == 'title_asc') {
+      filteredLands.sort((a, b) => a.title.compareTo(b.title));
+    } else if (event.sortBy == 'title_desc') {
+      filteredLands.sort((a, b) => b.title.compareTo(a.title));
     } else if (event.sortBy == 'newest') {
       filteredLands.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }

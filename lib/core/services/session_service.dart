@@ -9,6 +9,7 @@ class SessionService {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   
+  
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   /// Save the user session data
@@ -105,18 +106,47 @@ class SessionService {
   }
 
   Future<SessionData?> getSession() async {
-    return SessionData(
-      user: User(
-        id: '67b2419f32f3b50be504ed1b',
-        username: 'nesrine',
-        email: 'nesrine@example.com',
-        role: 'user', // Replace 'user' with the appropriate role
-        createdAt: DateTime.now(), // Replace with the actual creation date if available
-        updatedAt: DateTime.now(), // Replace with the actual update date if available
-      ),
-      accessToken: 'valid_access_token',
-      refreshToken: 'valid_refresh_token',
-    );
+    try {
+      print('[${DateTime.now()}] 🔍 SessionService: Retrieving session');
+      
+      // Get all session data
+      final userJson = await _storage.read(key: _userKey);
+      final accessToken = await _storage.read(key: _accessTokenKey);
+      final refreshToken = await _storage.read(key: _refreshTokenKey);
+      
+      // Check if we have all required session data
+      if (userJson == null || accessToken == null || refreshToken == null) {
+        print('[${DateTime.now()}] ℹ️ SessionService: No session found');
+        return null;
+      }
+      
+      // Parse user object
+      final userData = jsonDecode(userJson);
+      final user = User(
+        id: userData['_id'],
+        username: userData['username'],
+        email: userData['email'],
+        role: userData['role'],
+        twoFactorSecret: userData['twoFactorSecret'],
+        isTwoFactorEnabled: userData['isTwoFactorEnabled'] ?? false,
+        createdAt: DateTime.parse(userData['createdAt']),
+        updatedAt: DateTime.parse(userData['updatedAt']),
+      );
+      
+      print('[${DateTime.now()}] ✅ SessionService: Session retrieved successfully'
+            '\n└─ User: ${user.username}'
+            '\n└─ Email: ${user.email}');
+      
+      return SessionData(
+        user: user,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
+    } catch (e) {
+      print('[${DateTime.now()}] ❌ SessionService: Error retrieving session'
+            '\n└─ Error: $e');
+      return null;
+    }
   }
 }
 

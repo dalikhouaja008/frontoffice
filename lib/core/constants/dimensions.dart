@@ -1,4 +1,19 @@
 class AppDimensions {
+  // Border Radius
+  static const double borderRadiusS = 4.0;
+  static const double borderRadiusM = 8.0;
+  static const double borderRadiusL = 12.0;
+
+  // Spacing
+  static const double spacingS = 4.0;
+  static const double spacingM = 8.0;
+  static const double spacingL = 16.0;
+
+  // Icon Sizes
+  static const double iconSizeS = 16.0;
+  static const double iconSizeM = 24.0;
+  static const double iconSizeL = 32.0;
+
   // Padding and margins
   static const double paddingXS = 4.0;
   static const double paddingS = 8.0;

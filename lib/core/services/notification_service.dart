@@ -2,7 +2,6 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:the_boost/core/services/land_service.dart';
-import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/domain/entities/notification.dart';
 import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
@@ -11,15 +10,12 @@ class NotificationService {
   static const String _notificationsKey = 'user_notifications';
   final FlutterSecureStorage _storage;
   final LandService _landService;
-  final SecureStorageService _storageService;
 
   NotificationService({
     FlutterSecureStorage? storage,
     required LandService landService,
-    required SecureStorageService storageService,
   })  : _storage = storage ?? const FlutterSecureStorage(),
-        _landService = landService,
-        _storageService = storageService;
+        _landService = landService;
 
   Future<List<UserNotification>> getNotifications() async {
     try {
@@ -51,7 +47,6 @@ class NotificationService {
       if (notifications.length > 50) {
         notifications.removeRange(50, notifications.length);
       }
-
       await saveNotifications(notifications);
       print('[${DateTime.now()}] NotificationService: ✅ Added notification: ${notification.title}');
     } catch (e) {
@@ -103,7 +98,6 @@ class NotificationService {
   Future<void> checkNewLandsForNotifications(
       UserPreferences preferences, DateTime lastCheckTime) async {
     if (!preferences.notificationsEnabled) return;
-
     try {
       final lands = await _landService.fetchLands();
       final newLands = lands.where((land) => land.createdAt.isAfter(lastCheckTime)).toList();
@@ -120,7 +114,7 @@ class NotificationService {
   }
 
   bool _matchesPreferences(Land land, UserPreferences preferences) {
-    final landPrice = land.totalPrice;
+    final landPrice = land.totalPrice ?? 0.0; // Handle null totalPrice
     return landPrice >= preferences.minPrice &&
         (preferences.maxPrice == double.infinity || landPrice <= preferences.maxPrice) &&
         (preferences.preferredLocations.isEmpty ||

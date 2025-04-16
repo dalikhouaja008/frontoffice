@@ -19,7 +19,7 @@ class InvestFilters extends StatefulWidget {
 class _InvestFiltersState extends State<InvestFilters> {
   RangeValues _priceRange = const RangeValues(0, 1000000);
   LandType? _selectedLandType;
-  LandValidationStatus? _selectedValidationStatus;
+  String? _selectedStatus; // Changed to String
   final Map<String, bool> _amenities = {
     'electricity': false,
     'water': false,
@@ -27,6 +27,7 @@ class _InvestFiltersState extends State<InvestFilters> {
     'buildingPermit': false,
   };
   String? _sortBy;
+  String _searchQuery = '';
 
   void _applyFilters() {
     final filters = {
@@ -35,9 +36,10 @@ class _InvestFiltersState extends State<InvestFilters> {
         'max': _priceRange.end,
       },
       'landType': _selectedLandType?.name,
-      'validationStatus': _selectedValidationStatus?.name,
+      'validationStatus': _selectedStatus, // Now a String
       'amenities': _amenities,
       'sortBy': _sortBy,
+      'searchQuery': _searchQuery,
     };
     widget.onFiltersChanged(filters);
     widget.onClose();
@@ -47,16 +49,18 @@ class _InvestFiltersState extends State<InvestFilters> {
     setState(() {
       _priceRange = const RangeValues(0, 1000000);
       _selectedLandType = null;
-      _selectedValidationStatus = null;
+      _selectedStatus = null;
       _amenities.updateAll((key, value) => false);
       _sortBy = null;
+      _searchQuery = '';
     });
     final filters = {
-      'priceRange': null,
+      'priceRange': {'min': 0, 'max': 1000000},
       'landType': null,
       'validationStatus': null,
-      'amenities': null,
+      'amenities': _amenities..updateAll((key, value) => false),
       'sortBy': null,
+      'searchQuery': '',
     };
     widget.onFiltersChanged(filters);
   }
@@ -64,25 +68,48 @@ class _InvestFiltersState extends State<InvestFilters> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 300, // Fixed width for the sidebar
-      color: Colors.grey[200], // Light grey background
+      width: 300,
+      color: Colors.grey[200],
       padding: const EdgeInsets.all(16.0),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Filters Header
-            const Text(
-              'Filters',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Filters',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: widget.onClose,
+                  tooltip: 'Close Filters',
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-
-            // Price Range Filter
+            const Text(
+              'Search',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Search by title...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
             const Text(
               'Price Range',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -103,8 +130,6 @@ class _InvestFiltersState extends State<InvestFilters> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Land Type Filter
             const Text(
               'Land Type',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -126,38 +151,33 @@ class _InvestFiltersState extends State<InvestFilters> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Validation Status Filter
             const Text(
-              'Validation Status',
+              'Status',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-            DropdownButton<LandValidationStatus>(
+            DropdownButton<String>(
               isExpanded: true,
-              value: _selectedValidationStatus,
-              hint: const Text('Select Validation Status'),
-              items: LandValidationStatus.values.map((LandValidationStatus status) {
-                return DropdownMenuItem<LandValidationStatus>(
-                  value: status,
-                  child: Text(status.displayName),
-                );
-              }).toList(),
-              onChanged: (LandValidationStatus? value) {
+              value: _selectedStatus,
+              hint: const Text('Select Status'),
+              items: const [
+                DropdownMenuItem(value: 'available', child: Text('Available')),
+                DropdownMenuItem(value: 'reserved', child: Text('Reserved')),
+                DropdownMenuItem(value: 'sold', child: Text('Sold')),
+              ],
+              onChanged: (String? value) {
                 setState(() {
-                  _selectedValidationStatus = value;
+                  _selectedStatus = value;
                 });
               },
             ),
             const SizedBox(height: 16),
-
-            // Amenities Filter
             const Text(
               'Amenities',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             ..._amenities.keys.map((String key) {
               return CheckboxListTile(
-                title: Text(key.capitalize()),
+                title: Text(key[0].toUpperCase() + key.substring(1)),
                 value: _amenities[key],
                 onChanged: (bool? value) {
                   setState(() {
@@ -167,8 +187,6 @@ class _InvestFiltersState extends State<InvestFilters> {
               );
             }).toList(),
             const SizedBox(height: 16),
-
-            // Sort By Filter
             const Text(
               'Sort By',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -182,6 +200,7 @@ class _InvestFiltersState extends State<InvestFilters> {
                 DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
                 DropdownMenuItem(value: 'title_asc', child: Text('Title: A to Z')),
                 DropdownMenuItem(value: 'title_desc', child: Text('Title: Z to A')),
+                DropdownMenuItem(value: 'newest', child: Text('Newest First')),
               ],
               onChanged: (String? value) {
                 setState(() {
@@ -190,8 +209,6 @@ class _InvestFiltersState extends State<InvestFilters> {
               },
             ),
             const SizedBox(height: 24),
-
-            // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -217,11 +234,5 @@ class _InvestFiltersState extends State<InvestFilters> {
         ),
       ),
     );
-  }
-}
-
-extension StringExtension on String {
-  String capitalize() {
-    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

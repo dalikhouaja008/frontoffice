@@ -31,7 +31,6 @@ import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.
 import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
 import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
 import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
-
 final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
@@ -47,10 +46,10 @@ Future<void> initDependencies() async {
   // Register LandService as singleton
   getIt.registerLazySingleton<LandService>(() => LandService());
 
+  // Register NotificationService (removed storageService parameter)
   getIt.registerLazySingleton<NotificationService>(
     () => NotificationService(
       landService: getIt<LandService>(),
-      storageService: getIt<SecureStorageService>(),
     ),
   );
   

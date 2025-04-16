@@ -8,19 +8,16 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Rechercher un terrain...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onChanged: onSearchChanged,
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Search lands...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          prefixIcon: const Icon(Icons.search),
         ),
-      ],
+        onChanged: onSearchChanged,
+      ),
     );
   }
 }

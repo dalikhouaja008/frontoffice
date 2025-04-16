@@ -1,24 +1,16 @@
-// lib/features/auth/presentation/pages/dashboard/widgets/dashboard_stats.dart
+// presentation/pages/dashboard/widgets/dashboard_stats.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 
-class DashboardStats extends StatelessWidget {
-  const DashboardStats({super.key});
 
+class DashboardStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-
-    // Static values matching the screenshot
-    const totalValue = 7380.00;
-    const totalInvested = 6150.00;
-    const totalReturn = 1230.00;
-    const roi = 20.0;
-
+    
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(top: AppDimensions.paddingL),
       padding: const EdgeInsets.all(AppDimensions.paddingL),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -27,7 +19,7 @@ class DashboardStats extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
-            offset: const Offset(0, 5),
+            offset: Offset(0, 5),
           ),
         ],
       ),
@@ -37,24 +29,24 @@ class DashboardStats extends StatelessWidget {
                 _buildStatItem(
                   context: context,
                   title: "Portfolio Value",
-                  value: "${totalValue.toStringAsFixed(2)} €",
-                  changeText: "+${totalReturn.toStringAsFixed(2)} € (${(totalReturn / totalInvested * 100).toStringAsFixed(1)}%)",
-                  isPositive: totalReturn > 0,
+                  value: "\$15,250",
+                  changeText: "+\$1,250 (8.9%)",
+                  isPositive: true,
                 ),
-                const Divider(height: AppDimensions.paddingXL),
+                Divider(height: AppDimensions.paddingXL),
                 _buildStatItem(
                   context: context,
                   title: "Invested Capital",
-                  value: "${totalInvested.toStringAsFixed(2)} €",
+                  value: "\$12,500",
                   changeText: "5 properties",
                 ),
-                const Divider(height: AppDimensions.paddingXL),
+                Divider(height: AppDimensions.paddingXL),
                 _buildStatItem(
                   context: context,
                   title: "Total Return",
-                  value: "${totalReturn.toStringAsFixed(2)} €",
-                  changeText: "${roi.toStringAsFixed(1)}% ROI",
-                  isPositive: totalReturn > 0,
+                  value: "\$2,750",
+                  changeText: "22% ROI",
+                  isPositive: true,
                 ),
               ],
             )
@@ -65,28 +57,28 @@ class DashboardStats extends StatelessWidget {
                   child: _buildStatItem(
                     context: context,
                     title: "Portfolio Value",
-                    value: "${totalValue.toStringAsFixed(2)} €",
-                    changeText: "+${totalReturn.toStringAsFixed(2)} € (${(totalReturn / totalInvested * 100).toStringAsFixed(1)}%)",
-                    isPositive: totalReturn > 0,
+                    value: "\$15,250",
+                    changeText: "+\$1,250 (8.9%)",
+                    isPositive: true,
                   ),
                 ),
-                const VerticalDivider(width: AppDimensions.paddingXL),
+                VerticalDivider(width: AppDimensions.paddingXL),
                 Expanded(
                   child: _buildStatItem(
                     context: context,
                     title: "Invested Capital",
-                    value: "${totalInvested.toStringAsFixed(2)} €",
+                    value: "\$12,500",
                     changeText: "5 properties",
                   ),
                 ),
-                const VerticalDivider(width: AppDimensions.paddingXL),
+                VerticalDivider(width: AppDimensions.paddingXL),
                 Expanded(
                   child: _buildStatItem(
                     context: context,
                     title: "Total Return",
-                    value: "${totalReturn.toStringAsFixed(2)} €",
-                    changeText: "${roi.toStringAsFixed(1)}% ROI",
-                    isPositive: totalReturn > 0,
+                    value: "\$2,750",
+                    changeText: "22% ROI",
+                    isPositive: true,
                   ),
                 ),
               ],
@@ -106,30 +98,31 @@ class DashboardStats extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             color: Colors.black54,
           ),
         ),
-        const SizedBox(height: AppDimensions.paddingS),
+        SizedBox(height: AppDimensions.paddingS),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: AppDimensions.paddingS),
+        SizedBox(height: AppDimensions.paddingS),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isPositive)
-              const Icon(
-                Icons.arrow_upward,
-                color: Colors.green,
-                size: 16,
-              ),
+            isPositive
+                ? Icon(
+                    Icons.arrow_upward,
+                    color: Colors.green,
+                    size: 16,
+                  )
+                : SizedBox(width: 0),
             Text(
               changeText,
               style: TextStyle(

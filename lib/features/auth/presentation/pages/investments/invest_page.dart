@@ -1,6 +1,7 @@
 // lib/features/auth/presentation/pages/investments/invest_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
@@ -19,61 +20,40 @@ class InvestPage extends StatefulWidget {
 }
 
 class _InvestPageState extends State<InvestPage> {
-  List<Land> _filteredLands = [];
-  List<Land> _allLands = [];
+  bool _isSidebarOpen = false;
+  final FlutterTts _flutterTts = FlutterTts();
 
-  void _applyFilters(Map<String, dynamic> filters) {
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setVolume(1.0);
+    await _flutterTts.setPitch(1.0);
+  }
+
+  Future<void> _speak(String text) async {
+    await _flutterTts.speak(text);
+  }
+
+  Future<void> _stopSpeaking() async {
+    await _flutterTts.stop();
+  }
+
+  void _toggleSidebar() {
     setState(() {
-      _filteredLands = _allLands.where((land) {
-        // Price Range Filter
-        double landPrice = land.totalPrice;
-        if (filters['priceRange'] != null) {
-          double minPrice = filters['priceRange']['min'];
-          double maxPrice = filters['priceRange']['max'];
-          if (landPrice < minPrice || landPrice > maxPrice) return false;
-        }
-
-        // Land Type Filter
-        if (filters['landType'] != null && filters['landType'] != land.landtype.name) {
-          return false;
-        }
-
-        // Validation Status Filter
-        if (filters['validationStatus'] != null && filters['validationStatus'] != land.status.name) {
-          return false;
-        }
-
-        // Amenities Filter
-        if (filters['amenities'] != null) {
-          Map<String, bool> selectedAmenities = filters['amenities'];
-          for (var entry in selectedAmenities.entries) {
-            if (entry.value && (land.amenities[entry.key] != true)) {
-              return false;
-            }
-          }
-        }
-
-        return true;
-      }).toList();
-
-      // Sort By Filter
-      if (filters['sortBy'] != null) {
-        switch (filters['sortBy']) {
-          case 'price_asc':
-            _filteredLands.sort((a, b) => a.totalPrice.compareTo(b.totalPrice));
-            break;
-          case 'price_desc':
-            _filteredLands.sort((a, b) => b.totalPrice.compareTo(a.totalPrice));
-            break;
-          case 'title_asc':
-            _filteredLands.sort((a, b) => a.title.compareTo(b.title));
-            break;
-          case 'title_desc':
-            _filteredLands.sort((a, b) => b.title.compareTo(a.title));
-            break;
-        }
-      }
+      _isSidebarOpen = !_isSidebarOpen;
     });
+  }
+
+  @override
+  void dispose() {
+    _stopSpeaking();
+    super.dispose();
   }
 
   @override
@@ -88,91 +68,94 @@ class _InvestPageState extends State<InvestPage> {
         return bloc;
       },
       child: Scaffold(
-        
-        body: Column(
+        appBar: AppBar(
+          title: const Text('Invest'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: Icon(_isSidebarOpen ? Icons.close : Icons.filter_list),
+              onPressed: _toggleSidebar,
+              tooltip: 'Toggle Filters',
+            ),
+          ],
+        ),
+        body: Stack(
           children: [
-            const AppNavBar(currentRoute: '/invest'),
-            Expanded(
-              child: Row(
-                children: [
-                  // Sidebar with Filters
-                  InvestFilters(
-                    onFiltersChanged: _applyFilters,
-                    onClose: () {}, // No-op since it's not a drawer
-                  ),
-                  // Main Content (Lands Grid)
-                  Expanded(
-                    child: BlocListener<LandBloc, LandState>(
-                      listener: (context, state) {
-                        print('[${DateTime.now()}] InvestPage: BlocListener - State: $state');
-                        if (state is LandError) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error: ${state.message}'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 5),
-                            ),
-                          );
-                        } else if (state is NavigatingToLandDetails) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => LandDetailsScreen(land: state.land),
-                            ),
-                          );
+            Column(
+              children: [
+                const AppNavBar(currentRoute: '/invest'),
+                Expanded(
+                  child: BlocListener<LandBloc, LandState>(
+                    listener: (context, state) {
+                      print('[${DateTime.now()}] InvestPage: BlocListener - State: $state');
+                      if (state is LandError) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${state.message}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      } else if (state is NavigatingToLandDetails) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => LandDetailsScreen(land: state.land),
+                          ),
+                        );
+                      }
+                    },
+                    child: BlocBuilder<LandBloc, LandState>(
+                      builder: (context, state) {
+                        print('[${DateTime.now()}] InvestPage: BlocBuilder - State: $state');
+                        if (state is LandLoading) {
+                          return const Center(child: CircularProgressIndicator());
                         } else if (state is LandLoaded) {
-                          setState(() {
-                            _allLands = state.lands;
-                            _filteredLands = state.lands;
-                          });
-                        }
-                      },
-                      child: BlocBuilder<LandBloc, LandState>(
-                        builder: (context, state) {
-                          print('[${DateTime.now()}] InvestPage: BlocBuilder - State: $state');
-                          if (state is LandLoading) {
-                            return const Center(child: CircularProgressIndicator());
-                          } else if (state is LandLoaded) {
-                            print('[${DateTime.now()}] InvestPage: Lands loaded: ${state.lands.length}');
-                            return _buildLandGrid(context, _filteredLands);
-                          } else if (state is LandError) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Failed to load lands',
-                                    style: TextStyle(color: Colors.red, fontSize: 18),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    state.message,
-                                    style: const TextStyle(color: Colors.black54, fontSize: 14),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      context.read<LandBloc>().add(LoadLands());
-                                    },
-                                    child: const Text('Retry'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
+                          print('[${DateTime.now()}] InvestPage: Lands loaded: ${state.lands.length}');
+                          return _buildLandGrid(context, state.lands);
+                        } else if (state is LandError) {
                           return const Center(
                             child: Text(
-                              'No lands available',
-                              style: TextStyle(color: Colors.black, fontSize: 18),
+                              'Failed to load lands',
+                              style: TextStyle(color: Colors.red, fontSize: 18),
+                              semanticsLabel: 'Failed to load lands',
                             ),
                           );
-                        },
-                      ),
+                        }
+                        return const Center(
+                          child: Text(
+                            'No lands available',
+                            style: TextStyle(color: Colors.black, fontSize: 18),
+                            semanticsLabel: 'No lands available',
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+            if (_isSidebarOpen)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: InvestFilters(
+                  onFiltersChanged: (filters) {
+                    context.read<LandBloc>().add(ApplyFilters(
+                          priceRange: RangeValues(
+                            (filters['priceRange']['min'] as double?) ?? 0,
+                            (filters['priceRange']['max'] as double?) ?? 1000000,
+                          ),
+                          searchQuery: filters['searchQuery'] as String? ?? '',
+                          sortBy: filters['sortBy'] as String? ?? '',
+                          landType: filters['landType'] as String?,
+                          validationStatus: filters['validationStatus'] as String?,
+                          amenities: (filters['amenities'] as Map<String, bool>?)?.cast<String, bool>(),
+                        ));
+                  },
+                  onClose: _toggleSidebar,
+                ),
+              ),
           ],
         ),
       ),
@@ -185,6 +168,7 @@ class _InvestPageState extends State<InvestPage> {
         child: Text(
           'No lands available after filtering',
           style: TextStyle(color: Colors.black, fontSize: 18),
+          semanticsLabel: 'No lands available after filtering',
         ),
       );
     }
@@ -201,12 +185,21 @@ class _InvestPageState extends State<InvestPage> {
         itemCount: lands.length,
         itemBuilder: (context, index) {
           final land = lands[index];
-          return LandCard(
-            land: land,
-            onTap: () {
-              print('[${DateTime.now()}] InvestPage: Navigating to land details: ${land.id}');
-              context.read<LandBloc>().add(NavigateToLandDetails(land: land));
-            },
+          return Semantics(
+            label: 'Land: ${land.title}, Location: ${land.location}, Price: ${land.totalPrice ?? 'N/A'} DT',
+            child: LandCard(
+              land: land,
+              onTap: () {
+                print('[${DateTime.now()}] InvestPage: Navigating to land details: ${land.id}');
+                context.read<LandBloc>().add(NavigateToLandDetails(land: land));
+              },
+              onSpeak: () {
+                final description = land.description ?? 'No description available';
+                final price = land.totalPrice != null ? '${land.totalPrice} DT' : 'Price not available';
+                _speak('Land: ${land.title}. Location: ${land.location}. Price: $price. Description: $description');
+              },
+              onStopSpeaking: _stopSpeaking,
+            ),
           );
         },
       ),
