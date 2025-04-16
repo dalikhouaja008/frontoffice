@@ -32,13 +32,16 @@ class LandBloc extends Bloc<LandEvent, LandState> {
     }
   }
 
-  void _onNavigateToLandDetails(NavigateToLandDetails event, Emitter<LandState> emit) {
-    print('[${DateTime.now()}] LandBloc: 🚀 Navigating to land details: ${event.land.id}');
+  void _onNavigateToLandDetails(
+      NavigateToLandDetails event, Emitter<LandState> emit) {
+    print(
+        '[${DateTime.now()}] LandBloc: 🚀 Navigating to land details: ${event.land.id}');
     emit(NavigatingToLandDetails(land: event.land));
   }
 
   void _onApplyFilters(ApplyFilters event, Emitter<LandState> emit) {
-    print('[${DateTime.now()}] LandBloc: 🚀 Applying filters: ${event.priceRange}, ${event.searchQuery}, ${event.sortBy}, ${event.landType}, ${event.validationStatus}, ${event.amenities}');
+    print(
+        '[${DateTime.now()}] LandBloc: 🚀 Applying filters: ${event.priceRange}, ${event.searchQuery}, ${event.sortBy}, ${event.landType}, ${event.validationStatus}, ${event.amenities}, ${event.availability}');
     if (_allLands.isEmpty) {
       print('[${DateTime.now()}] LandBloc: ❌ No lands loaded yet');
       emit(LandError(message: 'No lands loaded yet'));
@@ -46,24 +49,34 @@ class LandBloc extends Bloc<LandEvent, LandState> {
     }
 
     var filteredLands = _allLands.where((land) {
-      // Use a default value of 0 for totalPrice if null
       final price = land.totalPrice ?? 0.0;
-      final matchesPrice = price >= event.priceRange.start && price <= event.priceRange.end;
+      final matchesPrice =
+          price >= event.priceRange.start && price <= event.priceRange.end;
       final matchesQuery = event.searchQuery.isEmpty ||
           land.title.toLowerCase().contains(event.searchQuery.toLowerCase());
-      final matchesLandType = event.landType == null || (land.landtype?.name == event.landType);
-      final matchesValidationStatus = event.validationStatus == null || land.status == event.validationStatus;
+      final matchesLandType =
+          event.landType == null || (land.landtype?.name == event.landType);
+      final matchesValidationStatus =
+          event.validationStatus == null || land.status == event.validationStatus;
+      final matchesAvailability =
+          event.availability == null || land.availability == event.availability;
 
       final amenities = event.amenities;
       final matchesAmenities = amenities == null ||
           amenities.entries.every((entry) {
             if (entry.value) {
-              return land.amenities != null && (land.amenities![entry.key] == true);
+              return land.amenities != null &&
+                  (land.amenities![entry.key] == true);
             }
             return true;
           });
 
-      return matchesPrice && matchesQuery && matchesLandType && matchesValidationStatus && matchesAmenities;
+      return matchesPrice &&
+          matchesQuery &&
+          matchesLandType &&
+          matchesValidationStatus &&
+          matchesAvailability &&
+          matchesAmenities;
     }).toList();
 
     if (event.sortBy == 'price_asc') {
@@ -78,7 +91,8 @@ class LandBloc extends Bloc<LandEvent, LandState> {
       filteredLands.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
 
-    print('[${DateTime.now()}] LandBloc: ✅ Filtered ${filteredLands.length} lands');
+    print(
+        '[${DateTime.now()}] LandBloc: ✅ Filtered ${filteredLands.length} lands');
     emit(LandLoaded(lands: filteredLands));
   }
 }

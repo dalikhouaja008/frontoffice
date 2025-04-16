@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/land_service.dart';
@@ -71,85 +72,88 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        context.read<LandBloc>().add(LoadLands());
-        return true;
-      },
-      child: Scaffold(
-        body: Column(
-          children: [
-            const AppNavBar(currentRoute: '/property-details'),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _error != null
-                      ? Center(child: Text(_error!))
-                      : _land == null
-                          ? const Center(child: Text('No land data available'))
-                          : SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Stack(
-                                    children: [
-                                      Container(
-                                        width: double.infinity,
-                                        height: 300,
-                                        child: _land?.imageCIDs?.isNotEmpty == true
-                                          ? Image.network(
-                                              _land!.imageCIDs![0], // Now safe because we checked isNotEmpty
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: 300,
-                                              errorBuilder: (context, error, stackTrace) => const Text('Image Not Available'),
-                                            )
-                                          : const Text('No Image Available'),
-                                      ),
-                                      Positioned(
-                                        top: 20,
-                                        left: 20,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.9),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: IconButton(
-                                            icon: const Icon(Icons.arrow_back),
-                                            onPressed: () {
-                                              context.read<LandBloc>().add(LoadLands());
-                                              Navigator.pop(context);
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(24.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        _buildHeaderSection(context),
-                                        const SizedBox(height: 24),
-                                        _buildMainInfoSection(context),
-                                        const SizedBox(height: 24),
-                                        if (_land!.latitude != null && _land!.longitude != null)
-                                          _buildLocationSection(context),
-                                        const SizedBox(height: 24),
-                                        _buildAdditionalInfoSection(context),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-            ),
-          ],
-        ),
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(child: Text(_error!)),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_land?.title ?? 'Détails du Terrain'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _land != null ? () => _shareLand(context) : null,
+            tooltip: 'Partager le terrain',
+          ),
+        ],
       ),
+      body: _land == null
+          ? const Center(child: Text('Aucun terrain sélectionné'))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image du terrain
+                  LandImage(
+                    imageCIDs: _land?.imageCIDs,
+                    width: double.infinity,
+                    height: 300,
+                    fit: BoxFit.cover,
+                  ),
+                  const SizedBox(height: 16),
+                  // Header Section
+                  _buildHeaderSection(context),
+                  const SizedBox(height: 16),
+                  // Main Information Section
+                  _buildMainInfoSection(context),
+                  const SizedBox(height: 16),
+                  // Location Section (if latitude/longitude are available)
+                  if (_land!.latitude != null && _land!.longitude != null)
+                    _buildLocationSection(context),
+                  if (_land!.latitude != null && _land!.longitude != null)
+                    const SizedBox(height: 16),
+                  // Additional Information Section
+                  _buildAdditionalInfoSection(context),
+                  const SizedBox(height: 16),
+                  // Bouton de partage supplémentaire
+                  ElevatedButton.icon(
+                    onPressed: () => _shareLand(context),
+                    icon: const Icon(Icons.share),
+                    label: const Text('Partager ce terrain'),
+                  ),
+                ],
+              ),
+            ),
     );
   }
+
+  void _shareLand(BuildContext context) {
+  final land = _land!;
+  final String shareText = '''
+    🏡 Terrain à vendre : ${land.title}
+    📍 Localisation : ${land.location}
+    📏 Surface : ${land.surface ?? 'N/A'} m²
+    💰 Prix : ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT
+    📜 Description : ${land.description ?? 'Aucune description disponible'}
+    🔍 Statut : ${land.status}
+    📞 Contactez-nous pour plus d'informations !
+    ''';
+  
+  Share.share(
+    shareText,
+    subject: 'Terrain à vendre : ${land.title}',
+  );
+}
 
   Widget _buildHeaderSection(BuildContext context) {
     return Card(
@@ -161,18 +165,20 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
           children: [
             Text(
               _land!.title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
               semanticsLabel: 'Title: ${_land!.title}',
             ),
             const SizedBox(height: 8),
             Text(
               _land!.totalPrice != null
-                  ? NumberFormat.currency(locale: 'en_US', symbol: 'DT').format(_land!.totalPrice)
+                  ? NumberFormat.currency(locale: 'en_US', symbol: 'DT')
+                      .format(_land!.totalPrice)
                   : 'Price not available',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.primary, fontWeight: FontWeight.bold),
               semanticsLabel: 'Price: ${_land!.totalPrice ?? 'N/A'} DT',
             ),
             const SizedBox(height: 8),
@@ -194,11 +200,13 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Main Information', style: Theme.of(context).textTheme.titleLarge),
+            Text('Main Information',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             _buildInfoRow(Icons.location_on, 'Location', _land!.location),
             if (_land!.description != null && _land!.description!.isNotEmpty)
-              _buildInfoRow(Icons.description, 'Description', _land!.description!),
+              _buildInfoRow(
+                  Icons.description, 'Description', _land!.description!),
           ],
         ),
       ),
@@ -213,10 +221,13 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('GPS Coordinates', style: Theme.of(context).textTheme.titleLarge),
+            Text('GPS Coordinates',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
-            _buildInfoRow(Icons.gps_fixed, 'Latitude', _land!.latitude.toString()),
-            _buildInfoRow(Icons.gps_fixed, 'Longitude', _land!.longitude.toString()),
+            _buildInfoRow(
+                Icons.gps_fixed, 'Latitude', _land!.latitude.toString()),
+            _buildInfoRow(
+                Icons.gps_fixed, 'Longitude', _land!.longitude.toString()),
           ],
         ),
       ),
@@ -231,15 +242,20 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Additional Information', style: Theme.of(context).textTheme.titleLarge),
+            Text('Additional Information',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
-            _buildInfoRow(Icons.calendar_today, 'Creation Date', _formatDate(_land!.createdAt)),
-            _buildInfoRow(Icons.update, 'Last Update', _formatDate(_land!.updatedAt)),
+            _buildInfoRow(Icons.calendar_today, 'Creation Date',
+                _formatDate(_land!.createdAt)),
+            _buildInfoRow(
+                Icons.update, 'Last Update', _formatDate(_land!.updatedAt)),
             _buildInfoRow(Icons.person_outline, 'Owner ID', _land!.ownerId),
             if (_land!.ownerAddress != null)
-              _buildInfoRow(Icons.person, 'Owner Address', _land!.ownerAddress!),
+              _buildInfoRow(
+                  Icons.person, 'Owner Address', _land!.ownerAddress!),
             if (_land!.blockchainLandId != null)
-              _buildInfoRow(Icons.link, 'Blockchain Land ID', _land!.blockchainLandId!),
+              _buildInfoRow(
+                  Icons.link, 'Blockchain Land ID', _land!.blockchainLandId!),
           ],
         ),
       ),
@@ -258,7 +274,8 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                Text(label,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey)),
                 const SizedBox(height: 4),
                 Text(value, style: const TextStyle(fontSize: 16)),
               ],
@@ -271,5 +288,35 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
 
   String _formatDate(DateTime date) {
     return DateFormat('MM/dd/yyyy HH:mm').format(date);
+  }
+}
+
+// Widget réutilisable pour afficher l'image
+class LandImage extends StatelessWidget {
+  final List<String>? imageCIDs;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+
+  const LandImage({
+    Key? key,
+    this.imageCIDs,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return imageCIDs?.isNotEmpty == true
+        ? Image.network(
+            imageCIDs!.first,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) =>
+                const Text('Image indisponible'),
+          )
+        : const Text('Aucune image disponible');
   }
 }

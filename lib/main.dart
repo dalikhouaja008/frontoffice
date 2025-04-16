@@ -35,6 +35,7 @@ class SimpleBlocObserver extends BlocObserver {
 }
 
 void main() async {
+  setupLocator();
   WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = SimpleBlocObserver();
   await initDependencies();

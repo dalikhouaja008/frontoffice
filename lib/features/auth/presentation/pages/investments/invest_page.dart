@@ -19,14 +19,24 @@ class InvestPage extends StatefulWidget {
   _InvestPageState createState() => _InvestPageState();
 }
 
-class _InvestPageState extends State<InvestPage> {
+class _InvestPageState extends State<InvestPage> with SingleTickerProviderStateMixin {
   bool _isSidebarOpen = false;
   final FlutterTts _flutterTts = FlutterTts();
+  late AnimationController _animationController;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
     _initTts();
+    // Initialize animation controller for sidebar
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   Future<void> _initTts() async {
@@ -47,12 +57,18 @@ class _InvestPageState extends State<InvestPage> {
   void _toggleSidebar() {
     setState(() {
       _isSidebarOpen = !_isSidebarOpen;
+      if (_isSidebarOpen) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
     });
   }
 
   @override
   void dispose() {
     _stopSpeaking();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -134,28 +150,37 @@ class _InvestPageState extends State<InvestPage> {
                 ),
               ],
             ),
-            if (_isSidebarOpen)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: InvestFilters(
-                  onFiltersChanged: (filters) {
-                    context.read<LandBloc>().add(ApplyFilters(
-                          priceRange: RangeValues(
-                            (filters['priceRange']['min'] as double?) ?? 0,
-                            (filters['priceRange']['max'] as double?) ?? 1000000,
-                          ),
-                          searchQuery: filters['searchQuery'] as String? ?? '',
-                          sortBy: filters['sortBy'] as String? ?? '',
-                          landType: filters['landType'] as String?,
-                          validationStatus: filters['validationStatus'] as String?,
-                          amenities: (filters['amenities'] as Map<String, bool>?)?.cast<String, bool>(),
-                        ));
-                  },
-                  onClose: _toggleSidebar,
-                ),
+            AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                return Positioned(
+                  left: _isSidebarOpen ? 0 : -MediaQuery.of(context).size.width * 0.75,
+                  top: 0,
+                  bottom: 0,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.75, // Responsive width
+                    child: child!,
+                  ),
+                );
+              },
+              child: InvestFilters(
+                onFiltersChanged: (filters) {
+                  context.read<LandBloc>().add(ApplyFilters(
+                        priceRange: RangeValues(
+                          (filters['priceRange']['min'] as double?) ?? 0,
+                          (filters['priceRange']['max'] as double?) ?? 1000000,
+                        ),
+                        searchQuery: filters['searchQuery'] as String? ?? '',
+                        sortBy: filters['sortBy'] as String? ?? '',
+                        landType: filters['landType'] as String?,
+                        validationStatus: filters['validationStatus'] as String?,
+                        availability: filters['availability'] as String?, // Added availability
+                        amenities: (filters['amenities'] as Map<String, bool>?)?.cast<String, bool>(),
+                      ));
+                },
+                onClose: _toggleSidebar,
               ),
+            ),
           ],
         ),
       ),

@@ -1,5 +1,6 @@
 // lib/features/auth/presentation/widgets/catalogue/land_card.dart
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
@@ -18,6 +19,15 @@ class LandCard extends StatelessWidget {
     required this.onStopSpeaking,
   }) : super(key: key);
 
+  // Convert IPFS link to a usable URL if needed
+  String _resolveImageUrl(String cid) {
+    if (cid.startsWith('ipfs://')) {
+      // Replace 'ipfs://' with a gateway URL
+      return 'https://ipfs.io/ipfs/${cid.replaceFirst('ipfs://', '')}';
+    }
+    return cid; // Already a direct URL (e.g., https://picsum.photos/...)
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -30,26 +40,30 @@ class LandCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Placeholder for land image (if imageCIDs are available)
             Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(AppDimensions.borderRadiusM),
-                    ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppDimensions.borderRadiusM),
                   ),
-                  child: land.imageCIDs?.isNotEmpty == true
+                ),
+                child: land.imageCIDs?.isNotEmpty == true
                     ? Image.network(
-                        land.imageCIDs!.first, // Now safe because we checked isNotEmpty
+                        _resolveImageUrl(land.imageCIDs!.first),
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) => const Text('Image Not Available'),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(child: CircularProgressIndicator());
+                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Text('Image Not Available'),
                       )
                     : const Text('No Image Available'),
-                ),
               ),
+            ),
             Padding(
               padding: const EdgeInsets.all(AppDimensions.paddingS),
               child: Column(
@@ -98,14 +112,22 @@ class LandCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.volume_up, color: AppColors.primary),
+                        icon: const Icon(Icons.volume_up,
+                            color: AppColors.primary),
                         onPressed: onSpeak,
                         tooltip: 'Speak description',
                       ),
                       IconButton(
-                        icon: const Icon(Icons.volume_off, color: AppColors.primary),
+                        icon: const Icon(Icons.volume_off,
+                            color: AppColors.primary),
                         onPressed: onStopSpeaking,
                         tooltip: 'Stop speaking',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.share,
+                            color: AppColors.primary),
+                        onPressed: () => _shareLand(context),
+                        tooltip: 'Share land',
                       ),
                     ],
                   ),
@@ -115,6 +137,25 @@ class LandCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _shareLand(BuildContext context) {
+    final String deepLink = 'https://yourapp.com/lands/${land.id}';
+    final String shareText = '''
+🏡 Land for Sale: ${land.title}
+📍 Location: ${land.location}
+📏 Surface: ${land.surface ?? 'N/A'} m²
+💰 Price: ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT
+📜 Description: ${land.description ?? 'No description available'}
+🔍 Status: ${land.status}
+👉 More Details: $deepLink
+📞 Contact us for more information!
+''';
+
+    Share.share(
+      shareText,
+      subject: 'Land for Sale: ${land.title}',
     );
   }
 }
