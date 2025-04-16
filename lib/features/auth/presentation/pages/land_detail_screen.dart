@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/pages/land_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -80,80 +79,77 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
 
     if (_error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
+        appBar: AppBar(
+          title: const Text('Error'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
         body: Center(child: Text(_error!)),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_land?.title ?? 'Détails du Terrain'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: _land != null ? () => _shareLand(context) : null,
-            tooltip: 'Partager le terrain',
-          ),
-        ],
-      ),
       body: _land == null
-          ? const Center(child: Text('Aucun terrain sélectionné'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Image du terrain
-                  LandImage(
-                    imageCIDs: _land?.imageCIDs,
-                    width: double.infinity,
-                    height: 300,
-                    fit: BoxFit.cover,
+          ? const Center(child: Text('No Land Selected'))
+          : Column(
+              children: [
+                const AppNavBar(currentRoute: '/land-details'),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LandImage(
+                          imageCIDs: _land?.imageCIDs,
+                          width: double.infinity,
+                          height: 300,
+                          fit: BoxFit.cover,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildHeaderSection(context),
+                        const SizedBox(height: 16),
+                        _buildMainInfoSection(context),
+                        const SizedBox(height: 16),
+                        if (_land!.latitude != null && _land!.longitude != null)
+                          _buildLocationSection(context),
+                        if (_land!.latitude != null && _land!.longitude != null)
+                          const SizedBox(height: 16),
+                        _buildAdditionalInfoSection(context),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => _shareLand(context),
+                          icon: const Icon(Icons.share),
+                          label: const Text('Share this Land'),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  // Header Section
-                  _buildHeaderSection(context),
-                  const SizedBox(height: 16),
-                  // Main Information Section
-                  _buildMainInfoSection(context),
-                  const SizedBox(height: 16),
-                  // Location Section (if latitude/longitude are available)
-                  if (_land!.latitude != null && _land!.longitude != null)
-                    _buildLocationSection(context),
-                  if (_land!.latitude != null && _land!.longitude != null)
-                    const SizedBox(height: 16),
-                  // Additional Information Section
-                  _buildAdditionalInfoSection(context),
-                  const SizedBox(height: 16),
-                  // Bouton de partage supplémentaire
-                  ElevatedButton.icon(
-                    onPressed: () => _shareLand(context),
-                    icon: const Icon(Icons.share),
-                    label: const Text('Partager ce terrain'),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
     );
   }
 
   void _shareLand(BuildContext context) {
-  final land = _land!;
-  final String shareText = '''
-    🏡 Terrain à vendre : ${land.title}
-    📍 Localisation : ${land.location}
-    📏 Surface : ${land.surface ?? 'N/A'} m²
-    💰 Prix : ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT
-    📜 Description : ${land.description ?? 'Aucune description disponible'}
-    🔍 Statut : ${land.status}
-    📞 Contactez-nous pour plus d'informations !
+    final land = _land!;
+    final String shareText = '''
+    🏡 Land for Sale: ${land.title}
+    📍 Location: ${land.location}
+    📏 Surface: ${land.surface ?? 'N/A'} m²
+    💰 Price: ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT
+    📜 Description: ${land.description ?? 'No description available'}
+    🔍 Status: ${land.status}
+    📞 Contact us for more information!
     ''';
-  
-  Share.share(
-    shareText,
-    subject: 'Terrain à vendre : ${land.title}',
-  );
-}
+
+    Share.share(
+      shareText,
+      subject: 'Land for Sale: ${land.title}',
+    );
+  }
 
   Widget _buildHeaderSection(BuildContext context) {
     return Card(
@@ -291,7 +287,6 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
   }
 }
 
-// Widget réutilisable pour afficher l'image
 class LandImage extends StatelessWidget {
   final List<String>? imageCIDs;
   final double? width;
@@ -315,8 +310,8 @@ class LandImage extends StatelessWidget {
             height: height,
             fit: fit,
             errorBuilder: (context, error, stackTrace) =>
-                const Text('Image indisponible'),
+                const Text('Image not available'),
           )
-        : const Text('Aucune image disponible');
+        : const Text('No image available');
   }
 }

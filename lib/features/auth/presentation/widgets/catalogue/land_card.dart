@@ -19,51 +19,39 @@ class LandCard extends StatelessWidget {
     required this.onStopSpeaking,
   }) : super(key: key);
 
-  // Convert IPFS link to a usable URL if needed
-  String _resolveImageUrl(String cid) {
-    if (cid.startsWith('ipfs://')) {
-      // Replace 'ipfs://' with a gateway URL
-      return 'https://ipfs.io/ipfs/${cid.replaceFirst('ipfs://', '')}';
-    }
-    return cid; // Already a direct URL (e.g., https://picsum.photos/...)
-  }
+
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+       onTap: onTap,
+       child: Card(
+         elevation: 4,
+         shape: RoundedRectangleBorder(
+           borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
+         ),
+         child: Column(
+           crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppDimensions.borderRadiusM),
-                  ),
+                 child: Container(
+                   decoration: BoxDecoration(
+                     color: Colors.grey[300],
+                     borderRadius: const BorderRadius.vertical(
+                       top: Radius.circular(AppDimensions.borderRadiusM),
+                     ),
                 ),
-                child: land.imageCIDs?.isNotEmpty == true
-                    ? Image.network(
-                        _resolveImageUrl(land.imageCIDs!.first),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(child: CircularProgressIndicator());
-                        },
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Text('Image Not Available'),
-                      )
-                    : const Text('No Image Available'),
-              ),
-            ),
+                   child: land.imageCIDs?.isNotEmpty == true
+                     ? Image.network(
+                         land.imageCIDs!.first, // Now safe because we checked isNotEmpty
+                         fit: BoxFit.cover,
+                         width: double.infinity,
+                         height: double.infinity,
+                         errorBuilder: (context, error, stackTrace) => const Text('Image Not Available'),
+                       )
+                     : const Text('No Image Available'),
+                 ),
+               ),
             Padding(
               padding: const EdgeInsets.all(AppDimensions.paddingS),
               child: Column(
