@@ -32,22 +32,14 @@ class AppNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    
-    print('[2025-03-09 10:05:23] AppNavBar: 🔄 Building navbar'
-          '\n└─ Current route: $currentRoute');
-    
-    // Use BlocBuilder to check authentication state
+    print('[2025-04-16 10:05:23] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
+
     return BlocBuilder<LoginBloc, LoginState>(
       builder: (context, state) {
-        // Debug print to track state changes in the navbar
-        print('[2025-03-09 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}'
-              '\n└─ Is authenticated: ${state is LoginSuccess}');
-        
-        // The user is authenticated if the state is LoginSuccess
+        print('[2025-04-16 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
         final isAuthenticated = state is LoginSuccess;
-        // Get the user if available
         final user = isAuthenticated ? state.user : null;
-        
+
         return Container(
           padding: EdgeInsets.symmetric(
             horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
@@ -75,8 +67,7 @@ class AppNavBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildLogo(),
-        // Use Flexible with a FittedBox for the menu items
+        _buildLogo(context), // Pass context
         Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -94,41 +85,31 @@ class AppNavBar extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
-                
-                if (isAuthenticated) 
+                if (isAuthenticated)
                   Row(
                     children: [
                       NotificationBell(
-                        onOpenPreferences: () {
-                          _checkAndShowPreferences(context, user!);
-                        },
+                        onOpenPreferences: () => _checkAndShowPreferences(context, user!),
                       ),
                       const SizedBox(width: AppDimensions.paddingM),
                       _buildUserMenu(context, user),
                     ],
                   )
-                else 
+                else
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextButton(
-                        onPressed: onLoginPressed ?? () {
-                          Navigator.pushNamed(context, AppRoutes.auth);
-                        },
+                        onPressed: onLoginPressed ?? () => Navigator.pushNamed(context, AppRoutes.auth),
                         child: const Text(
                           'Login',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(width: AppDimensions.paddingS),
                       AppButton(
                         text: 'Get Started',
-                        onPressed: onSignUpPressed ?? () {
-                          Navigator.pushNamed(context, AppRoutes.auth);
-                        },
+                        onPressed: onSignUpPressed ?? () => Navigator.pushNamed(context, AppRoutes.auth),
                         type: ButtonType.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppDimensions.paddingL,
@@ -149,41 +130,29 @@ class AppNavBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildLogo(),
+        _buildLogo(context), // Pass context
         Row(
           children: [
             if (isAuthenticated) ...[
               NotificationBell(
-                onOpenPreferences: () {
-                  _checkAndShowPreferences(context, user!);
-                },
+                onOpenPreferences: () => _checkAndShowPreferences(context, user!),
               ),
               IconButton(
                 icon: const Icon(Icons.dashboard),
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.dashboard);
-                },
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.dashboard),
               ),
               _buildUserMenuMobile(context, user),
             ] else
               TextButton(
-                onPressed: onLoginPressed ?? () {
-                  Navigator.pushNamed(context, AppRoutes.auth);
-                },
+                onPressed: onLoginPressed ?? () => Navigator.pushNamed(context, AppRoutes.auth),
                 child: const Text(
                   'Login',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                 ),
               ),
-              
             IconButton(
               icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openEndDrawer();
-              },
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
             ),
           ],
         ),
@@ -194,29 +163,22 @@ class AppNavBar extends StatelessWidget {
   Future<void> _checkAndShowPreferences(BuildContext context, User user) async {
     final secureStorage = SecureStorageService();
     final prefsJson = await secureStorage.read(key: 'user_preferences_${user.id}');
-    
     if (prefsJson == null) {
-      // User hasn't set preferences yet, show the preferences alert
       showDialog(
         context: context,
         builder: (context) => PreferencesAlertDialog(user: user),
       );
     } else {
-      // User already has preferences, navigate directly to the preferences screen
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => UserPreferencesScreen(user: user),
-        ),
+        MaterialPageRoute(builder: (context) => UserPreferencesScreen(user: user)),
       );
     }
   }
 
-  Widget _buildLogo() {
+  Widget _buildLogo(BuildContext context) { // Add context parameter
     return InkWell(
-      onTap: () {
-        // Navigate to home
-      },
+      onTap: () => Navigator.pushNamed(context, '/'), // Use passed context
       child: Row(
         children: [
           const Icon(Icons.landscape, color: AppColors.primary, size: 32),
@@ -241,10 +203,7 @@ class AppNavBar extends StatelessWidget {
     return PopupMenuButton<String>(
       offset: const Offset(0, 40),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.paddingM,
-          vertical: AppDimensions.paddingS,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingM, vertical: AppDimensions.paddingS),
         decoration: BoxDecoration(
           color: AppColors.backgroundGreen,
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -256,90 +215,27 @@ class AppNavBar extends StatelessWidget {
               radius: 16,
               child: Text(
                 firstLetter,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: AppDimensions.paddingS),
             Text(
               displayName,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: AppDimensions.paddingS),
-            const Icon(
-              Icons.arrow_drop_down,
-              color: AppColors.primary,
-            ),
+            const Icon(Icons.arrow_drop_down, color: AppColors.primary),
           ],
         ),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'dashboard',
-          child: Row(
-            children: [
-              Icon(Icons.dashboard, color: Colors.black54),
-              SizedBox(width: AppDimensions.paddingM),
-              Text('Dashboard'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'profile',
-          child: Row(
-            children: [
-              Icon(Icons.person, color: Colors.black54),
-              SizedBox(width: AppDimensions.paddingM),
-              Text('My Profile'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'investments',
-          child: Row(
-            children: [
-              Icon(Icons.token, color: Colors.black54),
-              SizedBox(width: AppDimensions.paddingM),
-              Text('My Investments'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'preferences',
-          child: Row(
-            children: [
-              Icon(Icons.tune, color: Colors.black54),
-              SizedBox(width: AppDimensions.paddingM),
-              Text('Investment Preferences'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'settings',
-          child: Row(
-            children: [
-              Icon(Icons.settings, color: Colors.black54),
-              SizedBox(width: AppDimensions.paddingM),
-              Text('Settings'),
-            ],
-          ),
-        ),
+        const PopupMenuItem(value: 'dashboard', child: Row(children: [Icon(Icons.dashboard, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('Dashboard')])),
+        const PopupMenuItem(value: 'profile', child: Row(children: [Icon(Icons.person, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('My Profile')])),
+        const PopupMenuItem(value: 'invest', child: Row(children: [Icon(Icons.token, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('My Investments')])),
+        const PopupMenuItem(value: 'preferences', child: Row(children: [Icon(Icons.tune, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('Investment Preferences')])),
+        const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('Settings')])),
         const PopupMenuDivider(),
-        const PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              Icon(Icons.logout, color: Colors.red),
-              SizedBox(width: AppDimensions.paddingM),
-              Text('Logout', style: TextStyle(color: Colors.red)),
-            ],
-          ),
-        ),
+        const PopupMenuItem(value: 'logout', child: Row(children: [Icon(Icons.logout, color: Colors.red), SizedBox(width: AppDimensions.paddingM), Text('Logout', style: TextStyle(color: Colors.red))])),
       ],
       onSelected: (value) {
         switch (value) {
@@ -347,22 +243,17 @@ class AppNavBar extends StatelessWidget {
             Navigator.pushNamed(context, AppRoutes.dashboard);
             break;
           case 'profile':
-            // Navigate to profile page
+            Navigator.pushNamed(context, '/profile');
             break;
-          case 'investments':
-            // Navigate to investments page
+          case 'invest':
             Navigator.pushNamed(context, AppRoutes.invest);
             break;
           case 'preferences':
-            if (user != null) {
-              _checkAndShowPreferences(context, user);
-            }
+            if (user != null) _checkAndShowPreferences(context, user);
             break;
           case 'settings':
-            // Navigate to settings page
-            break;
+            break; // Add settings page route
           case 'logout':
-            // Send logout event to the bloc
             context.read<LoginBloc>().add(LogoutRequested());
             Navigator.pushReplacementNamed(context, AppRoutes.home);
             break;
@@ -380,27 +271,18 @@ class AppNavBar extends StatelessWidget {
         radius: 16,
         child: Text(
           firstLetter,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
         ),
       ),
       onPressed: () {
         showModalBottomSheet(
           context: context,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(20),
-            ),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
           builder: (context) => Container(
             padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingL),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // User info header
                 Padding(
                   padding: const EdgeInsets.all(AppDimensions.paddingL),
                   child: Row(
@@ -410,11 +292,7 @@ class AppNavBar extends StatelessWidget {
                         radius: 24,
                         child: Text(
                           firstLetter,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
                         ),
                       ),
                       const SizedBox(width: AppDimensions.paddingL),
@@ -422,20 +300,8 @@ class AppNavBar extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              user?.username ?? 'User',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              user?.email ?? '',
-                              style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 14,
-                              ),
-                            ),
+                            Text(user?.username ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(user?.email ?? '', style: const TextStyle(color: Colors.black54, fontSize: 14)),
                           ],
                         ),
                       ),
@@ -443,60 +309,13 @@ class AppNavBar extends StatelessWidget {
                   ),
                 ),
                 const Divider(),
-                // Menu options
-                ListTile(
-                  leading: const Icon(Icons.dashboard, color: AppColors.primary),
-                  title: const Text('Dashboard'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, AppRoutes.dashboard);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.person, color: AppColors.primary),
-                  title: const Text('My Profile'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to profile page
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.token, color: AppColors.primary),
-                  title: const Text('My Investments'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, AppRoutes.invest);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.tune, color: AppColors.primary),
-                  title: const Text('Investment Preferences'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    if (user != null) {
-                      _checkAndShowPreferences(context, user);
-                    }
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings, color: AppColors.primary),
-                  title: const Text('Settings'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to settings page
-                  },
-                ),
+                ListTile(leading: const Icon(Icons.dashboard, color: AppColors.primary), title: const Text('Dashboard'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, AppRoutes.dashboard); }),
+                ListTile(leading: const Icon(Icons.person, color: AppColors.primary), title: const Text('My Profile'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/profile'); }),
+                ListTile(leading: const Icon(Icons.token, color: AppColors.primary), title: const Text('My Investments'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, AppRoutes.invest); }),
+                ListTile(leading: const Icon(Icons.tune, color: AppColors.primary), title: const Text('Investment Preferences'), onTap: () { Navigator.pop(context); if (user != null) _checkAndShowPreferences(context, user); }),
+                ListTile(leading: const Icon(Icons.settings, color: AppColors.primary), title: const Text('Settings'), onTap: () { Navigator.pop(context); }),
                 const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
-                  title: const Text('Logout', style: TextStyle(color: Colors.red)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Send logout event to the bloc
-                    context.read<LoginBloc>().add(LogoutRequested());
-                    Navigator.pushReplacementNamed(context, AppRoutes.home);
-                  },
-                ),
+                ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text('Logout', style: TextStyle(color: Colors.red)), onTap: () { Navigator.pop(context); context.read<LoginBloc>().add(LogoutRequested()); Navigator.pushReplacementNamed(context, AppRoutes.home); }),
               ],
             ),
           ),
@@ -511,18 +330,13 @@ class _NavLink extends StatelessWidget {
   final String route;
   final String? currentRoute;
   
-  _NavLink(this.title, {required this.route, this.currentRoute});
-  
+  const _NavLink(this.title, {required this.route, this.currentRoute});
+
   @override
   Widget build(BuildContext context) {
-    final bool isActive = currentRoute == route;
-    
+    final isActive = currentRoute == route;
     return TextButton(
-      onPressed: () {
-        if (!isActive) {
-          Navigator.of(context).pushNamed(route);
-        }
-      },
+      onPressed: () => !isActive ? Navigator.pushNamed(context, route) : null,
       child: Text(
         title,
         style: TextStyle(

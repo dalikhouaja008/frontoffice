@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/presentation/features_pages.dart';
 import 'package:the_boost/features/auth/presentation/pages/lands_screen.dart';
+import 'package:the_boost/features/auth/presentation/pages/profile_page.dart';
 import '../../../chatbot/presentation/controllers/chat_controller.dart';
 
 import 'package:the_boost/features/auth/domain/entities/user.dart';
@@ -34,6 +35,7 @@ class AppRoutes {
   static const String investmentAssistant = '/investment-assistant';
 
   static const String preferences = '/preferences';
+  static const String profile = '/profile';
 
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -54,6 +56,8 @@ class AppRoutes {
       return MaterialPageRoute(builder: (_) => const LandsScreen());
       case learnMore:
         return MaterialPageRoute(builder: (_) => LearnMorePage());
+      case profile:
+        return MaterialPageRoute(builder: (_) => const ProfilePage());
       case propertyDetails:
         final String propertyId = settings.arguments as String;
         return MaterialPageRoute(

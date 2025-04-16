@@ -20,7 +20,7 @@ class _InvestFiltersState extends State<InvestFilters> {
   RangeValues _priceRange = const RangeValues(0, 1000000);
   LandType? _selectedLandType;
   String? _selectedAvailability;
-  String? _selectedValidationStatus; // New field for validation status
+  String? _selectedValidationStatus;
   final Map<String, bool> _amenities = {
     'electricity': false,
     'water_access': false,
@@ -32,12 +32,9 @@ class _InvestFiltersState extends State<InvestFilters> {
 
   void _applyFilters() {
     final filters = {
-      'priceRange': {
-        'min': _priceRange.start,
-        'max': _priceRange.end,
-      },
+      'priceRange': {'min': _priceRange.start, 'max': _priceRange.end},
       'landType': _selectedLandType?.name,
-      'validationStatus': _selectedValidationStatus, // Added validation status
+      'validationStatus': _selectedValidationStatus,
       'availability': _selectedAvailability,
       'amenities': _amenities,
       'sortBy': _sortBy,
@@ -107,11 +104,7 @@ class _InvestFiltersState extends State<InvestFilters> {
                   hintText: 'Search by title...',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _searchQuery = value),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -127,11 +120,7 @@ class _InvestFiltersState extends State<InvestFilters> {
                   _priceRange.start.round().toString(),
                   _priceRange.end.round().toString(),
                 ),
-                onChanged: (RangeValues values) {
-                  setState(() {
-                    _priceRange = values;
-                  });
-                },
+                onChanged: (values) => setState(() => _priceRange = values),
               ),
               Text(
                 'Min: ${_priceRange.start.round()} DT - Max: ${_priceRange.end.round()} DT',
@@ -146,17 +135,13 @@ class _InvestFiltersState extends State<InvestFilters> {
                 isExpanded: true,
                 value: _selectedLandType,
                 hint: const Text('Select Land Type'),
-                items: LandType.values.map((LandType type) {
+                items: LandType.values.map((type) {
                   return DropdownMenuItem<LandType>(
                     value: type,
                     child: Text(type.displayName),
                   );
                 }).toList(),
-                onChanged: (LandType? value) {
-                  setState(() {
-                    _selectedLandType = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _selectedLandType = value),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -172,11 +157,7 @@ class _InvestFiltersState extends State<InvestFilters> {
                   DropdownMenuItem(value: 'RESERVED', child: Text('Reserved')),
                   DropdownMenuItem(value: 'SOLD', child: Text('Sold')),
                 ],
-                onChanged: (String? value) {
-                  setState(() {
-                    _selectedAvailability = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _selectedAvailability = value),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -192,26 +173,18 @@ class _InvestFiltersState extends State<InvestFilters> {
                   DropdownMenuItem(value: 'VALIDATED', child: Text('Validated')),
                   DropdownMenuItem(value: 'REJECTED', child: Text('Rejected')),
                 ],
-                onChanged: (String? value) {
-                  setState(() {
-                    _selectedValidationStatus = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _selectedValidationStatus = value),
               ),
               const SizedBox(height: 16),
               const Text(
                 'Amenities',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              ..._amenities.keys.map((String key) {
+              ..._amenities.keys.map((key) {
                 return CheckboxListTile(
                   title: Text(key.replaceAll('_', ' ').split(' ').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ')),
                   value: _amenities[key],
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _amenities[key] = value ?? false;
-                    });
-                  },
+                  onChanged: (value) => setState(() => _amenities[key] = value ?? false),
                 );
               }).toList(),
               const SizedBox(height: 16),
@@ -230,11 +203,7 @@ class _InvestFiltersState extends State<InvestFilters> {
                   DropdownMenuItem(value: 'title_desc', child: Text('Title: Z to A')),
                   DropdownMenuItem(value: 'newest', child: Text('Newest First')),
                 ],
-                onChanged: (String? value) {
-                  setState(() {
-                    _sortBy = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _sortBy = value),
               ),
               const SizedBox(height: 24),
               Row(
@@ -242,18 +211,12 @@ class _InvestFiltersState extends State<InvestFilters> {
                 children: [
                   ElevatedButton(
                     onPressed: _applyFilters,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                     child: const Text('Apply Filters'),
                   ),
                   ElevatedButton(
                     onPressed: _clearFilters,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.grey, foregroundColor: Colors.white),
                     child: const Text('Clear Filters'),
                   ),
                 ],

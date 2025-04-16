@@ -44,27 +44,21 @@ void main() async {
 }
 
 Future<void> _checkExistingSession() async {
-  print('[2025-03-08 10:15:23] Main: 🔄 Checking for existing session');
-  
+  print('[2025-04-16 10:15:23] Main: 🔄 Checking for existing session');
   try {
     final sessionService = getIt<SessionService>();
     final sessionData = await sessionService.getSession();
-    
     if (sessionData != null) {
-      print('[2025-03-08 10:15:23] Main: ✅ Found existing session'
-            '\n└─ User: ${sessionData.user.username}'
-            '\n└─ Email: ${sessionData.user.email}');
-      
-      // Directly trigger CheckSession in the LoginBloc to restore the session
+      print('[2025-04-16 10:15:23] Main: ✅ Found existing session'
+          '\n└─ User: ${sessionData.user.username}'
+          '\n└─ Email: ${sessionData.user.email}');
       getIt<LoginBloc>().add(CheckSession());
-      
-      // Add a small delay to allow the event to be processed
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
     } else {
-      print('[2025-03-08 10:15:23] Main: ℹ️ No existing session found');
+      print('[2025-04-16 10:15:23] Main: ℹ️ No existing session found');
     }
   } catch (e) {
-    print('[2025-03-08 10:15:23] Main: ❌ Error checking session'
+    print('[2025-04-16 10:15:23] Main: ❌ Error checking session'
           '\n└─ Error: $e');
   }
 }
@@ -74,31 +68,24 @@ class TheBoostApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loginState = getIt<LoginBloc>().state;
-    final isAuthenticated = loginState is LoginSuccess;
-    print('[2025-04-15 10:15:23] TheBoostApp: 🔄 Building app'
-        '\n└─ Current auth state: ${loginState.runtimeType}'
-        '\n└─ Is authenticated: $isAuthenticated');
     return MultiBlocProvider(
       providers: [
         BlocProvider<LoginBloc>.value(value: getIt<LoginBloc>()),
         BlocProvider<SignUpBloc>(create: (_) => getIt<SignUpBloc>()),
         BlocProvider<PropertyBloc>(create: (_) => getIt<PropertyBloc>()),
         BlocProvider<PreferencesBloc>(create: (_) => getIt<PreferencesBloc>()),
-        BlocProvider<LandBloc>(create: (context) => LandBloc()),
+        BlocProvider<LandBloc>(create: (_) => getIt<LandBloc>()),
       ],
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, state) {
           final preferencesService = getIt<PreferencesService>();
           if (state is LoginSuccess) {
-            print('[2025-04-15 10:15:23] TheBoostApp: 👤 User authenticated'
+            print('[2025-04-16 10:15:23] TheBoostApp: 👤 User authenticated'
                 '\n└─ User: ${state.user.username}'
                 '\n└─ Email: ${state.user.email}');
-            // Start periodic matching for the authenticated user
             preferencesService.startPeriodicMatching(state.user.id);
           } else if (state is LoginInitial) {
-            print('[2025-04-15 10:15:23] TheBoostApp: 🔒 No active session');
-            // Stop periodic matching when the user logs out
+            print('[2025-04-16 10:15:23] TheBoostApp: 🔒 No active session');
             preferencesService.stopPeriodicMatching();
           }
         },
@@ -128,12 +115,12 @@ class TheBoostApp extends StatelessWidget {
             ),
             debugShowCheckedModeBanner: false,
             initialRoute: isAuthenticated ? AppRoutes.dashboard : AppRoutes.home,
-            onGenerateRoute: AppRoutes.generateRoute,
+            onGenerateRoute: AppRoutes.generateRoute, // Ensure this uses the updated routes
             builder: (context, child) {
               final currentState = context.watch<LoginBloc>().state;
               final isCurrentlyAuthenticated = currentState is LoginSuccess;
               if (child?.key == const ValueKey('AuthPage') && isCurrentlyAuthenticated) {
-                print('[2025-04-15 10:15:23] TheBoostApp: 🔄 Redirecting from auth to dashboard (already logged in)');
+                print('[2025-04-16 10:15:23] TheBoostApp: 🔄 Redirecting from auth to dashboard');
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
                 });
@@ -142,7 +129,7 @@ class TheBoostApp extends StatelessWidget {
                       child?.key == const ValueKey('InvestPage') ||
                       child?.key == const ValueKey('PropertyDetailsPage')) &&
                   !isCurrentlyAuthenticated) {
-                print('[2025-04-15 10:15:23] TheBoostApp: 🔄 Redirecting to auth (protected page, not logged in)');
+                print('[2025-04-16 10:15:23] TheBoostApp: 🔄 Redirecting to auth');
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
                 });

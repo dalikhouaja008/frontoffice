@@ -29,7 +29,6 @@ class _InvestPageState extends State<InvestPage> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _initTts();
-    // Initialize animation controller for sidebar
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -37,6 +36,7 @@ class _InvestPageState extends State<InvestPage> with SingleTickerProviderStateM
     _animation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    context.read<LandBloc>().add(LoadLands()); // Load lands on init
   }
 
   Future<void> _initTts() async {
@@ -57,11 +57,8 @@ class _InvestPageState extends State<InvestPage> with SingleTickerProviderStateM
   void _toggleSidebar() {
     setState(() {
       _isSidebarOpen = !_isSidebarOpen;
-      if (_isSidebarOpen) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
+      if (_isSidebarOpen) _animationController.forward();
+      else _animationController.reverse();
     });
   }
 
@@ -75,114 +72,109 @@ class _InvestPageState extends State<InvestPage> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     print('[${DateTime.now()}] InvestPage: 🔄 Building InvestPage');
-    return BlocProvider(
-      create: (context) {
-        print('[${DateTime.now()}] InvestPage: 🚀 Creating LandBloc');
-        final bloc = getIt<LandBloc>();
-        print('[${DateTime.now()}] InvestPage: 🚀 Adding LoadLands event');
-        bloc.add(LoadLands());
-        return bloc;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Invest'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              icon: Icon(_isSidebarOpen ? Icons.close : Icons.filter_list),
-              onPressed: _toggleSidebar,
-              tooltip: 'Toggle Filters',
-            ),
-          ],
-        ),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                const AppNavBar(currentRoute: '/invest'),
-                Expanded(
-                  child: BlocListener<LandBloc, LandState>(
-                    listener: (context, state) {
-                      print('[${DateTime.now()}] InvestPage: BlocListener - State: $state');
-                      if (state is LandError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: ${state.message}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      } else if (state is NavigatingToLandDetails) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => LandDetailsScreen(land: state.land),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Invest'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: Icon(_isSidebarOpen ? Icons.close : Icons.filter_list),
+            onPressed: _toggleSidebar,
+            tooltip: 'Toggle Filters',
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              const AppNavBar(currentRoute: '/invest'),
+              Expanded(
+                child: BlocListener<LandBloc, LandState>(
+                  listener: (context, state) {
+                    print('[${DateTime.now()}] InvestPage: BlocListener - State: $state');
+                    if (state is LandError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: ${state.message}'), backgroundColor: Colors.red),
+                      );
+                    } else if (state is NavigatingToLandDetails) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => LandDetailsScreen(land: state.land)),
+                      );
+                    }
+                  },
+                  child: BlocBuilder<LandBloc, LandState>(
+                    builder: (context, state) {
+                      print('[${DateTime.now()}] InvestPage: BlocBuilder - State: $state');
+                      if (state is LandLoading) return const Center(child: CircularProgressIndicator());
+                      else if (state is LandLoaded) {
+                        print('[${DateTime.now()}] InvestPage: Lands loaded: ${state.lands.length}');
+                        return _buildLandGrid(context, state.lands);
+                      } else if (state is LandError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Failed to load lands: ${state.message}',
+                                style: const TextStyle(color: Colors.red, fontSize: 18),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => context.read<LandBloc>().add(LoadLands()),
+                                child: const Text('Retry'),
+                              ),
+                            ],
                           ),
                         );
                       }
+                      return const Center(
+                        child: Text(
+                          'No lands available',
+                          style: TextStyle(color: Colors.black, fontSize: 18),
+                          semanticsLabel: 'No lands available',
+                        ),
+                      );
                     },
-                    child: BlocBuilder<LandBloc, LandState>(
-                      builder: (context, state) {
-                        print('[${DateTime.now()}] InvestPage: BlocBuilder - State: $state');
-                        if (state is LandLoading) {
-                          return const Center(child: CircularProgressIndicator());
-                        } else if (state is LandLoaded) {
-                          print('[${DateTime.now()}] InvestPage: Lands loaded: ${state.lands.length}');
-                          return _buildLandGrid(context, state.lands);
-                        } else if (state is LandError) {
-                          return const Center(
-                            child: Text(
-                              'Failed to load lands',
-                              style: TextStyle(color: Colors.red, fontSize: 18),
-                              semanticsLabel: 'Failed to load lands',
-                            ),
-                          );
-                        }
-                        return const Center(
-                          child: Text(
-                            'No lands available',
-                            style: TextStyle(color: Colors.black, fontSize: 18),
-                            semanticsLabel: 'No lands available',
-                          ),
-                        );
-                      },
-                    ),
                   ),
                 ),
-              ],
-            ),
-            AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) {
-                return Positioned(
-                  left: _isSidebarOpen ? 0 : -MediaQuery.of(context).size.width * 0.75,
-                  top: 0,
-                  bottom: 0,
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.75, // Responsive width
-                    child: child!,
-                  ),
-                );
-              },
-              child: InvestFilters(
-                onFiltersChanged: (filters) {
-                  context.read<LandBloc>().add(ApplyFilters(
-                        priceRange: RangeValues(
-                          (filters['priceRange']['min'] as double?) ?? 0,
-                          (filters['priceRange']['max'] as double?) ?? 1000000,
-                        ),
-                        searchQuery: filters['searchQuery'] as String? ?? '',
-                        sortBy: filters['sortBy'] as String? ?? '',
-                        landType: filters['landType'] as String?,
-                        validationStatus: filters['validationStatus'] as String?,
-                        availability: filters['availability'] as String?, // Added availability
-                        amenities: (filters['amenities'] as Map<String, bool>?)?.cast<String, bool>(),
-                      ));
-                },
-                onClose: _toggleSidebar,
               ),
+            ],
+          ),
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return Positioned(
+                left: _isSidebarOpen ? 0 : -MediaQuery.of(context).size.width * 0.75,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.75,
+                  child: child!,
+                ),
+              );
+            },
+            child: InvestFilters(
+              onFiltersChanged: (filters) {
+                context.read<LandBloc>().add(ApplyFilters(
+                      priceRange: RangeValues(
+                        (filters['priceRange']['min'] as double?) ?? 0,
+                        (filters['priceRange']['max'] as double?) ?? 1000000,
+                      ),
+                      searchQuery: filters['searchQuery'] as String? ?? '',
+                      sortBy: filters['sortBy'] as String? ?? '',
+                      landType: filters['landType'] as String?,
+                      validationStatus: filters['validationStatus'] as String?,
+                      availability: filters['availability'] as String?,
+                      amenities: (filters['amenities'] as Map<String, bool>?)?.cast<String, bool>(),
+                    ));
+              },
+              onClose: _toggleSidebar,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
