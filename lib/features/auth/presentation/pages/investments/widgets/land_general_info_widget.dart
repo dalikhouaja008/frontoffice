@@ -127,7 +127,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
               ElevatedButton.icon(
                 onPressed: () => _launchEtherscanAddress(widget.land.ownerAddress!),
                 icon: const Icon(Icons.account_balance_wallet),
-                label: const Text('View Owner on Etherscan'),
+                label: const Text('View on Etherscan'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueGrey,
                   foregroundColor: Colors.white,
@@ -405,20 +405,6 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
   // Méthode pour ouvrir un lien Etherscan pour une adresse
   void _launchEtherscanAddress(String address) async {
     final url = 'https://${_networkName}.etherscan.io/address/$address';
-    final uri = Uri.parse(url);
-    
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open Etherscan')),
-      );
-    }
-  }
-
-  // Méthode pour ouvrir un lien Etherscan pour une transaction
-  void _launchEtherscanTx(String txHash) async {
-    final url = 'https://${_networkName}.etherscan.io/tx/$txHash';
     final uri = Uri.parse(url);
     
     if (await canLaunchUrl(uri)) {
