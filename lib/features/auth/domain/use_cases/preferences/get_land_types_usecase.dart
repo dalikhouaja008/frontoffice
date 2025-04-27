@@ -6,8 +6,4 @@ class GetLandTypesUseCase {
   final PreferencesRepository repository;
 
   GetLandTypesUseCase(this.repository);
-
-  Future<List<LandType>> execute() async {
-    return await repository.getAvailableLandTypes();
-  }
 }

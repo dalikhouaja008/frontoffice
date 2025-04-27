@@ -15,25 +15,21 @@ class PreferencesSaving extends PreferencesState {}
 
 class PreferencesLoaded extends PreferencesState {
   final UserPreferences preferences;
-  final List<LandType>? availableLandTypes;
 
   const PreferencesLoaded({
     required this.preferences,
-    this.availableLandTypes,
   });
 
   PreferencesLoaded copyWith({
     UserPreferences? preferences,
-    List<LandType>? availableLandTypes,
   }) {
     return PreferencesLoaded(
       preferences: preferences ?? this.preferences,
-      availableLandTypes: availableLandTypes ?? this.availableLandTypes,
     );
   }
 
   @override
-  List<Object?> get props => [preferences, availableLandTypes];
+  List<Object?> get props => [preferences];
 }
 
 class PreferencesSaved extends PreferencesState {
@@ -44,16 +40,6 @@ class PreferencesSaved extends PreferencesState {
   @override
   List<Object> get props => [preferences];
 }
-
-class LandTypesLoaded extends PreferencesState {
-  final List<LandType> landTypes;
-
-  const LandTypesLoaded({required this.landTypes});
-
-  @override
-  List<Object> get props => [landTypes];
-}
-
 class PreferencesError extends PreferencesState {
   final String message;
 

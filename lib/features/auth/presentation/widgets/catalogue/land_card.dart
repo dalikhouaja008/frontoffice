@@ -1,48 +1,64 @@
-// widgets/land_card.dart
-
+// lib/features/auth/presentation/widgets/catalogue/land_card.dart
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:the_boost/core/constants/colors.dart';
+import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
-
 
 class LandCard extends StatelessWidget {
   final Land land;
   final VoidCallback onTap;
+  final VoidCallback onSpeak;
+  final VoidCallback onStopSpeaking;
 
   const LandCard({
     Key? key,
     required this.land,
     required this.onTap,
+    required this.onSpeak,
+    required this.onStopSpeaking,
   }) : super(key: key);
+
+
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.asset(
-                land.imageUrl,
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
+    return GestureDetector(
+       onTap: onTap,
+       child: Card(
+         elevation: 4,
+         shape: RoundedRectangleBorder(
+           borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
+         ),
+         child: Column(
+           crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
+            Expanded(
+                 child: Container(
+                   decoration: BoxDecoration(
+                     color: Colors.grey[300],
+                     borderRadius: const BorderRadius.vertical(
+                       top: Radius.circular(AppDimensions.borderRadiusM),
+                     ),
+                ),
+                   child: land.imageCIDs?.isNotEmpty == true
+                     ? Image.network(
+                         land.imageCIDs!.first, // Now safe because we checked isNotEmpty
+                         fit: BoxFit.cover,
+                         width: double.infinity,
+                         height: double.infinity,
+                         errorBuilder: (context, error, stackTrace) => const Text('Image Not Available'),
+                       )
+                     : const Text('No Image Available'),
+                 ),
+               ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppDimensions.paddingS),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    land.name,
+                    land.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -50,41 +66,57 @@ class LandCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppDimensions.spacingS),
                   Text(
                     land.location,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: Colors.grey,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppDimensions.spacingS),
+                  Text(
+                    'Price: ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppDimensions.spacingS),
+                  Text(
+                    land.description ?? 'No description available',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppDimensions.spacingS),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${land.surface.toStringAsFixed(0)} m²',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.volume_up,
+                            color: AppColors.primary),
+                        onPressed: onSpeak,
+                        tooltip: 'Speak description',
                       ),
-                      Text(
-                        '${land.price.toStringAsFixed(0)} DT',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.volume_off,
+                            color: AppColors.primary),
+                        onPressed: onStopSpeaking,
+                        tooltip: 'Stop speaking',
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildChip(_getLandTypeLabel(land.type), Colors.blue),
-                      const SizedBox(width: 8),
-                      _buildChip(_getLandStatusLabel(land.status), _getStatusColor(land.status)),
+                      IconButton(
+                        icon: const Icon(Icons.share,
+                            color: AppColors.primary),
+                        onPressed: () => _shareLand(context),
+                        tooltip: 'Share land',
+                      ),
                     ],
                   ),
                 ],
@@ -96,56 +128,22 @@ class LandCard extends StatelessWidget {
     );
   }
 
-  Widget _buildChip(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+  void _shareLand(BuildContext context) {
+    final String deepLink = 'https://yourapp.com/lands/${land.id}';
+    final String shareText = '''
+🏡 Land for Sale: ${land.title}
+📍 Location: ${land.location}
+📏 Surface: ${land.surface ?? 'N/A'} m²
+💰 Price: ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT
+📜 Description: ${land.description ?? 'No description available'}
+🔍 Status: ${land.status}
+👉 More Details: $deepLink
+📞 Contact us for more information!
+''';
+
+    Share.share(
+      shareText,
+      subject: 'Land for Sale: ${land.title}',
     );
-  }
-
-  String _getLandTypeLabel(LandType type) {
-    switch (type) {
-      case LandType.AGRICULTURAL:
-        return 'Agricole';
-      case LandType.RESIDENTIAL:
-        return 'Résidentiel';
-      case LandType.INDUSTRIAL:
-        return 'Industriel';
-      case LandType.COMMERCIAL:
-        return 'Commercial';
-    }
-  }
-
-  String _getLandStatusLabel(LandStatus status) {
-    switch (status) {
-      case LandStatus.AVAILABLE:
-        return 'Disponible';
-      case LandStatus.PENDING:
-        return 'En attente';
-      case LandStatus.SOLD:
-        return 'Vendu';
-    }
-  }
-
-  Color _getStatusColor(LandStatus status) {
-    switch (status) {
-      case LandStatus.AVAILABLE:
-        return Colors.green;
-      case LandStatus.PENDING:
-        return Colors.orange;
-      case LandStatus.SOLD:
-        return Colors.red;
-    }
   }
 }
