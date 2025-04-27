@@ -7,7 +7,7 @@ import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
-import 'package:the_boost/features/auth/presentation/pages/land_detail_screen.dart';
+import 'package:the_boost/features/auth/presentation/pages/investments/land_detail_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/app_nav_bar.dart';
 import 'package:the_boost/features/auth/presentation/widgets/catalogue/land_card.dart';
 
