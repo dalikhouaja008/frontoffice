@@ -1,6 +1,6 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // ✅ IMPORT DOTENV
 import 'package:google_fonts/google_fonts.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
@@ -36,10 +36,17 @@ class SimpleBlocObserver extends BlocObserver {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ FIRST Load .env file before anything else
+  await dotenv.load(fileName: "assets/.env"); // ✅ Notice the assets/ prefix
+
+
   Bloc.observer = SimpleBlocObserver();
+
   await initDependencies();
   await registerChatbotDependencies();
   await _checkExistingSession();
+
   runApp(const TheBoostApp());
 }
 
@@ -115,7 +122,7 @@ class TheBoostApp extends StatelessWidget {
             ),
             debugShowCheckedModeBanner: false,
             initialRoute: isAuthenticated ? AppRoutes.dashboard : AppRoutes.home,
-            onGenerateRoute: AppRoutes.generateRoute, // Ensure this uses the updated routes
+            onGenerateRoute: AppRoutes.generateRoute,
             builder: (context, child) {
               final currentState = context.watch<LoginBloc>().state;
               final isCurrentlyAuthenticated = currentState is LoginSuccess;
