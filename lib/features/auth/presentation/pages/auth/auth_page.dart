@@ -11,6 +11,8 @@ import 'package:the_boost/features/auth/presentation/widgets/app_nav_bar.dart';
 import 'package:the_boost/features/auth/presentation/widgets/login_form.dart';
 import 'package:the_boost/features/auth/presentation/widgets/signup_form.dart';
 
+import '../../../../../core/di/dependency_injection.dart';
+
 class AuthPage extends StatefulWidget {
   const AuthPage({Key? key}) : super(key: key);
 

@@ -11,5 +11,5 @@ abstract class AuthRepository {
   Future<Either<String, User>> signUp(String username, String email,
 
       //String password, String role, String? publicKey,GDPRConsent gdprConsent);
-      String password, String role, String? publicKey);
+      String password, String role, String? publicKey, GDPRConsent gdprConsent);
 }

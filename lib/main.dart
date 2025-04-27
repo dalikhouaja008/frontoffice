@@ -11,6 +11,9 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import 'features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+import 'package:provider/provider.dart';
+import 'data/auth_service.dart';
+import 'features/metamask/data/models/metamask_provider.dart';
 
 
 // Custom BlocObserver for debugging state changes
@@ -47,9 +50,19 @@ void main() async {
   
   // Initialize session by checking for existing login
   await _checkExistingSession();
+
+  //metamask provider instance 
+    final metamaskProvider = MetamaskProvider();
   
   // Run the app
-  runApp(const TheBoostApp());
+  runApp(MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MetamaskProvider>.value(
+          value: metamaskProvider,
+        ),
+      ],
+      child: const TheBoostApp(),
+    ),);
 }
 
 /// Checks for existing session and initializes the LoginBloc accordingly

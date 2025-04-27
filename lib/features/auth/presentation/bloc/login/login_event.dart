@@ -19,7 +19,7 @@ class LoginRequested extends LoginEvent {
 
 class LogoutRequested extends LoginEvent {}
 
-class CheckSession extends LoginEvent {}
+class CheckSession extends LoginEvent {
 
 
   @override

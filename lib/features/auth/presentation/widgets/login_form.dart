@@ -1,6 +1,7 @@
 // lib/features/auth/presentation/widgets/login_form.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
@@ -16,6 +17,8 @@ import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/utils/input_validators.dart';
+//import '../../../../features/metamask/presentation/widgets/metamask_login_button.dart';
+import '../../../../data/auth_service.dart';
 
 class LoginForm extends StatefulWidget {
   final Function updateView;
@@ -286,8 +289,40 @@ class _LoginFormState extends State<LoginForm> {
                     );
                   },
                 ),
-                const SizedBox(height: AppDimensions.paddingL),
 
+                // Add MetaMask login button here
+                //const SizedBox(height: AppDimensions.paddingL),
+                
+                // Or login with MetaMask divider
+               /* Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "OR",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                
+                const SizedBox(height: AppDimensions.paddingL),
+                
+                // MetaMask login button
+                MetaMaskLoginButton(
+                  onSuccess: () {
+                    // Navigate to dashboard after successful connection
+                    Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+                  },
+                ),
+
+                const SizedBox(height: AppDimensions.paddingL),
+*/
                 // Sign up link
                 Center(
                   child: Row(
@@ -361,6 +396,32 @@ class _LoginFormState extends State<LoginForm> {
           );
     }
   }
+  /*
+  void _handleMetaMaskLogin(BuildContext context) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final success = await authService.connectWithMetaMask();
+    
+    if (success) {
+      // Navigate to dashboard on successful login
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      
+      print('[${DateTime.now()}] LoginForm: ✅ MetaMask login successful'
+            '\n└─ Address: ${authService.currentAddress}'
+            '\n└─ Chain: ${authService.chainId}');
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authService.errorMessage),
+          backgroundColor: Colors.red,
+        ),
+      );
+      
+      print('[${DateTime.now()}] LoginForm: ❌ MetaMask login failed'
+            '\n└─ Error: ${authService.errorMessage}');
+    }
+  }
+*/
 }
 
 class _SocialButton extends StatelessWidget {

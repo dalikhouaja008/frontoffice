@@ -29,6 +29,8 @@ import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.
 import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
 import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
 import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+import '../../data/auth_service.dart';
+import '../../features/metamask/data/models/metamask_provider.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -49,21 +51,45 @@ Future<void> initDependencies() async {
   //=== Features ===//
   await _initAuthFeature();
   await _initPropertyFeature();
-  await _initPreferencesFeature(); // Add this line
-  await _initPreferencesFeature(); // Add this line
-
-
+  await _initPreferencesFeature(); 
+  await _initPreferencesFeature();
+  await _initMetaMaskFeature(); // Add MetaMask initialization
 
   print('DependencyInjection: ✅ Dependencies initialized');
 }
 
+/// Initialize MetaMask-related dependencies
+Future<void> _initMetaMaskFeature() async {
+  print('[${DateTime.now()}] DependencyInjection: 🔄 Initializing MetaMask feature');
+  
+  try {
+    // Register MetaMask provider
+    getIt.registerLazySingleton<MetamaskProvider>(
+      () => MetamaskProvider(),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ MetamaskProvider registered');
+    
+    // Register Auth Service that uses MetaMask
+    getIt.registerLazySingleton<AuthService>(
+      () => AuthService(
+        getIt<MetamaskProvider>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ AuthService registered');
+    
+    print('[${DateTime.now()}] DependencyInjection: ✅ MetaMask feature initialized');
+  } catch (e) {
+    print('[${DateTime.now()}] DependencyInjection: ❌ Error initializing MetaMask feature'
+        '\n└─ Error: $e');
+  }
+}
 
 Future<void> registerChatbotDependencies() async {
   // Register Gemini service with API key
   final geminiApiKey = const String.fromEnvironment(
     'GEMINI_API_KEY',
     defaultValue:
-        'AIzaSyAvEtQjkAjwld1rTx4EtPXJ97iM1_5CqT8', // Replace with your actual API key when not using --dart-define
+        'AIzaSyAvEtQjkAjwld1rTx4EtPXJ97iM1_5CqT8', //api key
   );
 
   getIt.registerLazySingleton<GeminiService>(

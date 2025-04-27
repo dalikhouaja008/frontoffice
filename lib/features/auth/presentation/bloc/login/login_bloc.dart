@@ -97,23 +97,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           tempToken: response.tempToken!,
         ));
 
-      } else {
+      } else if (response.accessToken != null && response.refreshToken != null) {
         print('[${DateTime.now()}] LoginBloc: ✅ Login successful'
             '\n└─ User: ${response.user?.username}'
             '\n└─ Email: ${response.user?.email}');
-
-        emit(LoginSuccess(user: response.user!));
-      }
-    } catch (e) {
-      print('[${DateTime.now()}] LoginBloc: ❌ Login failed'
-          '\n└─ Error: $e');
-
-        return;
-      }
-
-      if (response.accessToken != null && response.refreshToken != null) {
-        print('LoginBloc: ✅ Login successful'
-              '\n└─ Email: ${response.user.email}');
 
         // Save tokens to secure storage
         await _secureStorage.saveTokens(
@@ -123,12 +110,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         
         // Save session data
         await _sessionService.saveSession(
-          user: response.user,
+          user: response.user!,
           accessToken: response.accessToken!,
           refreshToken: response.refreshToken!,
         );
 
-        emit(LoginSuccess(user: response.user));
+        emit(LoginSuccess(user: response.user!));
       } else {
         throw Exception('Invalid login response: missing tokens');
       }
