@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/presentation/features_pages.dart';
-import 'package:the_boost/features/auth/presentation/pages/lands_screen.dart';
-import 'package:the_boost/features/auth/presentation/pages/profile_page.dart';
+import 'package:the_boost/features/auth/presentation/pages/investments/lands_screen.dart';
+import 'package:the_boost/features/auth/presentation/pages/investments/profile_page.dart';
 import '../../../chatbot/presentation/controllers/chat_controller.dart';
 
 import 'package:the_boost/features/auth/domain/entities/user.dart';
