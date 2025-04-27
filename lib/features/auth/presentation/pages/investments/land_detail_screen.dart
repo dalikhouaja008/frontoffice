@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/land_service.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
-import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
-import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_amenities_widget.dart';
+import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_amenities_widget.dart' show LandAmenitiesWidget;
 import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_general_info_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_images_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_validation_widget.dart';
@@ -18,11 +16,11 @@ class LandDetailsScreen extends StatefulWidget {
   final String? networkName; // Pour Etherscan
 
   const LandDetailsScreen({
-    Key? key,
+    super.key,
     this.land,
     this.landId,
     this.networkName = "ethereum",
-  }) : super(key: key);
+  });
 
   @override
   State<LandDetailsScreen> createState() => _LandDetailsScreenState();

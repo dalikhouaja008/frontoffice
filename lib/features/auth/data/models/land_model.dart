@@ -37,6 +37,7 @@ class Land {
   final String status; 
   final List<String>? ipfsCIDs;
   final List<String>? imageCIDs;
+  final String? blockchainTxHash; // Champ ajouté
   final DateTime createdAt;
   final DateTime updatedAt;
   final double? surface;
@@ -72,6 +73,7 @@ class Land {
     required this.status,
     this.ipfsCIDs,
     this.imageCIDs,
+    this.blockchainTxHash, 
     required this.createdAt,
     required this.updatedAt,
     this.surface,
@@ -97,13 +99,32 @@ class Land {
   static Map<String, bool>? _amenitiesFromJson(dynamic json) {
     if (json == null) return null;
     
-    // Handle if backend sends as Map
+    // Pour le débogage
+    print('Amenities JSON type: ${json.runtimeType}');
+    print('Amenities JSON value: $json');
+    
+    // Cas 1: Si le backend envoie comme Map
     if (json is Map) {
       return Map<String, bool>.from(json.map((key, value) => 
         MapEntry(key.toString(), value is bool ? value : value == true || value == 'true')));
     }
     
-    // Return empty map as fallback
+    // Cas 2: Si le backend envoie comme liste de listes [[key, value], [key, value], ...]
+    if (json is List) {
+      final Map<String, bool> result = {};
+      for (var item in json) {
+        if (item is List && item.length >= 2) {
+          final key = item[0].toString();
+          final value = item[1] is bool ? item[1] : (item[1].toString().toLowerCase() == 'true');
+          result[key] = value;
+        }
+      }
+      print('Converted amenities from list to map: $result'); // Log pour vérification
+      return result;
+    }
+    
+    // Si format inconnu, retourner une map vide
+    print('Unknown amenities format, returning empty map');
     return {};
   }
   
