@@ -32,8 +32,7 @@ class LandValidationWidget extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(width: 8),
-                  _buildInfoIcon(
-                    context,
+                  _buildTooltipIcon(
                     'Validations are conducted according to ISO 17024 standards for Land Registry. Each validation requires verification from multiple qualified authorities.',
                   ),
                 ],
@@ -92,8 +91,7 @@ class LandValidationWidget extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(width: 8),
-                _buildInfoIcon(
-                  context,
+                _buildTooltipIcon(
                   'Validations follow the ISO 17024 and RFC 3161 standards for Land Registry. All signatures are cryptographically verified on the blockchain.',
                 ),
               ],
@@ -237,7 +235,7 @@ class LandValidationWidget extends StatelessWidget {
                   ],
                 ),
                 
-                // Le standard de validation utilisé
+                // Le standard de validation utilisé avec tooltip
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -259,8 +257,7 @@ class LandValidationWidget extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _buildInfoIcon(
-                      context,
+                    _buildTooltipIcon(
                       _getValidationStandardDescription(validation.validatorType),
                       size: 14,
                     ),
@@ -320,34 +317,28 @@ class LandValidationWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoIcon(BuildContext context, String message, {double size = 18}) {
-    return IconButton(
-      icon: Icon(Icons.info_outline, size: size, color: AppColors.primary),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      onPressed: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext ctx) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Icon(Icons.info, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  const Text('Information'),
-                ],
-              ),
-              content: Text(message),
-              actions: [
-                TextButton(
-                  child: const Text('Close'),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            );
-          },
-        );
-      },
+  // Méthode remplacée pour utiliser un Tooltip au lieu d'un Dialog
+  Widget _buildTooltipIcon(String message, {double size = 18}) {
+    return Tooltip(
+      message: message,
+      preferBelow: false,
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      textStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 13,
+      ),
+      showDuration: const Duration(seconds: 5),
+      waitDuration: const Duration(milliseconds: 100),
+      child: Icon(
+        Icons.info_outline,
+        size: size,
+        color: AppColors.primary,
+      ),
     );
   }
 
@@ -378,8 +369,7 @@ class LandValidationWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              _buildInfoIcon(
-                context,
+              _buildTooltipIcon(
                 'Digital signatures provide cryptographic proof of validation according to industry standards. This signature can be independently verified on the blockchain.',
                 size: 14,
               ),
@@ -573,7 +563,7 @@ class LandValidationWidget extends StatelessWidget {
             ] else ...[
               const Icon(Icons.check_circle, size: 12, color: Colors.green),
               const SizedBox(width: 4),
-              const Text(
+              Text(
                 'All required validations completed',
                 style: TextStyle(
                   fontSize: 12,
@@ -590,38 +580,6 @@ class LandValidationWidget extends StatelessWidget {
 
   // Amélioration du style des badges d'état
   Widget _buildValidationStatusBadge(String status) {
-    Color color;
-    IconData icon;
-    String text;
-    
-    switch (status.toLowerCase()) {
-      case 'validated':
-        color = Colors.green;
-        icon = Icons.check_circle;
-        text = 'VALIDATED';
-        break;
-      case 'pending':
-      case 'pending_validation':
-        color = Colors.orange;
-        icon = Icons.pending;
-        text = 'PENDING';
-        break;
-      case 'partially_validated':
-        color = Colors.blue;
-        icon = Icons.playlist_add_check;
-        text = 'PARTIALLY VALIDATED';
-        break;
-      case 'rejected':
-        color = Colors.red;
-        icon = Icons.cancel;
-        text = 'REJECTED';
-        break;
-      default:
-        color = Colors.grey;
-        icon = Icons.help_outline;
-        text = status.toUpperCase();
-    }
-    
     return _buildValidationStatusChip(status);
   }
 
