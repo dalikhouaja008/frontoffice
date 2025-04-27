@@ -164,13 +164,13 @@ class _InvestPageState extends State<InvestPage> {
         itemBuilder: (context, index) {
           final land = lands[index];
           return Semantics(
-            label: 'Land: ${land.title}, Location: ${land.location}, Price: ${land.totalPrice ?? 'N/A'} DT',
+            label: 'Land: ${land.title}, Location: ${land.location}, Price: ${land.priceland ?? 'N/A'} DT',
             child: LandCard(
               land: land,
               onTap: () => context.read<LandBloc>().add(NavigateToLandDetails(land: land)),
               onSpeak: () {
                 final description = land.description ?? 'No description available';
-                final price = land.totalPrice != null ? '${land.totalPrice} DT' : 'Price not available';
+                final price = land.priceland != null ? '${land.priceland} DT' : 'Price not available';
                 _speak('Land: ${land.title}. Location: ${land.location}. Price: $price. Description: $description');
               },
               onStopSpeaking: _stopSpeaking,

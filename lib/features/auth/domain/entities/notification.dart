@@ -95,7 +95,7 @@ class UserNotification {
       landId: land.id,
       additionalData: {
         'landTitle': land.title,
-        'price': land.totalPrice ?? 0.0,
+        'price': land.priceland ?? '0',
         'location': land.location,
         'status': land.status,
         'ownerId': land.ownerId,
@@ -107,20 +107,25 @@ class UserNotification {
     );
   }
 
-  factory UserNotification.priceDrop(Land land, double previousPrice) {
-    final priceDropPercentage = ((previousPrice - (land.totalPrice ?? 0.0)) / previousPrice * 100).toStringAsFixed(1);
-    return UserNotification(
+  factory UserNotification.priceDrop(Land land, String previousPrice) {
+      final currentPrice = land.priceland ?? '0';
+      final prevPriceDouble = double.tryParse(previousPrice) ?? 0.0;
+      final currPriceDouble = double.tryParse(currentPrice) ?? 0.0;
+      final priceDropPercentage = prevPriceDouble > 0 
+          ? ((prevPriceDouble - currPriceDouble) / prevPriceDouble * 100).toStringAsFixed(1)
+          : '0.0';
+          return UserNotification(
       id: 'price_drop_${land.id}_${DateTime.now().millisecondsSinceEpoch}',
       title: 'Price Drop: ${land.title}',
       message:
-          'Price for ${land.title} dropped by $priceDropPercentage% (from \$${previousPrice.toStringAsFixed(2)} to \$${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'}).',
+        'Price for ${land.title} dropped by $priceDropPercentage% (from \$${previousPrice} to \$${currentPrice}).',
       type: NotificationType.PRICE_DROP,
       createdAt: DateTime.now(),
       landId: land.id,
       additionalData: {
         'landTitle': land.title,
         'previousPrice': previousPrice,
-        'newPrice': land.totalPrice ?? 0.0,
+        'newPrice': land.priceland ?? '0',
         'dropPercentage': priceDropPercentage,
         'location': land.location,
         'status': land.status,
