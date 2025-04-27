@@ -396,9 +396,9 @@ class LandValidationWidget extends StatelessWidget {
   }
 
   void _launchEtherscanTx(String txHash) async {
-    final url = 'https://etherscan.io/tx/$txHash';
-    final uri = Uri.parse(url);
-    
+  final url = 'https://sepolia.etherscan.io/tx/$txHash';
+  final uri = Uri.parse(url);
+  
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

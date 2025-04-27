@@ -7,7 +7,6 @@ import 'package:the_boost/core/services/land_service.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_amenities_widget.dart';
-import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_blockchain_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_general_info_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_images_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/widgets/land_validation_widget.dart';
@@ -127,13 +126,6 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
                           
                           // Section de validation
                           LandValidationWidget(land: _land!),
-                          const SizedBox(height: 24),
-                          
-                          // Section blockchain
-                          LandBlockchainWidget(
-                            land: _land!,
-                            networkName: widget.networkName,
-                          ),
                           const SizedBox(height: 24),
                           
                           // Boutons d'action

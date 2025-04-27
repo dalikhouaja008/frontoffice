@@ -18,6 +18,9 @@ class LandGeneralInfoWidget extends StatefulWidget {
 class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
   final MapController _mapController = MapController();
   bool _mapLoaded = false;
+  
+  // Définir la constante du nom du réseau
+  final String _networkName = 'sepolia'; // ou 'mainnet' selon votre besoin
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +122,18 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                 ],
               ),
             ],
+            if (widget.land.ownerAddress != null && widget.land.ownerAddress!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () => _launchEtherscanAddress(widget.land.ownerAddress!),
+                icon: const Icon(Icons.account_balance_wallet),
+                label: const Text('View on Etherscan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueGrey,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -168,6 +183,19 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                 _buildInfoRow(Icons.token, 'Total Tokens', '${widget.land.totalTokens}'),
               if (widget.land.pricePerToken != null)
                 _buildInfoRow(Icons.money, 'Price per Token', '${widget.land.pricePerToken} DT'),
+              
+              if (widget.land.blockchainLandId != null) ...[
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _launchBlockchainExplorer(),
+                  icon: const Icon(Icons.explore),
+                  label: const Text('View on Blockchain'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
             ],
           ],
         ),
@@ -370,6 +398,37 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open maps')),
+      );
+    }
+  }
+
+  // Méthode pour ouvrir un lien Etherscan pour une adresse
+  void _launchEtherscanAddress(String address) async {
+    final url = 'https://${_networkName}.etherscan.io/address/$address';
+    final uri = Uri.parse(url);
+    
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open Etherscan')),
+      );
+    }
+  }
+  
+  // Méthode pour ouvrir l'explorateur blockchain pour ce terrain
+  void _launchBlockchainExplorer() async {
+    if (widget.land.blockchainLandId == null) return;
+    
+    // Vous pouvez adapter cette URL selon votre explorateur de blockchain spécifique
+    final url = 'https://${_networkName}.etherscan.io/token/${widget.land.blockchainLandId}';
+    final uri = Uri.parse(url);
+    
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open blockchain explorer')),
       );
     }
   }
