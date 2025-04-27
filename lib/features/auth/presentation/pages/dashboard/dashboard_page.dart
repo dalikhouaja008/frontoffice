@@ -121,12 +121,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   DashboardStats(),
                   const SizedBox(height: AppDimensions.paddingXL),
                   
-                  SectionTitle(title: "Your Portfolio"),
+                  const SectionTitle(title: "Your Portfolio"),
                   const SizedBox(height: AppDimensions.paddingL),
                   InvestmentPortfolio(),
                   const SizedBox(height: AppDimensions.paddingXL),
                   
-                  SectionTitle(title: "Recent Activity"),
+                  const SectionTitle(title: "Recent Activity"),
                   const SizedBox(height: AppDimensions.paddingL),
                   RecentActivity(),
                   const SizedBox(height: AppDimensions.paddingXL),
@@ -134,7 +134,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      SectionTitle(title: "Featured Properties"),
+                      const SectionTitle(title: "Featured Properties"),
                       TextButton(
                         onPressed: () {
                           _navigateToInvest(context);
@@ -164,12 +164,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _navigateToInvest(BuildContext context) {
     try {
-      print('[2025-03-02 19:21:51] DashboardPage: 🔄 Navigating to Invest page'
+      print(' DashboardPage: 🔄 Navigating to Invest page'
             '\n└─ User: raednas');
             
       Navigator.pushNamed(context, '/invest');
     } catch (e) {
-      print('[2025-03-02 19:21:51] DashboardPage: ❌ Navigation error'
+      print(' DashboardPage: ❌ Navigation error'
             '\n└─ User: raednas'
             '\n└─ Error: $e');
             

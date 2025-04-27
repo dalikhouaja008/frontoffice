@@ -11,7 +11,7 @@ class SignUpBloc extends Bloc<SignUpEvent, SignUpState> {
   final SignUpUseCase signUpUseCase;
 
   SignUpBloc(this.signUpUseCase) : super(SignUpInitial()) {
-    on<SignUpRequested>((event, emit) async {
+  on<SignUpRequested>((event, emit) async {
   emit(SignUpLoading());
   
   try {
@@ -26,8 +26,8 @@ class SignUpBloc extends Bloc<SignUpEvent, SignUpState> {
 
     result.fold(
       (failure) {
-        print('Sign up failed with error: $failure');
-        emit(SignUpFailure(failure));
+        print('Sign up failed with detailed error: $failure');
+        emit(SignUpFailure(failure.toString()));
       },
       (user) {
         print('Sign up succeeded for user: ${user.username}');
@@ -35,7 +35,7 @@ class SignUpBloc extends Bloc<SignUpEvent, SignUpState> {
       },
     );
   } catch (e) {
-    print('Exception during sign up: $e');
+    print('Comprehensive Signup Exception: $e');
     emit(SignUpFailure(e.toString()));
   }
 });
