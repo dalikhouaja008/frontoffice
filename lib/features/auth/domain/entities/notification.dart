@@ -16,9 +16,9 @@ class UserNotification {
   final NotificationType type;
   final DateTime createdAt;
   final bool isRead;
-  final String? landId; // Optional reference to a specific land
+  final String? landId;
   final Map<String, dynamic>? additionalData;
-  
+
   const UserNotification({
     required this.id,
     required this.title,
@@ -30,7 +30,6 @@ class UserNotification {
     this.additionalData,
   });
 
-  // Copy with method for updating notification properties
   UserNotification copyWith({
     String? id,
     String? title,
@@ -53,12 +52,10 @@ class UserNotification {
     );
   }
 
-  // Mark as read
   UserNotification markAsRead() {
     return copyWith(isRead: true);
   }
 
-  // Convert to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -72,7 +69,6 @@ class UserNotification {
     };
   }
 
-  // Create from JSON
   factory UserNotification.fromJson(Map<String, dynamic> json) {
     return UserNotification(
       id: json['id'] as String,
@@ -89,45 +85,57 @@ class UserNotification {
     );
   }
 
-  // Factory for creating land match notifications
   factory UserNotification.landMatch(Land land) {
     return UserNotification(
       id: 'land_match_${land.id}_${DateTime.now().millisecondsSinceEpoch}',
-      title: 'New Land Match: ${land.name}',
-      message: 'We found a new land in ${land.location} that matches your preferences.',
+      title: 'New Match: ${land.title}',
+      message: 'Found a new land at ${land.location} matching your preferences. ${land.description != null ? "Description: ${land.description}" : ""}',
       type: NotificationType.MATCH_PREFERENCES,
       createdAt: DateTime.now(),
       landId: land.id,
       additionalData: {
-        'landName': land.name,
-        'landType': land.type.toString().split('.').last,
-        'price': land.price,
+        'landTitle': land.title,
+        'price': land.priceland ?? '0',
         'location': land.location,
+        'status': land.status,
+        'ownerId': land.ownerId,
+        'imageCIDs': land.imageCIDs,
+        'description': land.description ?? '', // Use empty string if null
+        'latitude': land.latitude, // Can be null, no change needed
+        'longitude': land.longitude, // Can be null, no change needed
       },
     );
   }
 
-  // Factory for creating price drop notifications
-  factory UserNotification.priceDrop(Land land, double previousPrice) {
-    final priceDropPercentage = ((previousPrice - land.price) / previousPrice * 100).toStringAsFixed(1);
-    
-    return UserNotification(
+  factory UserNotification.priceDrop(Land land, String previousPrice) {
+      final currentPrice = land.priceland ?? '0';
+      final prevPriceDouble = double.tryParse(previousPrice) ?? 0.0;
+      final currPriceDouble = double.tryParse(currentPrice) ?? 0.0;
+      final priceDropPercentage = prevPriceDouble > 0 
+          ? ((prevPriceDouble - currPriceDouble) / prevPriceDouble * 100).toStringAsFixed(1)
+          : '0.0';
+          return UserNotification(
       id: 'price_drop_${land.id}_${DateTime.now().millisecondsSinceEpoch}',
-      title: 'Price Drop: ${land.name}',
-      message: 'The price of ${land.name} has dropped by $priceDropPercentage%.',
+      title: 'Price Drop: ${land.title}',
+      message:
+        'Price for ${land.title} dropped by $priceDropPercentage% (from \$${previousPrice} to \$${currentPrice}).',
       type: NotificationType.PRICE_DROP,
       createdAt: DateTime.now(),
       landId: land.id,
       additionalData: {
-        'landName': land.name,
+        'landTitle': land.title,
         'previousPrice': previousPrice,
-        'newPrice': land.price,
+        'newPrice': land.priceland ?? '0',
         'dropPercentage': priceDropPercentage,
+        'location': land.location,
+        'status': land.status,
+        'description': land.description ?? '', // Use empty string if null
+        'latitude': land.latitude,
+        'longitude': land.longitude,
       },
     );
   }
 
-  // Factory for creating system alerts
   factory UserNotification.systemAlert(String title, String message) {
     return UserNotification(
       id: 'system_alert_${DateTime.now().millisecondsSinceEpoch}',

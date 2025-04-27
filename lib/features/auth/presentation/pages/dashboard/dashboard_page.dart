@@ -13,7 +13,6 @@ import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 
 import '../../../../../core/di/dependency_injection.dart';
-import '../../../../../core/services/land_matching_service.dart';
 
 class DashboardPage extends StatefulWidget {
   final User? user;
@@ -33,7 +32,6 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     
     print('[2025-03-02 19:21:51] DashboardPage: ✨ Initializing'
-          '\n└─ User: raednas'
           '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
     
     // Check for notifications and preferences when dashboard loads
@@ -68,33 +66,6 @@ class _DashboardPageState extends State<DashboardPage> {
     } else {
       print('[2025-03-02 19:21:51] DashboardPage: ✅ User has preferences'
             '\n└─ User: ${widget.user!.username}');
-    }
-    
-    // Start land matching service for this user
-    final landMatchingService = getIt<LandMatchingService>();
-    landMatchingService.startPeriodicMatching(widget.user!);
-    
-    // Check for new land notifications
-    final matchingLands = await landMatchingService.findMatchingLands(widget.user!);
-    
-    if (matchingLands.isNotEmpty && mounted) {
-      print('[2025-03-02 19:21:51] DashboardPage: 🔔 Found ${matchingLands.length} matching lands'
-            '\n└─ User: ${widget.user!.username}');
-            
-      // Show a snackbar to alert user about new matches
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Found ${matchingLands.length} new properties matching your preferences!'),
-          action: SnackBarAction(
-            label: 'View',
-            onPressed: () {
-              _navigateToInvest(context);
-            },
-          ),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 5),
-        ),
-      );
     }
   }
 

@@ -13,7 +13,7 @@ class GraphQLService {
       getToken: () => 'Bearer $token',
     );
 
-    final httpLink = HttpLink('http://127.0.0.1:3000/graphql');
+    final httpLink = HttpLink('http://localhost:3000/graphql');
     
     print('[$_timestamp] GraphQLService: 🔗 Setting up GraphQL link'
           '\n└─ User: $_user'
@@ -28,7 +28,7 @@ class GraphQLService {
   }
 
   static GraphQLClient get client {
-    final httpLink = HttpLink('http://127.0.0.1:3000/graphql');
+    final httpLink = HttpLink('http://localhost:3000/graphql');
     return GraphQLClient(
       link: httpLink,
       cache: GraphQLCache(),

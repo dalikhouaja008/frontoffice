@@ -1,101 +1,141 @@
-// models/land_model.dart
+import 'package:json_annotation/json_annotation.dart';
 
-enum LandType { AGRICULTURAL, RESIDENTIAL, INDUSTRIAL, COMMERCIAL }
-enum LandStatus { AVAILABLE, PENDING, SOLD }
+part 'land_model.g.dart';
 
+enum LandType {
+  residential,
+  commercial,
+  agricultural,
+  industrial,
+}
+
+extension LandTypeExtension on LandType {
+  String get displayName {
+    return toString().split('.').last[0].toUpperCase() +
+        toString().split('.').last.substring(1).toLowerCase();
+  }
+
+  String get name => toString().split('.').last;
+}
+
+enum LandValidationStatus {
+  PENDING_VALIDATION,
+  VALIDATED,
+  REJECTED
+}
+
+@JsonSerializable()
 class Land {
+  @JsonKey(name: '_id')
   final String id;
-  final String name;
-  final String description;
+  final String title;
+  final String? description;
   final String location;
-  final LandType type;
-  final LandStatus status;
-  final double price;
-  final double surface;
-  final String imageUrl;
+  final String ownerId;
+  final double? latitude;
+  final double? longitude;
+  final String status; 
+  final List<String>? ipfsCIDs;
+  final List<String>? imageCIDs;
   final DateTime createdAt;
-  final String? title;  // Made optional with ?
+  final DateTime updatedAt;
+  final double? surface;
+  final String? priceland; 
+  final int? totalTokens;
+  final String? pricePerToken; 
+  final String? ownerAddress;
+  final String? blockchainLandId;
+  final LandType? landtype;
+  final List<String>? documentUrls; // Added property from backend
+  final List<String>? imageUrls; // Added property from backend
+  final String? coverImageUrl; // Added property from backend
+  
+  // Custom converter for MongoDB Map to Dart Map
+  @JsonKey(fromJson: _amenitiesFromJson, toJson: _amenitiesToJson)
+  final Map<String, bool>? amenities;
+  
+  // Handle the fact that backend might not have this field yet
+  @JsonKey(defaultValue: 'AVAILABLE')
+  final String availability;
+  
+  // Add validations field if you need to access it from the frontend
+  final List<ValidationEntry>? validations;
 
-  const Land({
+  Land({
     required this.id,
-    required this.name,
-    required this.description,
+    required this.title,
+    this.description,
     required this.location,
-    required this.type,
+    required this.ownerId,
+    this.latitude,
+    this.longitude,
     required this.status,
-    required this.price,
-    required this.surface,
-    required this.imageUrl,
+    this.ipfsCIDs,
+    this.imageCIDs,
     required this.createdAt,
-    this.title,  // Optional parameter
+    required this.updatedAt,
+    this.surface,
+    this.priceland,
+    this.totalTokens,
+    this.pricePerToken,
+    this.ownerAddress,
+    this.blockchainLandId,
+    this.landtype,
+    this.documentUrls,
+    this.imageUrls,
+    this.coverImageUrl,
+    this.amenities,
+    required this.availability,
+    this.validations,
   });
 
-  // Add fromJson constructor
-  factory Land.fromJson(Map<String, dynamic> json) {
-    return Land(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      location: json['location'] as String,
-      type: LandType.values.firstWhere(
-        (e) => e.toString() == 'LandType.${json['type']}',
-        orElse: () => LandType.RESIDENTIAL,
-      ),
-      status: LandStatus.values.firstWhere(
-        (e) => e.toString() == 'LandStatus.${json['status']}',
-        orElse: () => LandStatus.AVAILABLE,
-      ),
-      price: (json['price'] as num).toDouble(),
-      surface: (json['surface'] as num).toDouble(),
-      imageUrl: json['imageUrl'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      title: json['title'] as String?,
-    );
-  }
+  factory Land.fromJson(Map<String, dynamic> json) => _$LandFromJson(json);
 
-  // Add toJson method
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'location': location,
-      'type': type.toString().split('.').last,
-      'status': status.toString().split('.').last,
-      'price': price,
-      'surface': surface,
-      'imageUrl': imageUrl,
-      'createdAt': createdAt.toIso8601String(),
-      'title': title,
-    };
+  Map<String, dynamic> toJson() => _$LandToJson(this);
+  
+  // Custom converter for amenities
+  static Map<String, bool>? _amenitiesFromJson(dynamic json) {
+    if (json == null) return null;
+    
+    // Handle if backend sends as Map
+    if (json is Map) {
+      return Map<String, bool>.from(json.map((key, value) => 
+        MapEntry(key.toString(), value is bool ? value : value == true || value == 'true')));
+    }
+    
+    // Return empty map as fallback
+    return {};
   }
+  
+  static dynamic _amenitiesToJson(Map<String, bool>? amenities) {
+    return amenities;
+  }
+}
 
-  // Add copyWith method
-  Land copyWith({
-    String? id,
-    String? name,
-    String? description,
-    String? location,
-    LandType? type,
-    LandStatus? status,
-    double? price,
-    double? surface,
-    String? imageUrl,
-    DateTime? createdAt,
-    String? title,
-  }) {
-    return Land(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      location: location ?? this.location,
-      type: type ?? this.type,
-      status: status ?? this.status,
-      price: price ?? this.price,
-      surface: surface ?? this.surface,
-      imageUrl: imageUrl ?? this.imageUrl,
-      createdAt: createdAt ?? this.createdAt,
-      title: title ?? this.title,
-    );
-  }
+@JsonSerializable()
+class ValidationEntry {
+  final String? validator;
+  final int? validatorType;
+  final int? timestamp;
+  final bool? isValidated;
+  final String? cidComments;
+  final String? txHash;
+  final String? signature;
+  final String? signatureType;
+  final String? signedMessage;
+
+  ValidationEntry({
+    this.validator,
+    this.validatorType,
+    this.timestamp,
+    this.isValidated,
+    this.cidComments,
+    this.txHash,
+    this.signature,
+    this.signatureType,
+    this.signedMessage,
+  });
+
+  factory ValidationEntry.fromJson(Map<String, dynamic> json) => _$ValidationEntryFromJson(json);
+  Map<String, dynamic> toJson() => _$ValidationEntryToJson(this);
 }
