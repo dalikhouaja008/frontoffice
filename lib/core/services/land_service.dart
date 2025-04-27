@@ -10,63 +10,93 @@ class LandService {
   static const String _catalogueUrl = 'http://localhost:5000/lands/catalogue';
   final SessionService _sessionService = getIt<SessionService>();
 
-  Future<List<Land>> fetchLands() async {
-    // Utiliser l'URL du catalogue au lieu de l'URL de base
-    print('[${DateTime.now()}] LandService: 🚀 Fetching lands from $_catalogueUrl');
-    try {
-      final sessionData = await _sessionService.getSession();
-      if (sessionData == null || sessionData.accessToken.isEmpty) {
-        throw Exception('No authentication token available');
-      }
+Future<List<Land>> fetchLands() async {
+  try {
 
-      final token = sessionData.accessToken;
-      final response = await http.get(
-        Uri.parse(_catalogueUrl), // Mise à jour pour utiliser l'endpoint catalogue
-        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      );
-      print('[${DateTime.now()}] LandService: 📡 Response status: ${response.statusCode}');
-      
-      // Pour éviter de surcharger les logs, limitons l'affichage du corps de réponse
-      if (response.body.length > 500) {
-        print('[${DateTime.now()}] LandService: 📡 Response body (truncated): ${response.body.substring(0, 500)}...');
-      } else {
-        print('[${DateTime.now()}] LandService: 📡 Response body: ${response.body}');
-      }
-
-      if (response.statusCode == 200) {
-        final decodedData = jsonDecode(response.body);
-        if (decodedData is! List<dynamic>) throw Exception('Expected a list of lands');
-        
-        final lands = decodedData.map((json) {
-          // Récupérer les données enrichies du backend
-          final Map<String, dynamic> landJson = json as Map<String, dynamic>;
-          
-          // Vérifier si les URLs d'images et documents sont disponibles
-          if (landJson['imageInfos'] != null && landJson['imageInfos'] is List) {
-            landJson['imageUrls'] = (landJson['imageInfos'] as List).map((info) => info['url'].toString()).toList();
-          }
-          
-          if (landJson['documentInfos'] != null && landJson['documentInfos'] is List) {
-            landJson['documentUrls'] = (landJson['documentInfos'] as List).map((info) => info['url'].toString()).toList();
-          }
-          
-          // S'assurer que le coverImageUrl est défini
-          if (landJson['coverImageUrl'] == null && landJson['imageUrls'] != null && (landJson['imageUrls'] as List).isNotEmpty) {
-            landJson['coverImageUrl'] = landJson['imageUrls'][0];
-          }
-          
-          return Land.fromJson(landJson);
-        }).toList();
-        
-        print('[${DateTime.now()}] LandService: ✅ Successfully fetched ${lands.length} lands');
-        return lands;
-      }
-      throw Exception('Failed to load lands: ${response.statusCode}');
-    } catch (e) {
-      print('[${DateTime.now()}] LandService: ❌ Error fetching lands: $e');
-      rethrow;
+    print('LandService: 🚀 Fetching lands from $_catalogueUrl');
+    print('LandService: 👤 User: nesssim');
+    
+    final sessionData = await _sessionService.getSession();
+    if (sessionData == null || sessionData.accessToken.isEmpty) {
+      throw Exception('No authentication token available');
     }
+
+    final token = sessionData.accessToken;
+    final response = await http.get(
+      Uri.parse(_catalogueUrl),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+    );
+    
+    // Log du statut de la réponse
+    print('LandService: 📡 Response status: ${response.statusCode}');
+    
+    // Afficher le corps complet de la réponse
+    print('========== BEGINNING OF FULL JSON RESPONSE ==========');
+    print(response.body);
+    print('========== END OF FULL JSON RESPONSE ==========');
+    
+    if (response.statusCode == 200) {
+      final decodedData = jsonDecode(response.body);
+      
+      // Log de la structure des données
+      print('LandService: 🔍 JSON structure type: ${decodedData.runtimeType}');
+      
+      if (decodedData is! List<dynamic>) {
+        throw Exception('Expected a list of lands but got ${decodedData.runtimeType}');
+      }
+      
+      // Affiche les clés du premier élément pour débogage
+      if (decodedData.isNotEmpty && decodedData.first is Map) {
+        print('LandService: 🔑 First item keys: ${(decodedData.first as Map).keys.toList()}');
+      }
+      
+      final lands = decodedData.map((json) {
+        // Récupérer les données enrichies du backend
+        final Map<String, dynamic> landJson = json as Map<String, dynamic>;
+        
+        // Traitement spécifique des amenities pour débogage
+        if (landJson['amenities'] != null) {
+          print('LandService: 🔧 Amenities type: ${landJson['amenities'].runtimeType}');
+          print(' LandService: 🔧 Amenities value: ${landJson['amenities']}');
+        } else {
+          print('LandService: ⚠️ No amenities found for land ID: ${landJson['_id']}');
+        }
+        
+        // Vérifier si les URLs d'images et documents sont disponibles
+        if (landJson['imageInfos'] != null && landJson['imageInfos'] is List) {
+          landJson['imageUrls'] = (landJson['imageInfos'] as List).map((info) => info['url'].toString()).toList();
+        }
+        
+        if (landJson['documentInfos'] != null && landJson['documentInfos'] is List) {
+          landJson['documentUrls'] = (landJson['documentInfos'] as List).map((info) => info['url'].toString()).toList();
+        }
+        
+        // S'assurer que le coverImageUrl est défini
+        if (landJson['coverImageUrl'] == null && landJson['imageUrls'] != null && (landJson['imageUrls'] as List).isNotEmpty) {
+          landJson['coverImageUrl'] = landJson['imageUrls'][0];
+        }
+        
+        return Land.fromJson(landJson);
+      }).toList();
+      
+      print(' LandService: ✅ Successfully fetched ${lands.length} lands');
+      
+      // Log détaillé pour le premier terrain (uniquement à des fins de débogage)
+      if (lands.isNotEmpty) {
+        final firstLand = lands.first;
+        print(' LandService: 📊 Sample land - ID: ${firstLand.id}, Title: ${firstLand.title}');
+        print(' LandService: 📊 Sample land - Amenities: ${firstLand.amenities}');
+      }
+      
+      return lands;
+    }
+    throw Exception('Failed to load lands: ${response.statusCode}');
+  } catch (e) {
+    print(' LandService: ❌ Error fetching lands: $e');
+    print('LandService: ❌ Stack trace: ${StackTrace.current}');
+    rethrow;
   }
+}
 
   Future<Land?> fetchLandById(String id) async {
     print('[${DateTime.now()}] LandService: 🚀 Fetching land with ID: $id');

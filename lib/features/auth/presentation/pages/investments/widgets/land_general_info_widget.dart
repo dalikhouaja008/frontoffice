@@ -32,8 +32,6 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
         _buildBasicInfoSection(),
         const SizedBox(height: 16),
         _buildLocationSection(),
-        const SizedBox(height: 16),
-        _buildContactSection(),
       ],
     );
   }
@@ -125,7 +123,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
             if (widget.land.ownerAddress != null && widget.land.ownerAddress!.isNotEmpty) ...[
               const SizedBox(height: 8),
               ElevatedButton.icon(
-                onPressed: () => _launchEtherscanAddress(widget.land.ownerAddress!),
+                onPressed: () => _launchEtherscanAddress(widget.land.blockchainTxHash!),
                 icon: const Icon(Icons.account_balance_wallet),
                 label: const Text('View on Etherscan'),
                 style: ElevatedButton.styleFrom(
@@ -286,43 +284,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
     );
   }
 
-  Widget _buildContactSection() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Owner Information',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(Icons.person_outline, 'Owner ID', widget.land.ownerId),
-            if (widget.land.ownerAddress != null)
-              _buildInfoRow(Icons.account_balance_wallet, 'Wallet Address', widget.land.ownerAddress!),
-            
-            const SizedBox(height: 16),
-            const Text('Contact Owner', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Implement contact owner functionality
-                  },
-                  icon: const Icon(Icons.email),
-                  label: const Text('Send Message'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
