@@ -134,22 +134,22 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
   }
 
   void _shareLand(BuildContext context) {
-    final land = _land!;
-    final String shareText = '''
-    🏡 Land for Sale: ${land.title}
-    📍 Location: ${land.location}
-    📏 Surface: ${land.surface ?? 'N/A'} m²
-    💰 Price: ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT
-    📜 Description: ${land.description ?? 'No description available'}
-    🔍 Status: ${land.status}
-    📞 Contact us for more information!
-    ''';
+  final land = _land!;
+  final String shareText = '''
+  🏡 Land for Sale: ${land.title}
+  📍 Location: ${land.location}
+  📏 Surface: ${land.surface ?? 'N/A'} m²
+  💰 Price: ${land.priceland ?? 'N/A'} DT
+  📜 Description: ${land.description ?? 'No description available'}
+  🔍 Status: ${land.status}
+  📞 Contact us for more information!
+  ''';
 
-    Share.share(
-      shareText,
-      subject: 'Land for Sale: ${land.title}',
-    );
-  }
+  Share.share(
+    shareText,
+    subject: 'Land for Sale: ${land.title}',
+  );
+}
 
   Widget _buildHeaderSection(BuildContext context) {
     return Card(
@@ -169,14 +169,13 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _land!.totalPrice != null
-                  ? NumberFormat.currency(locale: 'en_US', symbol: 'DT')
-                      .format(_land!.totalPrice)
-                  : 'Price not available',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary, fontWeight: FontWeight.bold),
-              semanticsLabel: 'Price: ${_land!.totalPrice ?? 'N/A'} DT',
-            ),
+            _land!.priceland != null
+                ? '${_land!.priceland} DT'
+                : 'Price not available',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.primary, fontWeight: FontWeight.bold),
+            semanticsLabel: 'Price: ${_land!.priceland ?? 'N/A'} DT',
+          ),
             const SizedBox(height: 8),
             Text(
               'Status: ${_land!.status}',

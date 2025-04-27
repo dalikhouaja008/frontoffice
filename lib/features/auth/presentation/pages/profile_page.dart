@@ -148,7 +148,7 @@ class _LandGrid extends StatelessWidget {
             onTap: () => context.read<LandBloc>().add(NavigateToLandDetails(land: land)),
             onSpeak: () {
               final description = land.description ?? 'No description available';
-              final price = land.totalPrice != null ? '${land.totalPrice} DT' : 'Price not available';
+              final price = land.priceland != null ? '${land.priceland} DT' : 'Price not available';
               final state = context.findAncestorStateOfType<_ProfilePageState>()!;
               state._speak('Land: ${land.title}. Location: ${land.location}. Price: $price. Description: $description');
             },

@@ -93,7 +93,7 @@ class _LandsScreenState extends State<LandsScreen> {
                           },
                           onSpeak: () {
                             final description = land.description ?? 'No description available';
-                            final price = land.totalPrice != null ? '${land.totalPrice} DT' : 'Price not available';
+                            final price = land.priceland != null ? '${land.priceland} DT' : 'Price not available';
                             final coordinates = land.latitude != null && land.longitude != null
                                 ? 'Coordinates: ${land.latitude}, ${land.longitude}'
                                 : 'Coordinates not available';

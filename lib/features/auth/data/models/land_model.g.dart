@@ -24,19 +24,24 @@ Land _$LandFromJson(Map<String, dynamic> json) => Land(
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       surface: (json['surface'] as num?)?.toDouble(),
-      totalPrice: (json['totalPrice'] as num?)?.toDouble(),
+      priceland: json['priceland'] as String?,
       totalTokens: (json['totalTokens'] as num?)?.toInt(),
-      pricePerToken: (json['pricePerToken'] as num?)?.toDouble(),
+      pricePerToken: json['pricePerToken'] as String?,
       ownerAddress: json['ownerAddress'] as String?,
       blockchainLandId: json['blockchainLandId'] as String?,
       landtype: $enumDecodeNullable(_$LandTypeEnumMap, json['landtype']),
-      documentCIDs: (json['documentCIDs'] as List<dynamic>?)
+      documentUrls: (json['documentUrls'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      amenities: (json['amenities'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, e as bool),
-      ),
-      availability: json['availability'] as String,
+      imageUrls: (json['imageUrls'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      coverImageUrl: json['coverImageUrl'] as String?,
+      amenities: Land._amenitiesFromJson(json['amenities']),
+      availability: json['availability'] as String? ?? 'AVAILABLE',
+      validations: (json['validations'] as List<dynamic>?)
+          ?.map((e) => ValidationEntry.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$LandToJson(Land instance) => <String, dynamic>{
@@ -53,20 +58,49 @@ Map<String, dynamic> _$LandToJson(Land instance) => <String, dynamic>{
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'surface': instance.surface,
-      'totalPrice': instance.totalPrice,
+      'priceland': instance.priceland,
       'totalTokens': instance.totalTokens,
       'pricePerToken': instance.pricePerToken,
       'ownerAddress': instance.ownerAddress,
       'blockchainLandId': instance.blockchainLandId,
       'landtype': _$LandTypeEnumMap[instance.landtype],
-      'documentCIDs': instance.documentCIDs,
-      'amenities': instance.amenities,
+      'documentUrls': instance.documentUrls,
+      'imageUrls': instance.imageUrls,
+      'coverImageUrl': instance.coverImageUrl,
+      'amenities': Land._amenitiesToJson(instance.amenities),
       'availability': instance.availability,
+      'validations': instance.validations,
     };
 
 const _$LandTypeEnumMap = {
-  LandType.RESIDENTIAL: 'RESIDENTIAL',
-  LandType.COMMERCIAL: 'COMMERCIAL',
-  LandType.AGRICULTURAL: 'AGRICULTURAL',
-  LandType.INDUSTRIAL: 'INDUSTRIAL',
+  LandType.residential: 'residential',
+  LandType.commercial: 'commercial',
+  LandType.agricultural: 'agricultural',
+  LandType.industrial: 'industrial',
 };
+
+ValidationEntry _$ValidationEntryFromJson(Map<String, dynamic> json) =>
+    ValidationEntry(
+      validator: json['validator'] as String?,
+      validatorType: (json['validatorType'] as num?)?.toInt(),
+      timestamp: (json['timestamp'] as num?)?.toInt(),
+      isValidated: json['isValidated'] as bool?,
+      cidComments: json['cidComments'] as String?,
+      txHash: json['txHash'] as String?,
+      signature: json['signature'] as String?,
+      signatureType: json['signatureType'] as String?,
+      signedMessage: json['signedMessage'] as String?,
+    );
+
+Map<String, dynamic> _$ValidationEntryToJson(ValidationEntry instance) =>
+    <String, dynamic>{
+      'validator': instance.validator,
+      'validatorType': instance.validatorType,
+      'timestamp': instance.timestamp,
+      'isValidated': instance.isValidated,
+      'cidComments': instance.cidComments,
+      'txHash': instance.txHash,
+      'signature': instance.signature,
+      'signatureType': instance.signatureType,
+      'signedMessage': instance.signedMessage,
+    };

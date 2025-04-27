@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/widgets/catalogue/land_card.dart
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:the_boost/core/constants/colors.dart';
@@ -43,7 +42,7 @@ class LandCard extends StatelessWidget {
                 ),
                    child: land.imageCIDs?.isNotEmpty == true
                      ? Image.network(
-                         land.imageCIDs!.first, // Now safe because we checked isNotEmpty
+                         land.coverImageUrl!, // Now safe because we checked isNotEmpty
                          fit: BoxFit.cover,
                          width: double.infinity,
                          height: double.infinity,
@@ -77,12 +76,12 @@ class LandCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppDimensions.spacingS),
-                  Text(
-                    'Price: ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                    Text(
+                      'Price: ${land.priceland ?? 'N/A'} DT',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: AppDimensions.spacingS),
@@ -129,21 +128,21 @@ class LandCard extends StatelessWidget {
   }
 
   void _shareLand(BuildContext context) {
-    final String deepLink = 'https://yourapp.com/lands/${land.id}';
-    final String shareText = '''
+  final String deepLink = 'https://yourapp.com/lands/${land.id}';
+  final String shareText = '''
 🏡 Land for Sale: ${land.title}
 📍 Location: ${land.location}
 📏 Surface: ${land.surface ?? 'N/A'} m²
-💰 Price: ${land.totalPrice?.toStringAsFixed(2) ?? 'N/A'} DT
+💰 Price: ${land.priceland ?? 'N/A'} DT
 📜 Description: ${land.description ?? 'No description available'}
 🔍 Status: ${land.status}
 👉 More Details: $deepLink
 📞 Contact us for more information!
 ''';
 
-    Share.share(
-      shareText,
-      subject: 'Land for Sale: ${land.title}',
-    );
-  }
+  Share.share(
+    shareText,
+    subject: 'Land for Sale: ${land.title}',
+  );
+}
 }

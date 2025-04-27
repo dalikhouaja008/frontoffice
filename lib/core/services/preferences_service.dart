@@ -136,7 +136,8 @@ class PreferencesService {
   }
 
   bool _matchesPreferences(Land land, UserPreferences preferences) {
-    final landPrice = land.totalPrice ?? 0.0; // Handle null totalPrice
+    final landPrice = land.priceland != null ? double.tryParse(land.priceland!) ?? 0.0 : 0.0;
+    
     return landPrice >= preferences.minPrice &&
         (preferences.maxPrice == double.infinity || landPrice <= preferences.maxPrice) &&
         (preferences.preferredLocations.isEmpty ||

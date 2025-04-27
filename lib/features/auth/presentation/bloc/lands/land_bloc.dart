@@ -1,4 +1,5 @@
-// lib/features/auth/presentation/bloc/lands/land_bloc.dart
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
@@ -47,7 +48,7 @@ class LandBloc extends Bloc<LandEvent, LandState> {
     }
 
     var filteredLands = _allLands.where((land) {
-      final price = land.totalPrice ?? 0.0;
+      final price = land.priceland != null ? double.tryParse(land.priceland!) ?? 0.0 : 0.0;
       final matchesPrice = price >= event.priceRange.start && price <= event.priceRange.end;
       final matchesQuery = event.searchQuery.isEmpty || land.title.toLowerCase().contains(event.searchQuery.toLowerCase());
       final matchesLandType = event.landType == null || (land.landtype?.name == event.landType);
@@ -63,8 +64,14 @@ class LandBloc extends Bloc<LandEvent, LandState> {
       return matchesPrice && matchesQuery && matchesLandType && matchesValidationStatus && matchesAvailability && matchesAmenities;
     }).toList();
 
-    if (event.sortBy == 'price_asc') filteredLands.sort((a, b) => (a.totalPrice ?? 0.0).compareTo(b.totalPrice ?? 0.0));
-    else if (event.sortBy == 'price_desc') filteredLands.sort((a, b) => (b.totalPrice ?? 0.0).compareTo(a.totalPrice ?? 0.0));
+    if (event.sortBy == 'price_asc') 
+    filteredLands.sort((a, b) => 
+      (double.tryParse(a.priceland ?? '0') ?? 0.0)
+      .compareTo(double.tryParse(b.priceland ?? '0') ?? 0.0));
+  else if (event.sortBy == 'price_desc') 
+    filteredLands.sort((a, b) => 
+      (double.tryParse(b.priceland ?? '0') ?? 0.0)
+      .compareTo(double.tryParse(a.priceland ?? '0') ?? 0.0));
     else if (event.sortBy == 'title_asc') filteredLands.sort((a, b) => a.title.compareTo(b.title));
     else if (event.sortBy == 'title_desc') filteredLands.sort((a, b) => b.title.compareTo(a.title));
     else if (event.sortBy == 'newest') filteredLands.sort((a, b) => b.createdAt.compareTo(a.createdAt));
