@@ -17,6 +17,10 @@ import 'package:the_boost/features/auth/presentation/widgets/notification_bell.d
 import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
 import 'dart:convert';
 
+import '../../../../core/di/dependency_injection.dart';
+import '../../../../core/services/prop_service.dart';
+import '../pages/valuation/land_valuation_home_screen.dart';
+
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
   final VoidCallback? onSignUpPressed;
@@ -67,7 +71,7 @@ class AppNavBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildLogo(context), // Pass context
+        _buildLogo(context),
         Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -79,7 +83,23 @@ class AppNavBar extends StatelessWidget {
                   children: [
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
                     _NavLink('Features', route: '/features', currentRoute: currentRoute),
-                    _NavLink('How It Works', route: '/how-it-works', currentRoute: currentRoute),
+                    // Modified to open land valuation screen instead of '/how-it-works'
+                                        _NavLink(
+                      'How It Works', 
+                      route: '/how-it-works', 
+                      currentRoute: currentRoute,
+                      onNavigate: () {
+                        // Create a properly initialized ApiService instance
+                        final apiService = getIt<ApiService>(); // ✅ Get a properly initialized ApiService
+
+Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (context) => LandValuationHomeScreen(apiService: apiService),
+  ),
+);
+
+                      },
+                    ),
                     _NavLink('Invest', route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More', route: '/learn-more', currentRoute: currentRoute),
                   ],
@@ -130,7 +150,7 @@ class AppNavBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildLogo(context), // Pass context
+        _buildLogo(context),
         Row(
           children: [
             if (isAuthenticated) ...[
@@ -160,6 +180,81 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
+  // Add method to handle mobile drawer with land valuation navigation
+  Widget buildMobileDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.landscape, color: Colors.white, size: 32),
+                const SizedBox(width: 8),
+                Text(
+                  'TheBoost',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Home'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.featured_play_list),
+            title: const Text('Features'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/features');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.map),
+            title: const Text('Land Valuation'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LandValuationHomeScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.token),
+            title: const Text('Invest'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/invest');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.book),
+            title: const Text('Learn More'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/learn-more');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _checkAndShowPreferences(BuildContext context, User user) async {
     final secureStorage = SecureStorageService();
     final prefsJson = await secureStorage.read(key: 'user_preferences_${user.id}');
@@ -176,9 +271,9 @@ class AppNavBar extends StatelessWidget {
     }
   }
 
-  Widget _buildLogo(BuildContext context) { // Add context parameter
+  Widget _buildLogo(BuildContext context) {
     return InkWell(
-      onTap: () => Navigator.pushNamed(context, '/'), // Use passed context
+      onTap: () => Navigator.pushNamed(context, '/'),
       child: Row(
         children: [
           const Icon(Icons.landscape, color: AppColors.primary, size: 32),
@@ -312,6 +407,19 @@ class AppNavBar extends StatelessWidget {
                 ListTile(leading: const Icon(Icons.dashboard, color: AppColors.primary), title: const Text('Dashboard'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, AppRoutes.dashboard); }),
                 ListTile(leading: const Icon(Icons.person, color: AppColors.primary), title: const Text('My Profile'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/profile'); }),
                 ListTile(leading: const Icon(Icons.token, color: AppColors.primary), title: const Text('My Investments'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, AppRoutes.invest); }),
+                ListTile(
+                  leading: const Icon(Icons.map, color: AppColors.primary), 
+                  title: const Text('Land Valuation'), 
+                  onTap: () { 
+                    Navigator.pop(context); 
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LandValuationHomeScreen(),
+                      ),
+                    );
+                  }
+                ),
                 ListTile(leading: const Icon(Icons.tune, color: AppColors.primary), title: const Text('Investment Preferences'), onTap: () { Navigator.pop(context); if (user != null) _checkAndShowPreferences(context, user); }),
                 ListTile(leading: const Icon(Icons.settings, color: AppColors.primary), title: const Text('Settings'), onTap: () { Navigator.pop(context); }),
                 const Divider(),
@@ -329,14 +437,30 @@ class _NavLink extends StatelessWidget {
   final String title;
   final String route;
   final String? currentRoute;
+  final VoidCallback? onNavigate;
   
-  const _NavLink(this.title, {required this.route, this.currentRoute});
+  const _NavLink(
+    this.title, {
+    required this.route, 
+    this.currentRoute,
+    this.onNavigate,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isActive = currentRoute == route;
     return TextButton(
-      onPressed: () => !isActive ? Navigator.pushNamed(context, route) : null,
+      onPressed: () {
+        if (isActive) return;
+        
+        // If custom navigation is provided, use it
+        if (onNavigate != null) {
+          onNavigate!();
+        } else {
+          // Otherwise use standard navigation
+          Navigator.pushNamed(context, route);
+        }
+      },
       child: Text(
         title,
         style: TextStyle(

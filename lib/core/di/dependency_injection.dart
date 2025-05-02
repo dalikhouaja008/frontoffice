@@ -5,6 +5,7 @@ import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/services/land_service.dart';
 import 'package:the_boost/core/services/notification_service.dart';
 import 'package:the_boost/core/services/preferences_service.dart';
+import 'package:the_boost/core/services/prop_service.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -45,6 +46,7 @@ Future<void> initDependencies() async {
   
   // Register LandService as singleton
   getIt.registerLazySingleton<LandService>(() => LandService());
+  getIt.registerLazySingleton<ApiService>(() => ApiService()); // ✅ ADD THIS
 
   // Register NotificationService (removed storageService parameter)
   getIt.registerLazySingleton<NotificationService>(

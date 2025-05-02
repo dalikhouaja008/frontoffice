@@ -252,15 +252,16 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                       MarkerLayer(
                         markers: [
                           Marker(
-                            width: 40.0,
-                            height: 40.0,
-                            point: LatLng(widget.land.latitude!, widget.land.longitude!),
-                            builder: (ctx) => const Icon(
-                              Icons.location_on,
-                              color: Colors.red,
-                              size: 40,
-                            ),
-                          ),
+  width: 40.0,
+  height: 40.0,
+  point: LatLng(widget.land.latitude!, widget.land.longitude!),
+  child: const Icon(
+    Icons.location_on,
+    color: Colors.red,
+    size: 40,
+  ),
+)
+
                         ],
                       ),
                     ],

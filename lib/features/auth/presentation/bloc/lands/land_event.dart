@@ -4,6 +4,8 @@ part of 'land_bloc.dart';
 abstract class LandEvent {}
 
 class LoadLands extends LandEvent {}
+class LoadLandTypes extends LandEvent {} // ✅ ADD THIS
+
 
 class NavigateToLandDetails extends LandEvent {
   final Land land;

@@ -152,22 +152,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  @override
-  Future<UserModel> signUp(String username, String email, String password,
-      String role, String? publicKey) async {
-    final GraphQLClient client = GraphQLService.client;
+@override
+Future<UserModel> signUp(String username, String email, String password,
+    String role, String? publicKey) async {
+  final GraphQLClient client = GraphQLService.client;
 
-    const String signUpMutation = """
-      mutation SignUp(\$signupData: UserInput!) {
-        signUp(signupData: \$signupData) {
-          _id
-          username
-          email
-          role
-        }
+  const String signUpMutation = """
+    mutation SignUp(\$signupData: UserInput!) {
+      signUp(signupData: \$signupData) {
+        _id
+        username
+        email
+        role
+        isTwoFactorEnabled
+        isVerified
+        createdAt
+        updatedAt
+        phoneNumber
       }
-    """;
+    }
+  """;
 
+  try {
     final QueryResult result = await client.mutate(
       MutationOptions(
         document: gql(signUpMutation),
@@ -177,19 +183,67 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             "email": email,
             "password": password,
             "role": role,
-            "publicKey": publicKey,
+            if (publicKey != null) "publicKey": publicKey,
           },
         },
       ),
     );
 
+    // Detailed error handling
     if (result.hasException) {
-      throw Exception(result.exception.toString());
+      print('Signup Mutation Errors:');
+      
+      // Comprehensive error logging
+      if (result.exception?.graphqlErrors.isNotEmpty == true) {
+        result.exception?.graphqlErrors.forEach((error) {
+          print('GraphQL Error: ${error.message}');
+          print('Error Locations: ${error.locations}');
+          print('Error Extensions: ${error.message}');
+          
+          // Specific error handling
+          if (error.message.contains('Email already in use')) {
+            throw Exception('This email is already registered');
+          }
+          if (error.message.contains('Phone number already in use')) {
+            throw Exception('This phone number is already registered');
+          }
+        });
+      }
+
+      // Log network errors
+      if (result.exception?.linkException != null) {
+        print('Network Error: ${result.exception?.linkException}');
+      }
+
+      // Generic error message
+      final errorMessage = result.exception?.graphqlErrors.isNotEmpty == true 
+          ? result.exception!.graphqlErrors.first.message 
+          : 'Signup failed due to an unknown error';
+      
+      throw Exception(errorMessage);
     }
 
+    // Validate user data
     final userData = result.data?['signUp'];
-    return UserModel.fromJson(userData);
+    if (userData == null) {
+      throw Exception('No user data returned from signup');
+    }
+
+    // Debug print to see exact user data structure
+    print('User Data from Signup: $userData');
+
+    // Return UserModel, ensuring all necessary data is present
+    return UserModel.fromJson({
+      'user': userData,
+      'accessToken': '', 
+      'refreshToken': ''
+    });
+
+  } catch (e) {
+    print('Detailed Signup Error: $e');
+    rethrow;
   }
+}
 
 //partie 2FA
 
