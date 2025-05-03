@@ -17,8 +17,7 @@ import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
 import 'package:the_boost/core/utils/input_validators.dart';
-//import '../../../../features/metamask/presentation/widgets/metamask_login_button.dart';
-import '../../../../data/auth_service.dart';
+import 'dart:developer' as developer;
 
 class LoginForm extends StatefulWidget {
   final Function updateView;
@@ -39,6 +38,12 @@ class _LoginFormState extends State<LoginForm> {
   final _passwordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    developer.log('LoginForm: 🎬 Initializing login form');
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -47,8 +52,7 @@ class _LoginFormState extends State<LoginForm> {
 
   void _showErrorDialog(BuildContext context, String error) {
     final formattedError = _formatErrorMessage(error);
-    print('[2025-03-02 15:58:06] LoginForm: ❌ Showing error dialog'
-        '\n└─ User: raednas'
+    developer.log('LoginForm: ❌ Showing error dialog'
         '\n└─ Error: $formattedError');
 
     showDialog(
@@ -65,8 +69,8 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   void _show2FADialog(BuildContext context, LoginRequires2FA state) {
-    print('[2025-03-02 16:20:01] LoginForm: 🔐 Showing 2FA dialog'
-        '\n└─ User: raednas'
+    developer.log('LoginForm: 🔐 Showing 2FA dialog'
+        '\n└─ User: ${state.user.username}'
         '\n└─ Email: ${state.user.email}');
 
     // Get the repository from getIt
@@ -82,25 +86,15 @@ class _LoginFormState extends State<LoginForm> {
         child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
           listener: (context, twoFactorState) {
             if (twoFactorState is TwoFactorAuthLoginSuccess) {
-              print(
-                  '[2025-03-02 16:20:01] LoginForm: ✅ 2FA verification successful'
+              developer.log('LoginForm: ✅ 2FA verification successful'
                   '\n└─ Email: ${twoFactorState.user.email}');
 
               Navigator.of(dialogContext).pop();
 
-              // Use the route constant for navigation and add a small delay to ensure the
-              // login state is properly updated before navigation
-              Future.delayed(Duration(milliseconds: 100), () {
-                Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
-
-                print(
-                    '[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
-                    '\n└─ User: raednas'
-                    '\n└─ Email: ${twoFactorState.user.email}');
-              });
+              // Use the route constant for navigation and ensure we use pushReplacementNamed
+              Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
             } else if (twoFactorState is TwoFactorAuthError) {
-              print('[2025-03-02 16:20:01] LoginForm: ❌ 2FA verification failed'
-                  '\n└─ User: raednas'
+              developer.log('LoginForm: ❌ 2FA verification failed'
                   '\n└─ Error: ${twoFactorState.message}');
 
               ScaffoldMessenger.of(context).showSnackBar(
@@ -121,10 +115,10 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   void _onLoginSuccess(LoginSuccess state) {
-    print('[${DateTime.now().toIso8601String()}] LoginForm: ✅ Login successful'
-        '\n└─ User: ${state.user.email}'
-        '\n└─ Session ID: ${state.sessionId}'
-        '\n└─ Device: ${state.deviceInfo?.device ?? "Unknown"}');
+    developer.log('LoginForm: ✅ Login successful'
+        '\n└─ User: ${state.user.username}'
+        '\n└─ Email: ${state.user.email}'
+        '\n└─ Session ID: ${state.sessionId}');
 
     // Naviguer vers le dashboard
     Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
@@ -133,29 +127,30 @@ class _LoginFormState extends State<LoginForm> {
   @override
   Widget build(BuildContext context) {
     // Debug print to track form builds
-    print('[2025-03-02 15:58:06] LoginForm: 🔄 Building login form');
+    developer.log('LoginForm: 🔄 Building login form');
     
     return BlocListener<LoginBloc, LoginState>(
+      listenWhen: (previous, current) {
+        developer.log('LoginForm: 🔍 State change: ${previous.runtimeType} -> ${current.runtimeType}');
+        return previous.runtimeType != current.runtimeType;
+      },
       listener: (context, state) {
         // Debug print to track state changes
-        print('[2025-03-02 15:58:06] LoginForm: 📣 Login state changed: ${state.runtimeType}');
+        developer.log('LoginForm: 📣 Login state changed: ${state.runtimeType}');
         
         if (state is LoginSuccess) {
-          print('[2025-03-02 16:20:01] LoginForm: ✅ Login successful'
-              '\n└─ User: raednas'
+          developer.log('LoginForm: ✅ Login successful'
+              '\n└─ User: ${state.user.username}'
               '\n└─ Email: ${state.user.email}');
 
           _onLoginSuccess(state);
-          print('[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
-              '\n└─ Email: ${state.user.email}');
-
         } else if (state is LoginRequires2FA) {
-          print('[2025-03-02 16:20:01] LoginForm: 🔐 2FA required'
+          developer.log('LoginForm: 🔐 2FA required'
               '\n└─ Email: ${state.user.email}');
 
           _show2FADialog(context, state);
         } else if (state is LoginFailure) {
-          print('[2025-03-02 16:20:01] LoginForm: ❌ Login failed'
+          developer.log('LoginForm: ❌ Login failed'
               '\n└─ Error: ${state.error}');
 
           _showErrorDialog(context, state.error);
@@ -231,6 +226,9 @@ class _LoginFormState extends State<LoginForm> {
 
                 // Error message
                 BlocBuilder<LoginBloc, LoginState>(
+                  buildWhen: (previous, current) {
+                    return current is LoginFailure || previous is LoginFailure;
+                  },
                   builder: (context, state) {
                     if (state is LoginFailure) {
                       return Container(
@@ -280,6 +278,9 @@ class _LoginFormState extends State<LoginForm> {
 
                 // Login button
                 BlocBuilder<LoginBloc, LoginState>(
+                  buildWhen: (previous, current) {
+                    return current is LoginLoading || previous is LoginLoading;
+                  },
                   builder: (context, state) {
                     return AppButton(
                       text: "Log In",
@@ -290,39 +291,8 @@ class _LoginFormState extends State<LoginForm> {
                   },
                 ),
 
-                // Add MetaMask login button here
-                //const SizedBox(height: AppDimensions.paddingL),
-                
-                // Or login with MetaMask divider
-               /* Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        "OR",
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
-                  ],
-                ),
-                
                 const SizedBox(height: AppDimensions.paddingL),
-                
-                // MetaMask login button
-                MetaMaskLoginButton(
-                  onSuccess: () {
-                    // Navigate to dashboard after successful connection
-                    Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-                  },
-                ),
 
-                const SizedBox(height: AppDimensions.paddingL),
-*/
                 // Sign up link
                 Center(
                   child: Row(
@@ -376,8 +346,7 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   void _handleLogin() {
-    print('[2025-03-02 15:58:06] LoginForm: 🚀 Login button pressed'
-        '\n└─ User: raednas'
+    developer.log('LoginForm: 🚀 Login button pressed'
         '\n└─ Email: ${_emailController.text.trim()}');
 
     // Don't proceed if already authenticating
@@ -396,32 +365,6 @@ class _LoginFormState extends State<LoginForm> {
           );
     }
   }
-  /*
-  void _handleMetaMaskLogin(BuildContext context) async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final success = await authService.connectWithMetaMask();
-    
-    if (success) {
-      // Navigate to dashboard on successful login
-      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-      
-      print('[${DateTime.now()}] LoginForm: ✅ MetaMask login successful'
-            '\n└─ Address: ${authService.currentAddress}'
-            '\n└─ Chain: ${authService.chainId}');
-    } else {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authService.errorMessage),
-          backgroundColor: Colors.red,
-        ),
-      );
-      
-      print('[${DateTime.now()}] LoginForm: ❌ MetaMask login failed'
-            '\n└─ Error: ${authService.errorMessage}');
-    }
-  }
-*/
 }
 
 class _SocialButton extends StatelessWidget {

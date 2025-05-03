@@ -59,6 +59,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           email
           username
           role
+          publicKey
         }
       }
     }

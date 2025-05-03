@@ -14,8 +14,8 @@ import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 import 'package:the_boost/features/auth/presentation/widgets/notification_bell.dart';
-import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
-import 'dart:convert';
+import 'package:the_boost/features/metamask/presentation/widgets/compact_metamask_button.dart';
+import 'dart:developer' as developer;
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -32,42 +32,51 @@ class AppNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    print('[2025-04-16 10:05:23] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
+    print('[2025-05-03 19:47:18] AppNavBar: 🔄 Building navbar');
 
-    return BlocBuilder<LoginBloc, LoginState>(
-      builder: (context, state) {
-        print('[2025-04-16 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
-        final isAuthenticated = state is LoginSuccess;
-        final user = isAuthenticated ? state.user : null;
+    // Obtenir directement l'état actuel
+    final loginState = context.watch<LoginBloc>().state;
+    final isAuthenticated = loginState is LoginSuccess;
+    final user = isAuthenticated ? (loginState as LoginSuccess).user : null;
 
-        return Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
-            vertical: AppDimensions.paddingM,
+    // Log détaillé
+    print(
+        '[2025-05-03 19:47:18] AppNavBar: 🔍 Current state: ${loginState.runtimeType}');
+    print(
+        '[2025-05-03 19:47:18] AppNavBar: 🔑 IsAuthenticated: $isAuthenticated');
+
+    if (isAuthenticated) {
+      print('[2025-05-03 19:47:18] AppNavBar: 👤 User: ${user?.username}');
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal:
+            isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
+        vertical: AppDimensions.paddingM,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: isMobile
-              ? _buildMobileNavBar(context, isAuthenticated, user)
-              : _buildDesktopNavBar(context, isAuthenticated, user),
-        );
-      },
+        ],
+      ),
+      child: isMobile
+          ? _buildMobileNavBar(context, isAuthenticated, user)
+          : _buildDesktopNavBar(context, isAuthenticated, user),
     );
   }
 
-  Widget _buildDesktopNavBar(BuildContext context, bool isAuthenticated, User? user) {
+  Widget _buildDesktopNavBar(
+      BuildContext context, bool isAuthenticated, User? user) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildLogo(context), // Pass context
+        _buildLogo(context),
         Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -78,18 +87,33 @@ class AppNavBar extends StatelessWidget {
                   spacing: AppDimensions.paddingM,
                   children: [
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
-                    _NavLink('Features', route: '/features', currentRoute: currentRoute),
-                    _NavLink('How It Works', route: '/how-it-works', currentRoute: currentRoute),
-                    _NavLink('Invest', route: '/invest', currentRoute: currentRoute),
-                    _NavLink('Learn More', route: '/learn-more', currentRoute: currentRoute),
+                    _NavLink('Features',
+                        route: '/features', currentRoute: currentRoute),
+                    _NavLink('How It Works',
+                        route: '/how-it-works', currentRoute: currentRoute),
+                    _NavLink('Invest',
+                        route: '/invest', currentRoute: currentRoute),
+                    _NavLink('Learn More',
+                        route: '/learn-more', currentRoute: currentRoute),
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
+                // Afficher le bouton MetaMask uniquement si l'utilisateur est connecté et publicKey est nul
+                if (isAuthenticated &&
+                    (user?.publicKey == null || user!.publicKey!.isEmpty)) ...[
+                  CompactMetamaskButton(
+                    onUpdatePublicKey: (context, address) async {
+                      await _updateUserPublicKey(context, address);
+                    },
+                  ),
+                  const SizedBox(width: AppDimensions.paddingM),
+                ],
                 if (isAuthenticated)
                   Row(
                     children: [
                       NotificationBell(
-                        onOpenPreferences: () => _checkAndShowPreferences(context, user!),
+                        onOpenPreferences: () =>
+                            _checkAndShowPreferences(context, user!),
                       ),
                       const SizedBox(width: AppDimensions.paddingM),
                       _buildUserMenu(context, user),
@@ -100,16 +124,20 @@ class AppNavBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextButton(
-                        onPressed: onLoginPressed ?? () => Navigator.pushNamed(context, AppRoutes.auth),
+                        onPressed: onLoginPressed ??
+                            () => Navigator.pushNamed(context, AppRoutes.auth),
                         child: const Text(
                           'Login',
-                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(width: AppDimensions.paddingS),
                       AppButton(
                         text: 'Get Started',
-                        onPressed: onSignUpPressed ?? () => Navigator.pushNamed(context, AppRoutes.auth),
+                        onPressed: onSignUpPressed ??
+                            () => Navigator.pushNamed(context, AppRoutes.auth),
                         type: ButtonType.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppDimensions.paddingL,
@@ -126,28 +154,43 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileNavBar(BuildContext context, bool isAuthenticated, User? user) {
+  Widget _buildMobileNavBar(
+      BuildContext context, bool isAuthenticated, User? user) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildLogo(context), // Pass context
+        _buildLogo(context),
         Row(
           children: [
+            // Afficher le bouton MetaMask uniquement si l'utilisateur est connecté et publicKey est nul
+            if (isAuthenticated &&
+                (user?.publicKey == null || user!.publicKey!.isEmpty))
+              CompactMetamaskButton(
+                onUpdatePublicKey: (context, address) async {
+                  await _updateUserPublicKey(context, address);
+                },
+                // Pour mobile, ajuster le padding pour un look plus compact
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              ),
             if (isAuthenticated) ...[
               NotificationBell(
-                onOpenPreferences: () => _checkAndShowPreferences(context, user!),
+                onOpenPreferences: () =>
+                    _checkAndShowPreferences(context, user!),
               ),
               IconButton(
                 icon: const Icon(Icons.dashboard),
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.dashboard),
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.dashboard),
               ),
               _buildUserMenuMobile(context, user),
             ] else
               TextButton(
-                onPressed: onLoginPressed ?? () => Navigator.pushNamed(context, AppRoutes.auth),
+                onPressed: onLoginPressed ??
+                    () => Navigator.pushNamed(context, AppRoutes.auth),
                 child: const Text(
                   'Login',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: AppColors.primary, fontWeight: FontWeight.bold),
                 ),
               ),
             IconButton(
@@ -160,9 +203,43 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
+  Future<void> _updateUserPublicKey(
+      BuildContext context, String address) async {
+    try {
+      // TODO: Implémentez l'appel à votre API pour mettre à jour la clé publique
+      // Exemple:
+      // final result = await YourApi.updateUserPublicKey(address);
+
+      developer.log('AppNavBar: ✅ Public key update requested'
+          '\n└─ Address: $address');
+
+      // Afficher un message de confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ethereum address saved successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Rafraîchir l'état utilisateur
+      context.read<LoginBloc>().add(CheckSession());
+    } catch (e) {
+      developer.log('AppNavBar: ❌ Failed to update public key'
+          '\n└─ Error: $e');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update public key: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _checkAndShowPreferences(BuildContext context, User user) async {
     final secureStorage = SecureStorageService();
-    final prefsJson = await secureStorage.read(key: 'user_preferences_${user.id}');
+    final prefsJson =
+        await secureStorage.read(key: 'user_preferences_${user.id}');
     if (prefsJson == null) {
       showDialog(
         context: context,
@@ -171,14 +248,15 @@ class AppNavBar extends StatelessWidget {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserPreferencesScreen(user: user)),
+        MaterialPageRoute(
+            builder: (context) => UserPreferencesScreen(user: user)),
       );
     }
   }
 
-  Widget _buildLogo(BuildContext context) { // Add context parameter
+  Widget _buildLogo(BuildContext context) {
     return InkWell(
-      onTap: () => Navigator.pushNamed(context, '/'), // Use passed context
+      onTap: () => Navigator.pushNamed(context, '/'),
       child: Row(
         children: [
           const Icon(Icons.landscape, color: AppColors.primary, size: 32),
@@ -198,12 +276,16 @@ class AppNavBar extends StatelessWidget {
 
   Widget _buildUserMenu(BuildContext context, User? user) {
     final displayName = user?.username.split(' ')[0] ?? 'User';
-    final firstLetter = user?.username.isNotEmpty == true ? user!.username[0].toUpperCase() : 'U';
-    
+    final firstLetter = user?.username.isNotEmpty == true
+        ? user!.username[0].toUpperCase()
+        : 'U';
+
     return PopupMenuButton<String>(
       offset: const Offset(0, 40),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingM, vertical: AppDimensions.paddingS),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingM,
+            vertical: AppDimensions.paddingS),
         decoration: BoxDecoration(
           color: AppColors.backgroundGreen,
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -215,13 +297,15 @@ class AppNavBar extends StatelessWidget {
               radius: 16,
               child: Text(
                 firstLetter,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: AppDimensions.paddingS),
             Text(
               displayName,
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: AppColors.primary, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: AppDimensions.paddingS),
             const Icon(Icons.arrow_drop_down, color: AppColors.primary),
@@ -229,13 +313,49 @@ class AppNavBar extends StatelessWidget {
         ),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(value: 'dashboard', child: Row(children: [Icon(Icons.dashboard, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('Dashboard')])),
-        const PopupMenuItem(value: 'profile', child: Row(children: [Icon(Icons.person, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('My Profile')])),
-        const PopupMenuItem(value: 'invest', child: Row(children: [Icon(Icons.token, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('My Investments')])),
-        const PopupMenuItem(value: 'preferences', child: Row(children: [Icon(Icons.tune, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('Investment Preferences')])),
-        const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings, color: Colors.black54), SizedBox(width: AppDimensions.paddingM), Text('Settings')])),
+        const PopupMenuItem(
+            value: 'dashboard',
+            child: Row(children: [
+              Icon(Icons.dashboard, color: Colors.black54),
+              SizedBox(width: AppDimensions.paddingM),
+              Text('Dashboard')
+            ])),
+        const PopupMenuItem(
+            value: 'profile',
+            child: Row(children: [
+              Icon(Icons.person, color: Colors.black54),
+              SizedBox(width: AppDimensions.paddingM),
+              Text('My Profile')
+            ])),
+        const PopupMenuItem(
+            value: 'invest',
+            child: Row(children: [
+              Icon(Icons.token, color: Colors.black54),
+              SizedBox(width: AppDimensions.paddingM),
+              Text('My Investments')
+            ])),
+        const PopupMenuItem(
+            value: 'preferences',
+            child: Row(children: [
+              Icon(Icons.tune, color: Colors.black54),
+              SizedBox(width: AppDimensions.paddingM),
+              Text('Investment Preferences')
+            ])),
+        const PopupMenuItem(
+            value: 'settings',
+            child: Row(children: [
+              Icon(Icons.settings, color: Colors.black54),
+              SizedBox(width: AppDimensions.paddingM),
+              Text('Settings')
+            ])),
         const PopupMenuDivider(),
-        const PopupMenuItem(value: 'logout', child: Row(children: [Icon(Icons.logout, color: Colors.red), SizedBox(width: AppDimensions.paddingM), Text('Logout', style: TextStyle(color: Colors.red))])),
+        const PopupMenuItem(
+            value: 'logout',
+            child: Row(children: [
+              Icon(Icons.logout, color: Colors.red),
+              SizedBox(width: AppDimensions.paddingM),
+              Text('Logout', style: TextStyle(color: Colors.red))
+            ])),
       ],
       onSelected: (value) {
         switch (value) {
@@ -263,23 +383,28 @@ class AppNavBar extends StatelessWidget {
   }
 
   Widget _buildUserMenuMobile(BuildContext context, User? user) {
-    final firstLetter = user?.username.isNotEmpty == true ? user!.username[0].toUpperCase() : 'U';
-    
+    final firstLetter = user?.username.isNotEmpty == true
+        ? user!.username[0].toUpperCase()
+        : 'U';
+
     return IconButton(
       icon: CircleAvatar(
         backgroundColor: AppColors.primary,
         radius: 16,
         child: Text(
           firstLetter,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
         ),
       ),
       onPressed: () {
         showModalBottomSheet(
           context: context,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
           builder: (context) => Container(
-            padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingL),
+            padding:
+                const EdgeInsets.symmetric(vertical: AppDimensions.paddingL),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -292,7 +417,10 @@ class AppNavBar extends StatelessWidget {
                         radius: 24,
                         child: Text(
                           firstLetter,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20),
                         ),
                       ),
                       const SizedBox(width: AppDimensions.paddingL),
@@ -300,8 +428,12 @@ class AppNavBar extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(user?.username ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(user?.email ?? '', style: const TextStyle(color: Colors.black54, fontSize: 14)),
+                            Text(user?.username ?? 'User',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(user?.email ?? '',
+                                style: const TextStyle(
+                                    color: Colors.black54, fontSize: 14)),
                           ],
                         ),
                       ),
@@ -309,13 +441,52 @@ class AppNavBar extends StatelessWidget {
                   ),
                 ),
                 const Divider(),
-                ListTile(leading: const Icon(Icons.dashboard, color: AppColors.primary), title: const Text('Dashboard'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, AppRoutes.dashboard); }),
-                ListTile(leading: const Icon(Icons.person, color: AppColors.primary), title: const Text('My Profile'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/profile'); }),
-                ListTile(leading: const Icon(Icons.token, color: AppColors.primary), title: const Text('My Investments'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, AppRoutes.invest); }),
-                ListTile(leading: const Icon(Icons.tune, color: AppColors.primary), title: const Text('Investment Preferences'), onTap: () { Navigator.pop(context); if (user != null) _checkAndShowPreferences(context, user); }),
-                ListTile(leading: const Icon(Icons.settings, color: AppColors.primary), title: const Text('Settings'), onTap: () { Navigator.pop(context); }),
+                ListTile(
+                    leading:
+                        const Icon(Icons.dashboard, color: AppColors.primary),
+                    title: const Text('Dashboard'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.dashboard);
+                    }),
+                ListTile(
+                    leading: const Icon(Icons.person, color: AppColors.primary),
+                    title: const Text('My Profile'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/profile');
+                    }),
+                ListTile(
+                    leading: const Icon(Icons.token, color: AppColors.primary),
+                    title: const Text('My Investments'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.invest);
+                    }),
+                ListTile(
+                    leading: const Icon(Icons.tune, color: AppColors.primary),
+                    title: const Text('Investment Preferences'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (user != null) _checkAndShowPreferences(context, user);
+                    }),
+                ListTile(
+                    leading:
+                        const Icon(Icons.settings, color: AppColors.primary),
+                    title: const Text('Settings'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    }),
                 const Divider(),
-                ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text('Logout', style: TextStyle(color: Colors.red)), onTap: () { Navigator.pop(context); context.read<LoginBloc>().add(LogoutRequested()); Navigator.pushReplacementNamed(context, AppRoutes.home); }),
+                ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text('Logout',
+                        style: TextStyle(color: Colors.red)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.read<LoginBloc>().add(LogoutRequested());
+                      Navigator.pushReplacementNamed(context, AppRoutes.home);
+                    }),
               ],
             ),
           ),
@@ -329,7 +500,7 @@ class _NavLink extends StatelessWidget {
   final String title;
   final String route;
   final String? currentRoute;
-  
+
   const _NavLink(this.title, {required this.route, this.currentRoute});
 
   @override

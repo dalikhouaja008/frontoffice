@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/widgets/menu/app_menu.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 
