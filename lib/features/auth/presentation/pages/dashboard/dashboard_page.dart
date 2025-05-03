@@ -92,7 +92,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   DashboardStats(),
                   const SizedBox(height: AppDimensions.paddingXL),
                   
-                  SectionTitle(title: "Your Portfolio"),
+                  const SectionTitle(title: "Your Portfolio"),
                   const SizedBox(height: AppDimensions.paddingL),
                   InvestmentPortfolio(),
                   const SizedBox(height: AppDimensions.paddingXL),
@@ -135,13 +135,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _navigateToInvest(BuildContext context) {
     try {
-      print('[2025-03-02 19:21:51] DashboardPage: 🔄 Navigating to Invest page'
-            '\n└─ User: raednas');
+      print('[2025-03-02 19:21:51] DashboardPage: 🔄 Navigating to Invest page');
             
       Navigator.pushNamed(context, '/invest');
     } catch (e) {
       print('[2025-03-02 19:21:51] DashboardPage: ❌ Navigation error'
-            '\n└─ User: raednas'
             '\n└─ Error: $e');
             
       ScaffoldMessenger.of(context).showSnackBar(

@@ -51,7 +51,6 @@ class LoginRequires2FA extends LoginState {
     required this.tempToken,
   }) {
     print('[2025-02-15 16:54:11] 🔐 2FA state initialized'
-          '\n└─ User: raednas'
           '\n└─ Email: ${user.email}');
   }
 
