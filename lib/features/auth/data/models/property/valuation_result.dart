@@ -1,6 +1,5 @@
-// models/valuation_result.dart - FIXED WITH NULL SAFETY
+// lib/features/auth/data/models/property/valuation_result.dart
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
 import 'property.dart';
 
 class ValuationResult {
@@ -15,13 +14,8 @@ class ValuationResult {
   });
   
   factory ValuationResult.fromJson(Map<String, dynamic> json) {
-    // Handle null location
     final locationJson = json['location'] ?? {};
-    
-    // Handle null valuation
     final valuationJson = json['valuation'] ?? {};
-    
-    // Handle null comparables or empty list
     final comparablesJson = json['comparables'] ?? [];
     
     return ValuationResult(
@@ -80,29 +74,50 @@ class LocationInfo {
 
 class ValuationInfo {
   final int estimatedValue;
+  final double? estimatedValueETH;
+  final double? currentEthValue;
   final double areaInSqFt;
   final double avgPricePerSqFt;
+  final double? avgPricePerSqFtETH;
   final String zoning;
   final List<ValuationFactor> valuationFactors;
+  final double? currentEthPriceTND;
   
   ValuationInfo({
     required this.estimatedValue,
+    this.estimatedValueETH,
+    this.currentEthValue,
     required this.areaInSqFt,
     required this.avgPricePerSqFt,
+    this.avgPricePerSqFtETH,
     required this.zoning,
     required this.valuationFactors,
+    this.currentEthPriceTND,
   });
   
   factory ValuationInfo.fromJson(Map<String, dynamic> json) {
-    // Safe conversion for numeric values with defaults
     int safeEstimatedValue = 0;
     double safeAreaInSqFt = 0.0;
     double safeAvgPricePerSqFt = 0.0;
+    double? safeEstimatedValueETH;
+    double? safeCurrentEthValue;
+    double? safeAvgPricePerSqFtETH;
+    double? safeCurrentEthPriceTND;
     
     try {
       if (json['estimatedValue'] != null) {
         final dynamic value = json['estimatedValue'];
         safeEstimatedValue = (value is double) ? value.toInt() : (value is int) ? value : 0;
+      }
+      
+      if (json['estimatedValueETH'] != null) {
+        final dynamic value = json['estimatedValueETH'];
+        safeEstimatedValueETH = (value is int) ? value.toDouble() : (value is double) ? value : null;
+      }
+      
+      if (json['currentEthValue'] != null) {
+        final dynamic value = json['currentEthValue'];
+        safeCurrentEthValue = (value is int) ? value.toDouble() : (value is double) ? value : null;
       }
       
       if (json['areaInSqFt'] != null) {
@@ -114,11 +129,20 @@ class ValuationInfo {
         final dynamic value = json['avgPricePerSqFt'];
         safeAvgPricePerSqFt = (value is int) ? value.toDouble() : (value is double) ? value : 0.0;
       }
+      
+      if (json['avgPricePerSqFtETH'] != null) {
+        final dynamic value = json['avgPricePerSqFtETH'];
+        safeAvgPricePerSqFtETH = (value is int) ? value.toDouble() : (value is double) ? value : null;
+      }
+      
+      if (json['currentEthPriceTND'] != null) {
+        final dynamic value = json['currentEthPriceTND'];
+        safeCurrentEthPriceTND = (value is int) ? value.toDouble() : (value is double) ? value : null;
+      }
     } catch (e) {
       print('Error parsing numeric values: $e');
     }
     
-    // Safe extraction of valuation factors
     List<ValuationFactor> factors = [];
     try {
       if (json['valuationFactors'] is List) {
@@ -132,10 +156,14 @@ class ValuationInfo {
     
     return ValuationInfo(
       estimatedValue: safeEstimatedValue,
+      estimatedValueETH: safeEstimatedValueETH,
+      currentEthValue: safeCurrentEthValue,
       areaInSqFt: safeAreaInSqFt,
       avgPricePerSqFt: safeAvgPricePerSqFt,
+      avgPricePerSqFtETH: safeAvgPricePerSqFtETH,
       zoning: json['zoning'] ?? 'residential',
       valuationFactors: factors,
+      currentEthPriceTND: safeCurrentEthPriceTND,
     );
   }
 }
@@ -161,29 +189,50 @@ class ComparableProperty {
   final String id;
   final String address;
   final double price;
+  final double? priceInETH;
+  final double? currentPriceInETH;
   final double area;
   final double pricePerSqFt;
+  final double? pricePerSqFtETH;
+  final double? currentPricePerSqFtETH;
   final PropertyFeatures features;
   
   ComparableProperty({
     required this.id,
     required this.address,
     required this.price,
+    this.priceInETH,
+    this.currentPriceInETH,
     required this.area,
     required this.pricePerSqFt,
+    this.pricePerSqFtETH,
+    this.currentPricePerSqFtETH,
     required this.features,
   });
   
   factory ComparableProperty.fromJson(Map<String, dynamic> json) {
-    // Safe conversion of numeric values with defaults
     double safePrice = 0.0;
     double safeArea = 0.0;
     double safePricePerSqFt = 0.0;
+    double? safePriceInETH;
+    double? safeCurrentPriceInETH;
+    double? safePricePerSqFtETH;
+    double? safeCurrentPricePerSqFtETH;
     
     try {
       if (json['price'] != null) {
         final dynamic value = json['price'];
         safePrice = (value is int) ? value.toDouble() : (value is double) ? value : 0.0;
+      }
+      
+      if (json['priceInETH'] != null) {
+        final dynamic value = json['priceInETH'];
+        safePriceInETH = (value is int) ? value.toDouble() : (value is double) ? value : null;
+      }
+      
+      if (json['currentPriceInETH'] != null) {
+        final dynamic value = json['currentPriceInETH'];
+        safeCurrentPriceInETH = (value is int) ? value.toDouble() : (value is double) ? value : null;
       }
       
       if (json['area'] != null) {
@@ -195,11 +244,20 @@ class ComparableProperty {
         final dynamic value = json['pricePerSqFt'];
         safePricePerSqFt = (value is int) ? value.toDouble() : (value is double) ? value : 0.0;
       }
+      
+      if (json['pricePerSqFtETH'] != null) {
+        final dynamic value = json['pricePerSqFtETH'];
+        safePricePerSqFtETH = (value is int) ? value.toDouble() : (value is double) ? value : null;
+      }
+      
+      if (json['currentPricePerSqFtETH'] != null) {
+        final dynamic value = json['currentPricePerSqFtETH'];
+        safeCurrentPricePerSqFtETH = (value is int) ? value.toDouble() : (value is double) ? value : null;
+      }
     } catch (e) {
       print('Error parsing numeric values for comparable: $e');
     }
     
-    // Safe extraction of features with defaults
     PropertyFeatures safeFeatures;
     try {
       if (json['features'] is Map) {
@@ -216,8 +274,12 @@ class ComparableProperty {
       id: json['id'] ?? 'unknown',
       address: json['address'] ?? 'Unknown',
       price: safePrice,
+      priceInETH: safePriceInETH,
+      currentPriceInETH: safeCurrentPriceInETH,
       area: safeArea,
       pricePerSqFt: safePricePerSqFt,
+      pricePerSqFtETH: safePricePerSqFtETH,
+      currentPricePerSqFtETH: safeCurrentPricePerSqFtETH,
       features: safeFeatures,
     );
   }

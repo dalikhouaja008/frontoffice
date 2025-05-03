@@ -500,80 +500,89 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     }
   }
   
-  Widget _buildPropertyCard(Property property) {
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: () => _showPropertyDetails(property),
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Property image or placeholder
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
+ Widget _buildPropertyCard(Property property) {
+  return Card(
+    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    child: InkWell(
+      onTap: () => _showPropertyDetails(property),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Property image or placeholder
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.landscape,
+                  size: 40,
+                  color: Colors.grey.shade700,
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.landscape,
-                    size: 40,
-                    color: Colors.grey.shade700,
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Show ETH price prominently
+                  Text(
+                    property.formatPriceETH(),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade800,
+                    ),
                   ),
-                ),
+                  // Show TND price in smaller text
+                  Text(
+                    '${property.price.toStringAsFixed(0)} TND',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    property.address,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      if (property.area != null)
+                        _buildPropertyTag(
+                          '${property.area!.toStringAsFixed(0)} sq ft',
+                          Icons.straighten,
+                        ),
+                      if (property.currentPricePerSqFtETH != null)
+                        _buildPropertyTag(
+                          '${property.currentPricePerSqFtETH!.toStringAsFixed(6)} ETH/sq ft',
+                          Icons.attach_money,
+                        ),
+                      if (property.zoning != null)
+                        _buildPropertyTag(
+                          property.zoning![0].toUpperCase() + property.zoning!.substring(1),
+                          Icons.category,
+                        ),
+                    ],
+                  ),
+                ],
               ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '\$${property.price.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade800,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      property.address,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        if (property.area != null)
-                          _buildPropertyTag(
-                            '${property.area!.toStringAsFixed(0)} sq ft',
-                            Icons.straighten,
-                          ),
-                        if (property.pricePerSqFt != null)
-                          _buildPropertyTag(
-                            '\$${property.pricePerSqFt!.toStringAsFixed(2)}/sq ft',
-                            Icons.attach_money,
-                          ),
-                        if (property.zoning != null)
-                          _buildPropertyTag(
-                            property.zoning![0].toUpperCase() + property.zoning!.substring(1),
-                            Icons.category,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

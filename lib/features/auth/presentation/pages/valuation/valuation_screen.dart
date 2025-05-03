@@ -1,4 +1,4 @@
-// screens/valuation_screen.dart - with UI fixes for Flutter 3.27.3
+// screens/valuation_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
@@ -7,7 +7,6 @@ import '../../../../../core/services/prop_service.dart';
 import '../../../../../core/utils/string_utils.dart';
 import '../../../data/models/property/valuation_result.dart';
 import 'app_theme.dart';
-
 
 class ValuationScreen extends StatefulWidget {
   final ApiService apiService;
@@ -39,6 +38,8 @@ class _ValuationScreenState extends State<ValuationScreen> {
   bool _isLoading = false;
   String _errorMessage = '';
   ValuationResult? _valuationResult;
+  Map<String, dynamic>? _ethPriceData;
+  String _selectedCurrency = 'ETH';
   
   @override
   void initState() {
@@ -51,6 +52,21 @@ class _ValuationScreenState extends State<ValuationScreen> {
     
     if (widget.prefilledZoning != null && widget.prefilledZoning!.isNotEmpty) {
       _selectedZoning = widget.prefilledZoning!;
+    }
+    
+    _fetchEthPrice();
+  }
+  
+  Future<void> _fetchEthPrice() async {
+    try {
+      final priceData = await widget.apiService.getEthPrice();
+      if (mounted) {
+        setState(() {
+          _ethPriceData = priceData;
+        });
+      }
+    } catch (e) {
+      print('Error fetching ETH price: $e');
     }
   }
   
@@ -130,6 +146,30 @@ class _ValuationScreenState extends State<ValuationScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 2,
+        actions: [
+          if (_valuationResult != null)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                setState(() {
+                  _selectedCurrency = value;
+                });
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(value: 'ETH', child: Text('ETH')),
+                PopupMenuItem(value: 'TND', child: Text('TND')),
+                PopupMenuItem(value: 'USD', child: Text('USD')),
+              ],
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    Text(_selectedCurrency),
+                    Icon(Icons.arrow_drop_down),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -435,14 +475,8 @@ class _ValuationScreenState extends State<ValuationScreen> {
                     ),
                   ),
                   SizedBox(height: 8),
-                  Text(
-                    '\$${result.valuation.estimatedValue.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryDarkColor,
-                    ),
-                  ),
+                  // Display value based on selected currency
+                  _buildValueDisplay(result),
                   SizedBox(height: 16),
                   Divider(),
                   SizedBox(height: 8),
@@ -458,7 +492,7 @@ class _ValuationScreenState extends State<ValuationScreen> {
                   SizedBox(height: 8),
                   _buildPropertyInfoRow(
                     'Avg Price/sq ft:', 
-                    '\$${result.valuation.avgPricePerSqFt.toStringAsFixed(2)}',
+                    _formatPricePerSqFt(result.valuation),
                   ),
                   SizedBox(height: 8),
                   _buildPropertyInfoRow(
@@ -572,95 +606,235 @@ class _ValuationScreenState extends State<ValuationScreen> {
       ),
     );
   }
-  
-  Widget _buildPropertyInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: AppTheme.textLightColor,
-            fontSize: 15,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textDarkColor,
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildComparableCard(ComparableProperty property) {
-    return Card(
-      margin: EdgeInsets.only(right: 12, bottom: 4),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-        width: 250,
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+
+  Widget _buildValueDisplay(ValuationResult result) {
+    switch (_selectedCurrency) {
+      case 'ETH':
+        return Column(
           children: [
             Text(
-             StringUtils.formatPrice(property.price),
+              '${result.valuation.currentEthValue?.toStringAsFixed(4) ?? result.valuation.estimatedValueETH?.toStringAsFixed(4) ?? "N/A"} ETH',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade700,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '${result.valuation.estimatedValue.toStringAsFixed(0)} TND',
               style: TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryDarkColor,
+                color: AppTheme.textLightColor,
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              property.address,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Divider(height: 16),
-            _buildPropertyInfoRow('Area:', '${property.area.toStringAsFixed(0)} sq ft'),
-            SizedBox(height: 4),
-            _buildPropertyInfoRow('Price/sq ft:', '\$${property.pricePerSqFt.toStringAsFixed(2)}'),
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildFeatureIcon(property.features.nearWater, 'Water'),
-                _buildFeatureIcon(property.features.roadAccess, 'Road'),
-                _buildFeatureIcon(property.features.utilities, 'Utilities'),
-              ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildFeatureIcon(bool available, String tooltip) {
-    return Tooltip(
-      message: available ? '$tooltip: Yes' : '$tooltip: No',
-      child: Container(
-        padding: EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: available ? AppTheme.primaryLightColor : Colors.red.shade50,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(
-          available ? Icons.check : Icons.close,
-          color: available ? AppTheme.primaryColor : Colors.red.shade800,
-          size: 16,
-        ),
-      ),
-    );
-  }
+        );
+      case 'TND':
+        return Column(
+          children: [
+            Text(
+              '${result.valuation.estimatedValue.toStringAsFixed(0)} TND',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade700,
+             ),
+           ),
+           SizedBox(height: 4),
+           Text(
+             '${result.valuation.currentEthValue?.toStringAsFixed(4) ?? result.valuation.estimatedValueETH?.toStringAsFixed(4) ?? "N/A"} ETH',
+             style: TextStyle(
+               fontSize: 20,
+               color: AppTheme.textLightColor,
+             ),
+           ),
+         ],
+       );
+     case 'USD':
+       final ethValue = result.valuation.currentEthValue ?? result.valuation.estimatedValueETH;
+       final ethUsdRate = 2400; // This should ideally come from an API
+       final usdValue = ethValue != null ? ethValue * ethUsdRate : null;
+       return Column(
+         children: [
+           Text(
+             usdValue != null ? '\$${usdValue.toStringAsFixed(2)}' : 'N/A',
+             style: TextStyle(
+               fontSize: 36,
+               fontWeight: FontWeight.bold,
+               color: Colors.green,
+             ),
+           ),
+           SizedBox(height: 4),
+           Text(
+             '${result.valuation.currentEthValue?.toStringAsFixed(4) ?? result.valuation.estimatedValueETH?.toStringAsFixed(4) ?? "N/A"} ETH',
+             style: TextStyle(
+               fontSize: 20,
+               color: AppTheme.textLightColor,
+             ),
+           ),
+         ],
+       );
+     default:
+       return Text('Invalid currency');
+   }
+ }
+
+ String _formatPricePerSqFt(ValuationInfo valuation) {
+   switch (_selectedCurrency) {
+     case 'ETH':
+       return '${valuation.avgPricePerSqFtETH?.toStringAsFixed(6) ?? "N/A"} ETH/sq ft';
+     case 'TND':
+       return '${valuation.avgPricePerSqFt.toStringAsFixed(2)} TND/sq ft';
+     case 'USD':
+       final ethPricePerSqFt = valuation.avgPricePerSqFtETH;
+       final ethUsdRate = 2400; // This should ideally come from an API
+       final usdPricePerSqFt = ethPricePerSqFt != null ? ethPricePerSqFt * ethUsdRate : null;
+       return usdPricePerSqFt != null ? '\$${usdPricePerSqFt.toStringAsFixed(2)}/sq ft' : 'N/A';
+     default:
+       return 'N/A';
+   }
+ }
+ 
+ Widget _buildPropertyInfoRow(String label, String value) {
+   return Row(
+     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+     children: [
+       Text(
+         label,
+         style: TextStyle(
+           color: AppTheme.textLightColor,
+           fontSize: 15,
+         ),
+       ),
+       Flexible(
+         child: Text(
+           value,
+           style: TextStyle(
+             fontSize: 15,
+             fontWeight: FontWeight.w600,
+             color: AppTheme.textDarkColor,
+           ),
+           textAlign: TextAlign.right,
+           overflow: TextOverflow.ellipsis,
+         ),
+       ),
+     ],
+   );
+ }
+ 
+ Widget _buildComparableCard(ComparableProperty property) {
+   return Card(
+     margin: EdgeInsets.only(right: 12, bottom: 4),
+     elevation: 2,
+     shape: RoundedRectangleBorder(
+       borderRadius: BorderRadius.circular(12),
+     ),
+     child: Container(
+       width: 250,
+       padding: EdgeInsets.all(16),
+       child: Column(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+           // Show price based on selected currency
+           _buildComparablePrice(property),
+           SizedBox(height: 8),
+           Text(
+             property.address,
+             style: TextStyle(
+               fontSize: 14,
+               fontWeight: FontWeight.w500,
+             ),
+             maxLines: 2,
+             overflow: TextOverflow.ellipsis,
+           ),
+           Divider(height: 16),
+           _buildPropertyInfoRow('Area:', '${property.area.toStringAsFixed(0)} sq ft'),
+           SizedBox(height: 4),
+           _buildPropertyInfoRow('Price/sq ft:', _formatComparablePricePerSqFt(property)),
+           SizedBox(height: 12),
+           Row(
+             mainAxisAlignment: MainAxisAlignment.spaceAround,
+             children: [
+               _buildFeatureIcon(property.features.nearWater, 'Water'),
+               _buildFeatureIcon(property.features.roadAccess, 'Road'),
+               _buildFeatureIcon(property.features.utilities, 'Utilities'),
+             ],
+           ),
+         ],
+       ),
+     ),
+   );
+ }
+
+ Widget _buildComparablePrice(ComparableProperty property) {
+   switch (_selectedCurrency) {
+     case 'ETH':
+       return Text(
+         '${property.currentPriceInETH?.toStringAsFixed(4) ?? property.priceInETH?.toStringAsFixed(4) ?? "N/A"} ETH',
+         style: TextStyle(
+           fontSize: 20,
+           fontWeight: FontWeight.bold,
+           color: Colors.blue.shade700,
+         ),
+       );
+     case 'TND':
+       return Text(
+         '${property.price.toStringAsFixed(0)} TND',
+         style: TextStyle(
+           fontSize: 20,
+           fontWeight: FontWeight.bold,
+           color: Colors.green.shade700,
+         ),
+       );
+     case 'USD':
+       final ethPrice = property.currentPriceInETH ?? property.priceInETH;
+       final ethUsdRate = 2400; // This should ideally come from an API
+       final usdPrice = ethPrice != null ? ethPrice * ethUsdRate : null;
+       return Text(
+         usdPrice != null ? '\$${usdPrice.toStringAsFixed(2)}' : 'N/A',
+         style: TextStyle(
+           fontSize: 20,
+           fontWeight: FontWeight.bold,
+           color: Colors.green,
+         ),
+       );
+     default:
+       return Text('N/A');
+   }
+ }
+
+ String _formatComparablePricePerSqFt(ComparableProperty property) {
+   switch (_selectedCurrency) {
+     case 'ETH':
+       return '${property.currentPricePerSqFtETH?.toStringAsFixed(6) ?? property.pricePerSqFtETH?.toStringAsFixed(6) ?? "N/A"} ETH';
+     case 'TND':
+       return '${property.pricePerSqFt.toStringAsFixed(2)} TND';
+     case 'USD':
+       final ethPricePerSqFt = property.currentPricePerSqFtETH ?? property.pricePerSqFtETH;
+       final ethUsdRate = 2400; // This should ideally come from an API
+       final usdPricePerSqFt = ethPricePerSqFt != null ? ethPricePerSqFt * ethUsdRate : null;
+       return usdPricePerSqFt != null ? '\$${usdPricePerSqFt.toStringAsFixed(2)}' : 'N/A';
+     default:
+       return 'N/A';
+   }
+ }
+ 
+ Widget _buildFeatureIcon(bool available, String tooltip) {
+   return Tooltip(
+     message: available ? '$tooltip: Yes' : '$tooltip: No',
+     child: Container(
+       padding: EdgeInsets.all(6),
+       decoration: BoxDecoration(
+         color: available ? AppTheme.primaryLightColor : Colors.red.shade50,
+         borderRadius: BorderRadius.circular(6),
+       ),
+       child: Icon(
+         available ? Icons.check : Icons.close,
+         color: available ? AppTheme.primaryColor : Colors.red.shade800,
+         size: 16,
+       ),
+     ),
+   );
+ }
 }

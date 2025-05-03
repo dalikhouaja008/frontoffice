@@ -10,16 +10,19 @@ class Property {
   final String? state;
   final String? zipCode;
   final double price;
+  final double? priceInETH;          // Add ETH fields
+  final double? currentPriceInETH;   
+  final double? ethPriceAtScraping;
   final double? area;
   final double? pricePerSqFt;
+  final double? pricePerSqFtETH;     // Add ETH price per sq ft
+  final double? currentPricePerSqFtETH;
   final String? zoning;
   final PropertyFeatures features;
   final String? sourceUrl;
   final List<String>? images;
   final DateTime lastUpdated;
   final String? description;
-
-  // Extended fields from backend
   final String? originalPrice;
   final dynamic originalArea;
   final String? governorate;
@@ -38,8 +41,13 @@ class Property {
     this.state,
     this.zipCode,
     required this.price,
+    this.priceInETH,
+    this.currentPriceInETH,
+    this.ethPriceAtScraping,
     this.area,
     this.pricePerSqFt,
+    this.pricePerSqFtETH,
+    this.currentPricePerSqFtETH,
     this.zoning,
     required this.features,
     this.sourceUrl,
@@ -56,6 +64,7 @@ class Property {
     this.areaInSqMeters,
     this.areaInHectares,
   });
+
 
   factory Property.fromJson(Map<String, dynamic> json) {
     // Handle coordinates correctly with error checking
@@ -185,16 +194,19 @@ class Property {
       state: json['state'],
       zipCode: json['zipCode'],
       price: safeDouble(json['price'], 0),
+      priceInETH: json.containsKey('priceInETH') ? safeDouble(json['priceInETH']) : null,
+      currentPriceInETH: json.containsKey('currentPriceInETH') ? safeDouble(json['currentPriceInETH']) : null,
+      ethPriceAtScraping: json.containsKey('ethPriceAtScraping') ? safeDouble(json['ethPriceAtScraping']) : null,
       area: json.containsKey('area') ? safeDouble(json['area']) : null,
       pricePerSqFt: json.containsKey('pricePerSqFt') ? safeDouble(json['pricePerSqFt']) : null,
+      pricePerSqFtETH: json.containsKey('pricePerSqFtETH') ? safeDouble(json['pricePerSqFtETH']) : null,
+      currentPricePerSqFtETH: json.containsKey('currentPricePerSqFtETH') ? safeDouble(json['currentPricePerSqFtETH']) : null,
       zoning: json['zoning'],
       features: extractFeatures(),
       sourceUrl: json['sourceUrl'],
       images: extractImages(),
       lastUpdated: extractDateTime('lastUpdated'),
       description: json['description'],
-
-      // Extended fields
       originalPrice: json['originalPrice'],
       originalArea: json['originalArea'],
       governorate: json['governorate'],
@@ -205,6 +217,24 @@ class Property {
       areaInSqMeters: json.containsKey('areaInSqMeters') ? safeDouble(json['areaInSqMeters']) : null,
       areaInHectares: json.containsKey('areaInHectares') ? safeDouble(json['areaInHectares']) : null,
     );
+  }
+   String formatPriceETH() {
+    if (currentPriceInETH != null) {
+      return '${currentPriceInETH!.toStringAsFixed(4)} ETH';
+    } else if (priceInETH != null) {
+      return '${priceInETH!.toStringAsFixed(4)} ETH';
+    }
+    return 'N/A';
+  }
+
+  // Add method to format price per square foot in ETH
+  String formatPricePerSqFtETH() {
+    if (currentPricePerSqFtETH != null) {
+      return '${currentPricePerSqFtETH!.toStringAsFixed(6)} ETH/sq ft';
+    } else if (pricePerSqFtETH != null) {
+      return '${pricePerSqFtETH!.toStringAsFixed(6)} ETH/sq ft';
+    }
+    return 'N/A';
   }
 
   // Create a copy with optional parameter overrides

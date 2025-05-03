@@ -110,136 +110,153 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
   
-  void _createMarkers() {
-    final Set<Marker> markers = {};
-    
-    // Add current position marker
+void _createMarkers() {
+  final Set<Marker> markers = {};
+  
+  // Add current position marker
+  markers.add(
+    Marker(
+      markerId: MarkerId('current_position'),
+      position: _currentPosition,
+      infoWindow: InfoWindow(title: 'Your Location'),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+    ),
+  );
+  
+  // Add property markers with ETH prices
+  for (final property in _properties) {
     markers.add(
       Marker(
-        markerId: MarkerId('current_position'),
-        position: _currentPosition,
-        infoWindow: InfoWindow(title: 'Your Location'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        markerId: MarkerId(property.id),
+        position: property.location,
+        infoWindow: InfoWindow(
+          title: property.formatPriceETH(),
+          snippet: property.address,
+          onTap: () {
+            _showPropertyDetails(property);
+          },
+        ),
+        icon: _propertyIcon,
       ),
     );
-    
-    // Add property markers
-    for (final property in _properties) {
-      markers.add(
-        Marker(
-          markerId: MarkerId(property.id),
-          position: property.location,
-          infoWindow: InfoWindow(
-            title: '\$${property.price.toStringAsFixed(0)}',
-            snippet: property.address,
-            onTap: () {
-              _showPropertyDetails(property);
-            },
-          ),
-          icon: _propertyIcon,
-        ),
-      );
-    }
-    
-    setState(() {
-      _markers = markers;
-    });
   }
   
+  setState(() {
+    _markers = markers;
+  });
+}
+  
   void _showPropertyDetails(Property property) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Container(
-        padding: EdgeInsets.all(16),
-        height: MediaQuery.of(context).size.height * 0.6,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '\$${property.price.toStringAsFixed(0)}',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) => Container(
+      padding: EdgeInsets.all(16),
+      height: MediaQuery.of(context).size.height * 0.6,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ETH price prominently displayed
+            Text(
+              property.formatPriceETH(),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
               ),
-              SizedBox(height: 8),
-              Text(
-                property.address,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
+            ),
+            // TND price below
+            Text(
+              '${property.price.toStringAsFixed(0)} TND',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.green,
               ),
-              SizedBox(height: 4),
-              Text(
-                '${property.city ?? ""}, ${property.state ?? ""} ${property.zipCode ?? ""}',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              property.address,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
               ),
-              Divider(height: 24),
-              _buildPropertyInfoRow(
-                'Area', 
-                property.area != null ? '${property.area!.toStringAsFixed(0)} sq ft' : 'Unknown'
+            ),
+            SizedBox(height: 4),
+            Text(
+              '${property.city ?? ""}, ${property.state ?? ""} ${property.zipCode ?? ""}',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
               ),
-              _buildPropertyInfoRow(
-                'Price/sq ft', 
-                property.pricePerSqFt != null ? '\$${property.pricePerSqFt!.toStringAsFixed(2)}' : 'Unknown'
+            ),
+            Divider(height: 24),
+            _buildPropertyInfoRow(
+              'Area', 
+              property.area != null ? '${property.area!.toStringAsFixed(0)} sq ft' : 'Unknown'
+            ),
+            _buildPropertyInfoRow(
+              'Price/sq ft (ETH)', 
+              property.currentPricePerSqFtETH != null 
+                ? '${property.currentPricePerSqFtETH!.toStringAsFixed(6)} ETH' 
+                : 'Unknown'
+            ),
+            _buildPropertyInfoRow(
+              'Price/sq ft (TND)', 
+              property.pricePerSqFt != null 
+                ? '${property.pricePerSqFt!.toStringAsFixed(2)} TND' 
+                : 'Unknown'
+            ),
+            _buildPropertyInfoRow('Zoning', property.zoning ?? 'Unknown'),
+            SizedBox(height: 16),
+            Text(
+              'Features',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              _buildPropertyInfoRow('Zoning', property.zoning ?? 'Unknown'),
-              SizedBox(height: 16),
-              Text(
-                'Features',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              _buildFeatureRow('Water Proximity', property.features.nearWater),
-              _buildFeatureRow('Road Access', property.features.roadAccess),
-              _buildFeatureRow('Utilities Available', property.features.utilities),
-              SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    icon: Icon(Icons.calculate),
-                    label: Text('Value Similar Land'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _navigateToValuation(property);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
+            ),
+            SizedBox(height: 8),
+            _buildFeatureRow('Water Proximity', property.features.nearWater),
+            _buildFeatureRow('Road Access', property.features.roadAccess),
+            _buildFeatureRow('Utilities Available', property.features.utilities),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  icon: Icon(Icons.calculate),
+                  label: Text('Value Similar Land'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _navigateToValuation(property);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
-                  if (property.sourceUrl != null && property.sourceUrl!.isNotEmpty)
-                    TextButton.icon(
-                      icon: Icon(Icons.link),
-                      label: Text('View Source'),
-                      onPressed: () {
-                        // In a real app, launch URL
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Would open: ${property.sourceUrl}')),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ],
-          ),
+                ),
+                if (property.sourceUrl != null && property.sourceUrl!.isNotEmpty)
+                  TextButton.icon(
+                    icon: Icon(Icons.link),
+                    label: Text('View Source'),
+                    onPressed: () {
+                      // In a real app, launch URL
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Would open: ${property.sourceUrl}')),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
   
   Widget _buildPropertyInfoRow(String label, String value) {
     return Padding(

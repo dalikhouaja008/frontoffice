@@ -1,4 +1,4 @@
-// lib/features/land_valuation/presentation/pages/land_valuation_home_screen.dart
+// lib/features/auth/presentation/pages/valuation/land_valuation_home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -12,8 +12,6 @@ import 'valuation_screen.dart';
 class LandValuationHomeScreen extends StatefulWidget {
   final ApiService? apiService;
   
-  /// If you want to provide a custom API service, pass it here.
-  /// Otherwise, a default one will be created.
   const LandValuationHomeScreen({
     Key? key,
     this.apiService,
@@ -29,89 +27,135 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
   Position? _currentPosition;
   bool _isLoading = true;
   String _errorMessage = '';
+  Map<String, dynamic>? _ethPriceData;
+  bool _isInitialized = false;
 
-  final List<Widget> _screens = [];
+  List<Widget> _screens = [];
   
   @override
   void initState() {
     super.initState();
     apiService = widget.apiService ?? ApiService();
-    _determinePosition();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await _determinePosition();
+    if (_currentPosition != null) {
+      await _fetchEthPrice();
+      _initializeScreens();
+    }
+  }
+
+  void _initializeScreens() {
+    if (_currentPosition == null) return;
+    
+    setState(() {
+      _screens = [
+        MapScreen(
+          initialPosition: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          apiService: apiService,
+        ),
+        PropertyListScreen(
+          apiService: apiService,
+          initialPosition: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        ),
+        ValuationScreen(
+          apiService: apiService,
+          initialPosition: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        ),
+      ];
+      _isInitialized = true;
+    });
   }
   
+  Future<void> _fetchEthPrice() async {
+    try {
+      final priceData = await apiService.getEthPrice();
+      if (mounted) {
+        setState(() {
+          _ethPriceData = priceData;
+        });
+      }
+    } catch (e) {
+      print('Error fetching ETH price: $e');
+    }
+  }
+
   Future<void> _determinePosition() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
     
     try {
+      // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() {
-          _errorMessage = 'Location services are disabled.';
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Location services are disabled. Please enable them to use this feature.';
+            _isLoading = false;
+          });
+        }
         return;
       }
       
+      // Check location permissions
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          setState(() {
-            _errorMessage = 'Location permissions are denied.';
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Location permissions are denied. Please allow location access to use this feature.';
+              _isLoading = false;
+            });
+          }
           return;
         }
       }
       
       if (permission == LocationPermission.deniedForever) {
-        setState(() {
-          _errorMessage = 'Location permissions are permanently denied.';
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Location permissions are permanently denied. Please enable them in your device settings.';
+            _isLoading = false;
+          });
+        }
         return;
       }
       
-      Position position = await Geolocator.getCurrentPosition();
-      setState(() {
-        _currentPosition = position;
-        _isLoading = false;
-        
-        // Initialize screens with current position
-        _screens.clear();
-        _screens.addAll([
-          MapScreen(
-            initialPosition: LatLng(position.latitude, position.longitude),
-            apiService: apiService,
-          ),
-          PropertyListScreen(
-            apiService: apiService,
-            initialPosition: LatLng(position.latitude, position.longitude),
-          ),
-          ValuationScreen(
-            apiService: apiService,
-            initialPosition: LatLng(position.latitude, position.longitude),
-          ),
-        ]);
-      });
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 10),
+      );
+      
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error determining position: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error determining position: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
   
   @override
   Widget build(BuildContext context) {
-    // Get theme from context - this allows the component to use the theme from the parent app
     final primaryColor = Theme.of(context).colorScheme.primary;
     
-    // Enhanced loading screen
-    if (_isLoading) {
+    // Show loading screen while initializing
+    if (_isLoading || (!_isInitialized && _currentPosition != null)) {
       return Scaffold(
         body: Container(
           decoration: BoxDecoration(
@@ -128,7 +172,6 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -149,7 +192,6 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Feature name
                 Text(
                   'Land Value Estimator',
                   style: TextStyle(
@@ -159,13 +201,11 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                // Loading indicator
                 SizedBox(
                   width: 200,
                   child: Column(
                     children: [
-                      LinearProgressIndicator(
-                        backgroundColor: primaryColor.withOpacity(0.2),
+                      CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                       ),
                       const SizedBox(height: 16),
@@ -186,14 +226,11 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
       );
     }
     
-    // Enhanced error screen
-    if (_errorMessage.isNotEmpty) {
+    // Show error screen if there's an error
+    if (_errorMessage.isNotEmpty || _currentPosition == null) {
       return Scaffold(
         body: Container(
           padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-          ),
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -205,7 +242,7 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.error_outline,
+                    Icons.location_off,
                     size: 64,
                     color: Colors.red,
                   ),
@@ -223,7 +260,9 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    _errorMessage,
+                    _errorMessage.isEmpty ? 
+                      'We need access to your location to show nearby properties and provide accurate valuations.' :
+                      _errorMessage,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -233,26 +272,25 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _determinePosition,
+                ElevatedButton.icon(
+                  onPressed: _initializeApp,
+                  icon: Icon(Icons.refresh),
+                  label: Text('Try Again'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2,
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    child: Text(
-                      'Grant Permission',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 ),
+                if (_errorMessage.contains('permanently denied'))
+                  TextButton(
+                    onPressed: () {
+                      Geolocator.openAppSettings();
+                    },
+                    child: Text('Open Settings'),
+                  ),
               ],
             ),
           ),
@@ -260,11 +298,52 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
       );
     }
     
-    // Enhanced main screen with bottom navigation
+    // Main screen with navigation
     return Scaffold(
-      body: _screens.isNotEmpty && _selectedIndex < _screens.length 
-          ? _screens[_selectedIndex] 
-          : Container(),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text('Land Value Estimator'),
+            const Spacer(),
+            if (_ethPriceData != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.currency_exchange, size: 16, color: Colors.blue.shade700),
+                    const SizedBox(width: 4),
+                    Text(
+                      '1 ETH = ${_ethPriceData!['ethPriceTND'].toStringAsFixed(2)} TND',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchEthPrice,
+            tooltip: 'Refresh ETH Price',
+          ),
+        ],
+      ),
+      body: _isInitialized && _screens.isNotEmpty
+          ? IndexedStack(
+              index: _selectedIndex,
+              children: _screens,
+            )
+          : Center(
+              child: CircularProgressIndicator(),
+            ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -296,7 +375,7 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
                 label: 'Valuation',
               ),
             ],
-            currentIndex: _selectedIndex < _screens.length ? _selectedIndex : 0,
+            currentIndex: _selectedIndex,
             selectedItemColor: primaryColor,
             unselectedItemColor: Colors.grey.shade600,
             showUnselectedLabels: true,
@@ -304,15 +383,18 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
             elevation: 0,
             type: BottomNavigationBarType.fixed,
             onTap: (index) {
-              if (index < _screens.length) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              }
+              setState(() {
+                _selectedIndex = index;
+              });
             },
           ),
         ),
       ),
     );
+  }
+  
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
