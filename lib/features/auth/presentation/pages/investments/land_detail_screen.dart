@@ -29,15 +29,16 @@ class LandDetailsScreen extends StatefulWidget {
   State<LandDetailsScreen> createState() => _LandDetailsScreenState();
 }
 
-class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTickerProviderStateMixin {
+class _LandDetailsScreenState extends State<LandDetailsScreen>
+    with SingleTickerProviderStateMixin {
   Land? _land;
   bool _isLoading = true;
   String? _error;
   final ScrollController _scrollController = ScrollController();
-  
+
   // Déclarer TabController pour le TabBar
   late TabController _tabController;
-  
+
   // Liste des tabs pour organiser le contenu
   final List<String> _tabs = [
     'Overview',
@@ -53,7 +54,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
     _tabController = TabController(length: _tabs.length, vsync: this);
     _loadLand();
   }
-  
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -130,7 +131,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
             ),
     );
   }
-  
+
   Widget _buildLoadingScreen() {
     return Scaffold(
       body: Center(
@@ -153,7 +154,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
       ),
     );
   }
-  
+
   Widget _buildErrorScreen() {
     return Scaffold(
       appBar: AppBar(
@@ -207,7 +208,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
       ),
     );
   }
-  
+
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -223,13 +224,14 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
                 child: Text(
                   _land!.title,
                   style: const TextStyle(
-                    fontSize: 22, 
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: _getStatusColor(_land!.status),
                   borderRadius: BorderRadius.circular(20),
@@ -288,7 +290,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
       ),
     );
   }
-  
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -302,7 +304,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
         return AppColors.primary;
     }
   }
-  
+
   Widget _buildTabBar() {
     return Container(
       decoration: BoxDecoration(
@@ -326,7 +328,7 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
       ),
     );
   }
-  
+
   Widget _buildTabContent() {
     return TabBarView(
       controller: _tabController, // Utiliser le TabController
@@ -341,25 +343,25 @@ class _LandDetailsScreenState extends State<LandDetailsScreen> with SingleTicker
               // Section des images
               LandImagesWidget(land: _land!),
               const SizedBox(height: 24),
-              
+
               // Section des informations générales
               LandGeneralInfoWidget(land: _land!),
             ],
           ),
         ),
-        
+
         // Tokenization Tab
         SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: LandTokenizationWidget(land: _land!),
         ),
-        
+
         // Features Tab
         SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: LandAmenitiesWidget(land: _land!),
         ),
-        
+
         // Validation Tab
         SingleChildScrollView(
           padding: const EdgeInsets.all(16),
