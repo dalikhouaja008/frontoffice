@@ -13,6 +13,8 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+import 'package:provider/provider.dart';
+import 'features/metamask/data/models/metamask_provider.dart';
 
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -40,7 +42,19 @@ void main() async {
   await initDependencies();
   await registerChatbotDependencies();
   await _checkExistingSession();
-  runApp(const TheBoostApp());
+
+  //metamask provider instance 
+    final metamaskProvider = MetamaskProvider();
+  
+  // Run the app
+  runApp(MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MetamaskProvider>.value(
+          value: metamaskProvider,
+        ),
+      ],
+      child: const TheBoostApp(),
+    ),);
 }
 
 Future<void> _checkExistingSession() async {

@@ -11,6 +11,8 @@ import 'package:the_boost/features/auth/presentation/widgets/app_nav_bar.dart';
 import 'package:the_boost/features/auth/presentation/widgets/login_form.dart';
 import 'package:the_boost/features/auth/presentation/widgets/signup_form.dart';
 
+import '../../../../../core/di/dependency_injection.dart';
+
 class AuthPage extends StatefulWidget {
   const AuthPage({Key? key}) : super(key: key);
 
@@ -18,11 +20,12 @@ class AuthPage extends StatefulWidget {
   _AuthPageState createState() => _AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin {
+class _AuthPageState extends State<AuthPage>
+    with SingleTickerProviderStateMixin {
   bool isLogin = true;
   late AnimationController _animationController;
   late Animation<double> _animationTextRotate;
-  
+
   @override
   void initState() {
     super.initState();
@@ -35,9 +38,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
       begin: 0,
       end: 90,
     ).animate(_animationController);
-    
-    print('[2025-03-09 12:00:02] AuthPage: 🔄 Initializing'
-          '\n└─ User: raednas');
+
+
+    print('[2025-03-02 15:53:02] AuthPage: 🔄 Initializing');
   }
 
   @override
@@ -51,36 +54,43 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
       isLogin = !isLogin;
     });
     isLogin ? _animationController.reverse() : _animationController.forward();
-    
-    print('[2025-03-09 12:00:02] AuthPage: 🔄 Switching view'
-          '\n└─ User: raednas'
-          '\n└─ Current view: ${isLogin ? 'Login' : 'Signup'}');
+
+
+    print(' AuthPage: 🔄 Switching view'
+        '\n└─ Current view: ${isLogin ? 'Login' : 'Signup'}');
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isMobile = ResponsiveHelper.isMobile(context);
-    
-    // Use BlocBuilder to ensure the page rebuilds when auth state changes
-    return BlocBuilder<LoginBloc, LoginState>(
-      builder: (context, loginState) {
-        print('[2025-03-09 12:00:02] AuthPage: 🔄 Building with state: ${loginState.runtimeType}');
-        
-        // Redirect to dashboard if already logged in
-        if (loginState is LoginSuccess) {
-          print('[2025-03-09 12:00:02] AuthPage: 🔄 User already logged in, redirecting to dashboard');
-          
-          // Delay navigation to allow build to complete
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
+
+    return BlocListener<LoginBloc, LoginState>(
+        listener: (context, state) {
+          print('[${DateTime.now()}] AuthPage: 🎧 Login state changed'
+              '\n└─ New state: ${state.runtimeType}');
+
+          if (state is LoginSuccess) {
+            print('[${DateTime.now()}] AuthPage: ✅ Login successful'
+                '\n└─ Username: ${state.user.username}');
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacementNamed(context, '/dashboard');
           });
-        }
-        
-        return Scaffold(
+          } else if (state is LoginFailure) {
+            print('[${DateTime.now()}] AuthPage: ❌ Login failed'
+                '\n└─ Error: ${state.error}');
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Login failed: ${state.error}')),
+            );
+          }
+        },
+        child: Scaffold(
           key: const ValueKey('AuthPage'),
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(70),
+          appBar: const PreferredSize(
+            preferredSize: Size.fromHeight(70),
+
             child: AppNavBar(
               currentRoute: '/auth',
             ),
@@ -106,7 +116,8 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                   height: isMobile ? null : size.height * 0.8,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusXXL),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusXXL),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
@@ -125,11 +136,16 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                               AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 500),
                                 child: isLogin
-                                    ? LoginForm(
-                                        updateView: updateView,
+
+                                    ? BlocProvider<LoginBloc>(
+                                        create: (context) => getIt<LoginBloc>(),
+                                        child: LoginForm(
+                                          updateView: updateView,
+                                        ),
                                       )
-                                    : BlocProvider.value(
-                                        value: context.read<SignUpBloc>(),
+                                    : BlocProvider<SignUpBloc>(
+                                        create: (context) =>
+                                            getIt<SignUpBloc>(),
                                         child: SignUpForm(
                                           updateView: updateView,
                                         ),
@@ -146,8 +162,11 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                                 decoration: const BoxDecoration(
                                   color: AppColors.primary,
                                   borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(AppDimensions.radiusXXL),
-                                    bottomLeft: Radius.circular(AppDimensions.radiusXXL),
+                                    topLeft: Radius.circular(
+                                        AppDimensions.radiusXXL),
+                                    bottomLeft: Radius.circular(
+                                        AppDimensions.radiusXXL),
+
                                   ),
                                 ),
                                 child: Column(
@@ -163,7 +182,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                                           return Transform(
                                             alignment: Alignment.center,
                                             transform: Matrix4.rotationY(
-                                                _animationTextRotate.value * (3.1415927 / 180)),
+
+                                                _animationTextRotate.value *
+                                                    (3.1415927 / 180)),
                                             child: Text(
                                               isLogin
                                                   ? "Welcome back to TheBoost, where your land investment journey continues."
@@ -189,11 +210,16 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 500),
                                 child: isLogin
-                                    ? LoginForm(
-                                        updateView: updateView,
+
+                                    ? BlocProvider<LoginBloc>(
+                                        create: (context) => getIt<LoginBloc>(),
+                                        child: LoginForm(
+                                          updateView: updateView,
+                                        ),
                                       )
-                                    : BlocProvider.value(
-                                        value: context.read<SignUpBloc>(),
+                                    : BlocProvider<SignUpBloc>(
+                                        create: (context) =>
+                                            getIt<SignUpBloc>(),
                                         child: SignUpForm(
                                           updateView: updateView,
                                         ),
@@ -206,8 +232,8 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-        );
-      },
+
+        )
     );
   }
 
@@ -242,8 +268,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/');
-              print('[2025-03-09 12:00:02] AuthPage: 🏠 Navigating to Home'
-                    '\n└─ User: raednas');
+              print('[2025-03-02 15:53:02] AuthPage: 🏠 Navigating to Home');
             },
           ),
           ListTile(
@@ -252,8 +277,8 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/features');
-              print('[2025-03-09 12:00:02] AuthPage: 🚀 Navigating to Features'
-                    '\n└─ User: raednas');
+
+              print('[2025-03-02 15:53:02] AuthPage: 🚀 Navigating to Features');
             },
           ),
           ListTile(
@@ -262,8 +287,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/how-it-works');
-              print('[2025-03-09 12:00:02] AuthPage: ❓ Navigating to How It Works'
-                    '\n└─ User: raednas');
+
+              print(
+                  '[2025-03-02 15:53:02] AuthPage: ❓ Navigating to How It Works');
             },
           ),
           ListTile(
@@ -272,8 +298,8 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/invest');
-              print('[2025-03-09 12:00:02] AuthPage: 💰 Navigating to Invest'
-                    '\n└─ User: raednas');
+
+              print('[2025-03-02 15:53:02] AuthPage: 💰 Navigating to Invest');
             },
           ),
           ListTile(
@@ -282,8 +308,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/learn-more');
-              print('[2025-03-09 12:00:02] AuthPage: 📚 Navigating to Learn More'
-                    '\n└─ User: raednas');
+              print(
+                  '[2025-03-02 15:53:02] AuthPage: 📚 Navigating to Learn More');
+
             },
           ),
           const Divider(),
@@ -294,8 +321,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               onTap: () {
                 Navigator.pop(context);
                 updateView();
-                print('[2025-03-09 12:00:02] AuthPage: 👤 Switching to Sign Up'
-                      '\n└─ User: raednas');
+
+                print('[2025-03-02 15:53:02] AuthPage: 👤 Switching to Sign Up'
+                    '\n└─ User: raednas');
               },
             )
           else
@@ -305,8 +333,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               onTap: () {
                 Navigator.pop(context);
                 updateView();
-                print('[2025-03-09 12:00:02] AuthPage: 🔑 Switching to Login'
-                      '\n└─ User: raednas');
+
+                print('[2025-03-02 15:53:02] AuthPage: 🔑 Switching to Login');
+
               },
             ),
         ],

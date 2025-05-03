@@ -1,6 +1,7 @@
 // lib/features/auth/presentation/bloc/login/login_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+
 import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
@@ -21,8 +22,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _secureStorage = secureStorage,
         _sessionService = sessionService,
         super(LoginInitial()) {
+
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
+
     on<CheckSession>(_onCheckSession);
     
     // Automatically check for existing session when bloc is created
@@ -68,7 +71,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit,
   ) async {
     print('LoginBloc: 🚀 Processing login request'
-          '\n└─ Email: ${event.email}');
+        '\n└─ Email: ${event.email}');
 
     try {
       emit(LoginLoading());
@@ -78,20 +81,26 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         password: event.password,
       );
 
-      if (response.requiresTwoFactor) {
-        print('LoginBloc: 🔐 2FA required'
-              '\n└─ Email: ${response.user.email}');
 
-        emit(LoginRequires2FA(
-          user: response.user,
-          tempToken: response.tempToken!,
-        ));
-        return;
+      // Sauvegarder les tokens immédiatement après une connexion réussie
+      if (!response.requiresTwoFactor) {
+        await _secureStorage.saveTokens(
+          accessToken: response.accessToken!,
+          refreshToken: response.refreshToken!,
+        );
       }
 
-      if (response.accessToken != null && response.refreshToken != null) {
-        print('LoginBloc: ✅ Login successful'
-              '\n└─ Email: ${response.user.email}');
+
+      if (response.requiresTwoFactor) {
+        emit(LoginRequires2FA(
+          user: response.user!,
+          tempToken: response.tempToken!,
+        ));
+
+      } else if (response.accessToken != null && response.refreshToken != null) {
+        print('[${DateTime.now()}] LoginBloc: ✅ Login successful'
+            '\n└─ User: ${response.user?.username}'
+            '\n└─ Email: ${response.user?.email}');
 
         // Save tokens to secure storage
         await _secureStorage.saveTokens(
@@ -101,12 +110,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         
         // Save session data
         await _sessionService.saveSession(
-          user: response.user,
+          user: response.user!,
           accessToken: response.accessToken!,
           refreshToken: response.refreshToken!,
         );
 
-        emit(LoginSuccess(user: response.user));
+        emit(LoginSuccess(user: response.user!));
       } else {
         throw Exception('Invalid login response: missing tokens');
       }
@@ -114,9 +123,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       print('LoginBloc: ❌ Login failed'
             '\n└─ Error: $e');
 
+
       emit(LoginFailure(e.toString()));
     }
   }
+
 
   Future<void> _onLogoutRequested(
     LogoutRequested event,
@@ -133,4 +144,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginInitial());
     print('LoginBloc: ✅ Logout successful');
   }
+
+
 }
