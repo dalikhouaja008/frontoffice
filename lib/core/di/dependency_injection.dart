@@ -20,11 +20,9 @@ import 'package:the_boost/features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
-import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import '../services/gemini_service.dart';
 import '../../features/chatbot/presentation/controllers/chat_controller.dart';
-
 import '../../features/auth/data/datasources/preferences_remote_data_source.dart';
 import '../../features/auth/data/repositories/preferences_repository.dart';
 import '../../features/auth/data/repositories/preferences_repository_impl.dart';
@@ -32,6 +30,8 @@ import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.
 import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
 import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
 import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+import '../../data/auth_service.dart';
+import '../../features/metamask/data/models/metamask_provider.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -62,10 +62,37 @@ Future<void> initDependencies() async {
 
   await _initAuthFeature();
   await _initPropertyFeature();
-  await _initPreferencesFeature();
   //await registerChatbotDependencies();
+  await _initPreferencesFeature();
+  await _initMetaMaskFeature(); // Add MetaMask initialization
 
   print('DependencyInjection: ✅ Dependencies initialized');
+}
+
+/// Initialize MetaMask-related dependencies
+Future<void> _initMetaMaskFeature() async {
+  print('[${DateTime.now()}] DependencyInjection: 🔄 Initializing MetaMask feature');
+  
+  try {
+    // Register MetaMask provider
+    getIt.registerLazySingleton<MetamaskProvider>(
+      () => MetamaskProvider(),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ MetamaskProvider registered');
+    
+    // Register Auth Service that uses MetaMask
+    getIt.registerLazySingleton<AuthService>(
+      () => AuthService(
+        getIt<MetamaskProvider>(),
+      ),
+    );
+    print('[${DateTime.now()}] DependencyInjection: ✅ AuthService registered');
+    
+    print('[${DateTime.now()}] DependencyInjection: ✅ MetaMask feature initialized');
+  } catch (e) {
+    print('[${DateTime.now()}] DependencyInjection: ❌ Error initializing MetaMask feature'
+        '\n└─ Error: $e');
+  }
 }
 
 Future<void> registerChatbotDependencies() async {
@@ -73,7 +100,7 @@ Future<void> registerChatbotDependencies() async {
   const geminiApiKey = String.fromEnvironment(
     'GEMINI_API_KEY',
     defaultValue:
-        'AIzaSyAvEtQjkAjwld1rTx4EtPXJ97iM1_5CqT8', // Replace with your actual API key when not using --dart-define
+        'AIzaSyAvEtQjkAjwld1rTx4EtPXJ97iM1_5CqT8', //api key
   );
 
   getIt.registerLazySingleton<GeminiService>(
