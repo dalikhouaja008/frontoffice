@@ -337,14 +337,17 @@ class _LandValuationHomeScreenState extends State<LandValuationHomeScreen> {
         ],
       ),
       body: _isInitialized && _screens.isNotEmpty
-          ? IndexedStack(
-              index: _selectedIndex,
-              children: _screens,
-            )
-          : Center(
-              child: CircularProgressIndicator(),
-            ),
+    ? Expanded(  // Wrap in Expanded
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
+      )
+    : Center(
+        child: CircularProgressIndicator(),
+      ),
       bottomNavigationBar: Container(
+        height: 60,
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(

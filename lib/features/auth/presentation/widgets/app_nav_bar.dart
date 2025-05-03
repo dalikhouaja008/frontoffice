@@ -85,21 +85,22 @@ class AppNavBar extends StatelessWidget {
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
                     _NavLink('Features', route: '/features', currentRoute: currentRoute),
                     // Modified to open land valuation screen instead of '/how-it-works'
-  _NavLink(
-  'How It Works', 
-  route: '/how-it-works', 
-  currentRoute: currentRoute,
-  onNavigate: () {
-    final apiService = getIt<ApiService>();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => LandValuationScreenWithNav(
-          apiService: apiService,
-        ),
-      ),
-    );
-  },
-),
+                                        _NavLink(
+                      'How It Works', 
+                      route: '/how-it-works', 
+                      currentRoute: currentRoute,
+                      onNavigate: () {
+                        // Create a properly initialized ApiService instance
+                        final apiService = getIt<ApiService>(); // ✅ Get a properly initialized ApiService
+
+Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (context) => LandValuationHomeScreen(apiService: apiService),
+  ),
+);
+
+                      },
+                    ),
                     _NavLink('Invest', route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More', route: '/learn-more', currentRoute: currentRoute),
                   ],
