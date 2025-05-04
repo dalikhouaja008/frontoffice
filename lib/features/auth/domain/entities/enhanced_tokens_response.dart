@@ -1,29 +1,29 @@
-// lib/features/investment/domain/entities/enhanced_tokens_response.dart
-import 'package:the_boost/features/auth/domain/entities/investment_stats.dart';
-import 'package:the_boost/features/auth/domain/entities/token.dart';
+import 'package:equatable/equatable.dart';
+import 'investment_stats.dart';
+import 'token.dart';
 
-class EnhancedTokensResponse {
-  final bool success;
+class EnhancedTokensResponse extends Equatable {
   final EnhancedTokensData data;
-  final int count;
-  final String message;
-  final String timestamp;
+  final DateTime timestamp;
 
-  EnhancedTokensResponse({
-    required this.success,
+  const EnhancedTokensResponse({
     required this.data,
-    required this.count,
-    required this.message,
     required this.timestamp,
   });
+
+  @override
+  List<Object?> get props => [data, timestamp];
 }
 
-class EnhancedTokensData {
+class EnhancedTokensData extends Equatable {
   final List<Token> tokens;
   final InvestmentStats stats;
 
-  EnhancedTokensData({
+  const EnhancedTokensData({
     required this.tokens,
     required this.stats,
   });
+
+  @override
+  List<Object?> get props => [tokens, stats];
 }

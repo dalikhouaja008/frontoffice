@@ -11,10 +11,13 @@ import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/core/services/token_minting_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:the_boost/features/auth/data/datasources/investment_remote_data_source.dart';
+import 'package:the_boost/features/auth/data/repositories/Investment_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/property_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/auth_repository.dart';
+import 'package:the_boost/features/auth/domain/repositories/investment_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/property_repository.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_enhanced_tokens_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
@@ -35,11 +38,12 @@ import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.
 import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
 import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
 import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
-
+import 'package:http/http.dart' as http; 
 final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
 Future<void> initDependencies() async {
+  
   print('DependencyInjection: 🚀 Initializing dependencies');
 
   //=== Core ===//
@@ -48,6 +52,9 @@ Future<void> initDependencies() async {
       () => SecureStorageService());
   getIt.registerLazySingleton<GraphQLClient>(() => GraphQLService.client);
   getIt.registerLazySingleton<SessionService>(() => SessionService());
+  
+  // Register HTTP Client
+  getIt.registerLazySingleton<http.Client>(() => http.Client());
 
   // Network
   getIt.registerLazySingleton(() => InternetConnectionChecker.createInstance());
@@ -80,27 +87,41 @@ Future<void> initDependencies() async {
 }
 
 Future<void> _initInvestmentFeature() async {
-  print(
-      '[${DateTime.now()}] DependencyInjection: 🔄 Initializing investment feature');
+  print('[${DateTime.now()}] DependencyInjection: 🔄 Initializing investment feature');
 
   try {
+    // Data Sources
+    getIt.registerLazySingleton<InvestmentRemoteDataSource>(
+      () => InvestmentRemoteDataSourceImpl(
+        client: getIt<http.Client>(),
+        secureStorage: getIt<SecureStorageService>(),
+        baseUrl: 'http://localhost:5000/marketplace', // Replace with your actual API base URL
+      ),
+    );
+    
+    // Repositories
+    getIt.registerLazySingleton<InvestmentRepository>(
+      () => InvestmentRepositoryImpl(
+        remoteDataSource: getIt<InvestmentRemoteDataSource>(),
+        networkInfo: getIt<NetworkInfo>(),
+      ),
+    );
+    
     // Use Cases
     getIt.registerLazySingleton<GetEnhancedTokensUseCase>(
-      () => GetEnhancedTokensUseCase(),
+      () => GetEnhancedTokensUseCase(getIt<InvestmentRepository>()),
     );
-
+    
     // BLoCs
     getIt.registerFactory<InvestmentBloc>(
       () => InvestmentBloc(
         getEnhancedTokensUseCase: getIt<GetEnhancedTokensUseCase>(),
       ),
     );
-
-    print(
-        '[${DateTime.now()}] DependencyInjection: ✅ Investment feature initialized');
+    
+    print('[${DateTime.now()}] DependencyInjection: ✅ Investment feature initialized');
   } catch (e) {
-    print(
-        '[${DateTime.now()}] DependencyInjection: ❌ Error initializing investment feature'
+    print('[${DateTime.now()}] DependencyInjection: ❌ Error initializing investment feature'
         '\n└─ Error: $e');
   }
 }
