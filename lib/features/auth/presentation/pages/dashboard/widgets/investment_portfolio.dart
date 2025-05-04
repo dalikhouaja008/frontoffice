@@ -6,7 +6,7 @@ import 'package:the_boost/features/auth/domain/entities/token.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 
 class InvestmentPortfolio extends StatefulWidget {
-  const InvestmentPortfolio({super.key});
+  const InvestmentPortfolio({Key? key}) : super(key: key);
 
   @override
   State<InvestmentPortfolio> createState() => _InvestmentPortfolioState();
@@ -37,16 +37,31 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
       return _buildEmptyPortfolio();
     }
 
-    // Sort tokens by current market value
-    final sortedTokens = List<Token>.from(tokens)
+    // Group tokens by landId
+    final Map<int, List<Token>> groupedTokens = {};
+    for (final token in tokens) {
+      if (!groupedTokens.containsKey(token.landId)) {
+        groupedTokens[token.landId] = [];
+      }
+      groupedTokens[token.landId]!.add(token);
+    }
+
+    // Sort lands by total value
+    final sortedLands = groupedTokens.entries.toList()
       ..sort((a, b) {
-        final aPrice = double.tryParse(a.currentMarketInfo.price) ?? 0;
-        final bPrice = double.tryParse(b.currentMarketInfo.price) ?? 0;
-        return bPrice.compareTo(aPrice); // Sort descending
+        final aTotal = a.value.fold(
+            0.0,
+            (sum, token) =>
+                sum + (double.tryParse(token.currentMarketInfo.price) ?? 0.0));
+        final bTotal = b.value.fold(
+            0.0,
+            (sum, token) =>
+                sum + (double.tryParse(token.currentMarketInfo.price) ?? 0.0));
+        return bTotal.compareTo(aTotal); // Sort descending
       });
 
-    // Display top 3 or fewer tokens
-    final displayTokens = sortedTokens.take(3).toList();
+    // Display top 3 or fewer lands
+    final displayLands = sortedLands.take(3).toList();
 
     return Stack(
       children: [
@@ -65,11 +80,11 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
           ),
           child: Column(
             children: [
-              for (int i = 0; i < displayTokens.length; i++)
+              for (int i = 0; i < displayLands.length; i++)
                 Column(
                   children: [
-                    _buildTokenItem(displayTokens[i]),
-                    if (i < displayTokens.length - 1)
+                    _buildLandItem(displayLands[i].key, displayLands[i].value),
+                    if (i < displayLands.length - 1)
                       const Divider(height: 1, indent: 16, endIndent: 16),
                   ],
                 ),
@@ -104,27 +119,57 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
     );
   }
 
-  Widget _buildTokenItem(Token token) {
+  Widget _buildLandItem(int landId, List<Token> tokens) {
+    // Take first token as reference for land info
+    final Token referenceToken = tokens.first;
+    final land = referenceToken.land;
+
+    // Calculate total tokens and combined value
+    final int tokenCount = tokens.length;
+    final double totalValue = tokens.fold(
+        0.0,
+        (sum, token) =>
+            sum + (double.tryParse(token.currentMarketInfo.price) ?? 0.0));
+    final double totalOriginalValue = tokens.fold(
+        0.0,
+        (sum, token) =>
+            sum + (double.tryParse(token.purchaseInfo.price) ?? 0.0));
+
+    // Calculate overall profit/loss
+    final double profitLoss = totalValue - totalOriginalValue;
+    final double profitLossPercentage =
+        totalOriginalValue > 0 ? (profitLoss / totalOriginalValue) * 100 : 0.0;
+
+    // Format values
+    final formattedTotalValue = "${totalValue.toStringAsFixed(4)} ETH";
+    final formattedProfitLoss =
+        "${profitLoss >= 0 ? '+' : ''}${profitLoss.toStringAsFixed(4)} ETH";
+    final formattedPercentage =
+        "${profitLossPercentage >= 0 ? '+' : ''}${profitLossPercentage.toStringAsFixed(2)}%";
+
+    // Is any token from this land listed?
+    final bool anyListed = tokens.any((token) => token.isListed);
+
     return InkWell(
       onTap: () {
         Navigator.pushNamed(
           context,
-          '/token',
-          arguments: token.tokenId,
+          '/land',
+          arguments: landId,
         );
       },
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.paddingM),
         child: Row(
           children: [
-            _buildTokenImage(token.land.imageUrl),
+            _buildLandImage(land.imageUrl),
             const SizedBox(width: AppDimensions.paddingM),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    token.land.title,
+                    land.title,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -142,7 +187,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          token.land.location,
+                          land.location,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -157,13 +202,13 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                   Row(
                     children: [
                       Text(
-                        "Token #${token.tokenNumber}",
+                        "$tokenCount tokens owned",
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 12,
                         ),
                       ),
-                      if (token.isListed)
+                      if (anyListed)
                         Container(
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(
@@ -175,7 +220,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
-                            "Listed",
+                            "Some Listed",
                             style: TextStyle(
                               color: Colors.green,
                               fontSize: 10,
@@ -192,7 +237,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  token.currentMarketInfo.formattedPrice,
+                  formattedTotalValue,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -201,20 +246,16 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                 Row(
                   children: [
                     Icon(
-                      token.currentMarketInfo.change >= 0
+                      profitLoss >= 0
                           ? Icons.arrow_upward
                           : Icons.arrow_downward,
-                      color: token.currentMarketInfo.change >= 0
-                          ? Colors.green
-                          : Colors.red,
+                      color: profitLoss >= 0 ? Colors.green : Colors.red,
                       size: 16,
                     ),
                     Text(
-                      token.currentMarketInfo.changeFormatted,
+                      formattedPercentage,
                       style: TextStyle(
-                        color: token.currentMarketInfo.change >= 0
-                            ? Colors.green
-                            : Colors.red,
+                        color: profitLoss >= 0 ? Colors.green : Colors.red,
                         fontSize: 14,
                       ),
                     ),
@@ -228,7 +269,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
     );
   }
 
-  Widget _buildTokenImage(String? imageUrl) {
+  Widget _buildLandImage(String? imageUrl) {
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
