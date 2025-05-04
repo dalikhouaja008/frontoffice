@@ -2,50 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
-import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/domain/entities/token.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 
 class InvestmentPortfolio extends StatefulWidget {
-  const InvestmentPortfolio({Key? key}) : super(key: key);
+  const InvestmentPortfolio({super.key});
 
   @override
   State<InvestmentPortfolio> createState() => _InvestmentPortfolioState();
 }
 
 class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
-  late InvestmentBloc _investmentBloc;
-
-  @override
-  void initState() {
-    super.initState();
-    _investmentBloc = getIt<InvestmentBloc>();
-    _loadTokens();
-  }
-
-  void _loadTokens() {
-    _investmentBloc.add(LoadEnhancedTokens());
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _investmentBloc,
-      child: BlocBuilder<InvestmentBloc, InvestmentState>(
-        builder: (context, state) {
-          if (state is InvestmentLoading) {
-            return _buildLoadingPortfolio();
-          } else if (state is InvestmentError) {
-            return _buildErrorPortfolio(state.message);
-          } else if (state is InvestmentLoaded) {
-            return _buildPortfolio(state.tokens);
-          } else if (state is InvestmentRefreshing) {
-            return _buildPortfolio(state.tokens, isRefreshing: true);
-          } else {
-            return _buildEmptyPortfolio();
-          }
-        },
-      ),
+    return BlocBuilder<InvestmentBloc, InvestmentState>(
+      builder: (context, state) {
+        if (state is InvestmentLoading) {
+          return _buildLoadingPortfolio();
+        } else if (state is InvestmentError) {
+          return _buildErrorPortfolio(state.message);
+        } else if (state is InvestmentLoaded) {
+          return _buildPortfolio(state.tokens);
+        } else if (state is InvestmentRefreshing) {
+          return _buildPortfolio(state.tokens, isRefreshing: true);
+        } else {
+          return _buildEmptyPortfolio();
+        }
+      },
     );
   }
 
@@ -122,70 +105,125 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
   }
 
   Widget _buildTokenItem(Token token) {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.paddingM),
-      child: Row(
-        children: [
-          _buildTokenImage(token.land.imageUrl),
-          const SizedBox(width: AppDimensions.paddingM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/token',
+          arguments: token.tokenId,
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.paddingM),
+        child: Row(
+          children: [
+            _buildTokenImage(token.land.imageUrl),
+            const SizedBox(width: AppDimensions.paddingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    token.land.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          token.land.location,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        "Token #${token.tokenNumber}",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (token.isListed)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            "Listed",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  token.land.title,
+                  token.currentMarketInfo.formattedPrice,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  token.land.location,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                token.currentMarketInfo.formattedPrice,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              Row(
-                children: [
-                  Icon(
-                    token.currentMarketInfo.change >= 0
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward,
-                    color: token.currentMarketInfo.change >= 0
-                        ? Colors.green
-                        : Colors.red,
-                    size: 16,
-                  ),
-                  Text(
-                    token.currentMarketInfo.changeFormatted,
-                    style: TextStyle(
+                Row(
+                  children: [
+                    Icon(
+                      token.currentMarketInfo.change >= 0
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
                       color: token.currentMarketInfo.change >= 0
                           ? Colors.green
                           : Colors.red,
-                      fontSize: 14,
+                      size: 16,
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                    Text(
+                      token.currentMarketInfo.changeFormatted,
+                      style: TextStyle(
+                        color: token.currentMarketInfo.change >= 0
+                            ? Colors.green
+                            : Colors.red,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -277,6 +315,15 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 60,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -355,7 +402,9 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
           ),
           const SizedBox(height: AppDimensions.paddingM),
           TextButton.icon(
-            onPressed: _loadTokens,
+            onPressed: () {
+              context.read<InvestmentBloc>().add(LoadEnhancedTokens());
+            },
             icon: const Icon(Icons.refresh),
             label: const Text("Try Again"),
             style: TextButton.styleFrom(
