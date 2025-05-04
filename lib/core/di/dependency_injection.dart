@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
+import 'package:the_boost/core/network/network_info.dart';
 import 'package:the_boost/core/services/land_service.dart';
 import 'package:the_boost/core/services/notification_service.dart';
 import 'package:the_boost/core/services/preferences_service.dart';
@@ -14,10 +16,12 @@ import 'package:the_boost/features/auth/data/repositories/property_repository_im
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/property_repository.dart';
+import 'package:the_boost/features/auth/domain/use_cases/investments/get_enhanced_tokens_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
 import 'package:the_boost/features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
@@ -40,10 +44,17 @@ Future<void> initDependencies() async {
 
   //=== Core ===//
   // Services
-  getIt.registerLazySingleton<SecureStorageService>(() => SecureStorageService());
+  getIt.registerLazySingleton<SecureStorageService>(
+      () => SecureStorageService());
   getIt.registerLazySingleton<GraphQLClient>(() => GraphQLService.client);
   getIt.registerLazySingleton<SessionService>(() => SessionService());
-  
+
+  // Network
+  getIt.registerLazySingleton(() => InternetConnectionChecker.createInstance());
+  getIt.registerLazySingleton<NetworkInfo>(
+    () => NetworkInfoImpl(getIt<InternetConnectionChecker>()),
+  );
+
   // Register LandService as singleton
   getIt.registerLazySingleton<LandService>(() => LandService());
   getIt.registerLazySingleton<ApiService>(() => ApiService());
@@ -54,17 +65,44 @@ Future<void> initDependencies() async {
       landService: getIt<LandService>(),
     ),
   );
-  
+
   getIt.registerLazySingleton<PreferencesService>(() => PreferencesService());
-  
+
   // Register TokenMintingService
   getIt.registerLazySingleton(() => TokenMintingService());
 
   await _initAuthFeature();
   await _initPropertyFeature();
   await _initPreferencesFeature();
-  
+  await _initInvestmentFeature();
+
   print('DependencyInjection: ✅ Dependencies initialized');
+}
+
+Future<void> _initInvestmentFeature() async {
+  print(
+      '[${DateTime.now()}] DependencyInjection: 🔄 Initializing investment feature');
+
+  try {
+    // Use Cases
+    getIt.registerLazySingleton<GetEnhancedTokensUseCase>(
+      () => GetEnhancedTokensUseCase(),
+    );
+
+    // BLoCs
+    getIt.registerFactory<InvestmentBloc>(
+      () => InvestmentBloc(
+        getEnhancedTokensUseCase: getIt<GetEnhancedTokensUseCase>(),
+      ),
+    );
+
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ Investment feature initialized');
+  } catch (e) {
+    print(
+        '[${DateTime.now()}] DependencyInjection: ❌ Error initializing investment feature'
+        '\n└─ Error: $e');
+  }
 }
 
 Future<void> registerChatbotDependencies() async {
@@ -77,7 +115,7 @@ Future<void> registerChatbotDependencies() async {
 
   getIt.registerLazySingleton<GeminiService>(
     () => GeminiService(
-      apiKey: geminiApiKey, 
+      apiKey: geminiApiKey,
       modelName: 'gemini-1.5-pro',
     ),
   );
@@ -89,8 +127,9 @@ Future<void> registerChatbotDependencies() async {
 }
 
 Future<void> _initPreferencesFeature() async {
-  print('[${DateTime.now()}] DependencyInjection: 🔄 Initializing preferences feature');
-  
+  print(
+      '[${DateTime.now()}] DependencyInjection: 🔄 Initializing preferences feature');
+
   try {
     // Data Sources
     getIt.registerLazySingleton<PreferencesRemoteDataSource>(
@@ -98,38 +137,43 @@ Future<void> _initPreferencesFeature() async {
         secureStorage: getIt<SecureStorageService>(),
       ),
     );
-    print('[${DateTime.now()}] DependencyInjection: ✅ PreferencesRemoteDataSource registered');
-    
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ PreferencesRemoteDataSource registered');
+
     // Repositories
     getIt.registerLazySingleton<PreferencesRepository>(
       () => PreferencesRepositoryImpl(
         getIt<PreferencesRemoteDataSource>(),
       ),
     );
-    print('[${DateTime.now()}] DependencyInjection: ✅ PreferencesRepository registered');
-    
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ PreferencesRepository registered');
+
     // Use Cases
     getIt.registerLazySingleton<GetPreferencesUseCase>(
       () => GetPreferencesUseCase(
         getIt<PreferencesRepository>(),
       ),
     );
-    print('[${DateTime.now()}] DependencyInjection: ✅ GetPreferencesUseCase registered');
-    
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ GetPreferencesUseCase registered');
+
     getIt.registerLazySingleton<SavePreferencesUseCase>(
       () => SavePreferencesUseCase(
         getIt<PreferencesRepository>(),
       ),
     );
-    print('[${DateTime.now()}] DependencyInjection: ✅ SavePreferencesUseCase registered');
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ SavePreferencesUseCase registered');
 
     getIt.registerLazySingleton<GetLandTypesUseCase>(
       () => GetLandTypesUseCase(
         getIt<PreferencesRepository>(),
       ),
     );
-    print('[${DateTime.now()}] DependencyInjection: ✅ GetLandTypesUseCase registered');
-    
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ GetLandTypesUseCase registered');
+
     // BLoCs
     getIt.registerFactory<PreferencesBloc>(
       () => PreferencesBloc(
@@ -138,11 +182,14 @@ Future<void> _initPreferencesFeature() async {
         getLandTypesUseCase: getIt<GetLandTypesUseCase>(),
       ),
     );
-    print('[${DateTime.now()}] DependencyInjection: ✅ PreferencesBloc registered');
-    
-    print('[${DateTime.now()}] DependencyInjection: ✅ Preferences feature initialized');
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ PreferencesBloc registered');
+
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ Preferences feature initialized');
   } catch (e) {
-    print('[${DateTime.now()}] DependencyInjection: ❌ Error initializing preferences feature'
+    print(
+        '[${DateTime.now()}] DependencyInjection: ❌ Error initializing preferences feature'
         '\n└─ Error: $e');
   }
 }
@@ -199,7 +246,8 @@ Future<void> _initAuthFeature() async {
 
 /// Initialise les dépendances de la fonctionnalité de gestion des propriétés
 Future<void> _initPropertyFeature() async {
-  print('[${DateTime.now()}] DependencyInjection: 🔄 Initializing property feature');
+  print(
+      '[${DateTime.now()}] DependencyInjection: 🔄 Initializing property feature');
 
   try {
     // Repositories
@@ -224,7 +272,7 @@ Future<void> _initPropertyFeature() async {
     getIt.registerFactory<LandBloc>(
       () => LandBloc(),
     );
-    
+
     // Register PropertyBloc
     getIt.registerFactory<PropertyBloc>(
       () => PropertyBloc(
@@ -232,8 +280,10 @@ Future<void> _initPropertyFeature() async {
       ),
     );
 
-    print('[${DateTime.now()}] DependencyInjection: ✅ Property feature initialized');
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ Property feature initialized');
   } catch (e) {
-    print('[${DateTime.now()}] DependencyInjection: ❌ Error initializing property feature: $e');
+    print(
+        '[${DateTime.now()}] DependencyInjection: ❌ Error initializing property feature: $e');
   }
 }
