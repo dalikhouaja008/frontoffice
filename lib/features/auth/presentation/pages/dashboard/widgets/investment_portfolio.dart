@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
-import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/domain/entities/token.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 
@@ -14,38 +13,22 @@ class InvestmentPortfolio extends StatefulWidget {
 }
 
 class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
-  late InvestmentBloc _investmentBloc;
-
-  @override
-  void initState() {
-    super.initState();
-    _investmentBloc = getIt<InvestmentBloc>();
-    _loadTokens();
-  }
-
-  void _loadTokens() {
-    _investmentBloc.add(LoadEnhancedTokens());
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _investmentBloc,
-      child: BlocBuilder<InvestmentBloc, InvestmentState>(
-        builder: (context, state) {
-          if (state is InvestmentLoading) {
-            return _buildLoadingPortfolio();
-          } else if (state is InvestmentError) {
-            return _buildErrorPortfolio(state.message);
-          } else if (state is InvestmentLoaded) {
-            return _buildPortfolio(state.tokens);
-          } else if (state is InvestmentRefreshing) {
-            return _buildPortfolio(state.tokens, isRefreshing: true);
-          } else {
-            return _buildEmptyPortfolio();
-          }
-        },
-      ),
+    return BlocBuilder<InvestmentBloc, InvestmentState>(
+      builder: (context, state) {
+        if (state is InvestmentLoading) {
+          return _buildLoadingPortfolio();
+        } else if (state is InvestmentError) {
+          return _buildErrorPortfolio(state.message);
+        } else if (state is InvestmentLoaded) {
+          return _buildPortfolio(state.tokens);
+        } else if (state is InvestmentRefreshing) {
+          return _buildPortfolio(state.tokens, isRefreshing: true);
+        } else {
+          return _buildEmptyPortfolio();
+        }
+      },
     );
   }
 
@@ -54,16 +37,31 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
       return _buildEmptyPortfolio();
     }
 
-    // Sort tokens by current market value
-    final sortedTokens = List<Token>.from(tokens)
+    // Group tokens by landId
+    final Map<int, List<Token>> groupedTokens = {};
+    for (final token in tokens) {
+      if (!groupedTokens.containsKey(token.landId)) {
+        groupedTokens[token.landId] = [];
+      }
+      groupedTokens[token.landId]!.add(token);
+    }
+
+    // Sort lands by total value
+    final sortedLands = groupedTokens.entries.toList()
       ..sort((a, b) {
-        final aPrice = double.tryParse(a.currentMarketInfo.price) ?? 0;
-        final bPrice = double.tryParse(b.currentMarketInfo.price) ?? 0;
-        return bPrice.compareTo(aPrice); // Sort descending
+        final aTotal = a.value.fold(
+            0.0,
+            (sum, token) =>
+                sum + (double.tryParse(token.currentMarketInfo.price) ?? 0.0));
+        final bTotal = b.value.fold(
+            0.0,
+            (sum, token) =>
+                sum + (double.tryParse(token.currentMarketInfo.price) ?? 0.0));
+        return bTotal.compareTo(aTotal); // Sort descending
       });
 
-    // Display top 3 or fewer tokens
-    final displayTokens = sortedTokens.take(3).toList();
+    // Display top 3 or fewer lands
+    final displayLands = sortedLands.take(3).toList();
 
     return Stack(
       children: [
@@ -82,11 +80,11 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
           ),
           child: Column(
             children: [
-              for (int i = 0; i < displayTokens.length; i++)
+              for (int i = 0; i < displayLands.length; i++)
                 Column(
                   children: [
-                    _buildTokenItem(displayTokens[i]),
-                    if (i < displayTokens.length - 1)
+                    _buildLandItem(displayLands[i].key, displayLands[i].value),
+                    if (i < displayLands.length - 1)
                       const Divider(height: 1, indent: 16, endIndent: 16),
                   ],
                 ),
@@ -121,76 +119,157 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
     );
   }
 
-  Widget _buildTokenItem(Token token) {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.paddingM),
-      child: Row(
-        children: [
-          _buildTokenImage(token.land.imageUrl),
-          const SizedBox(width: AppDimensions.paddingM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildLandItem(int landId, List<Token> tokens) {
+    // Take first token as reference for land info
+    final Token referenceToken = tokens.first;
+    final land = referenceToken.land;
+
+    // Calculate total tokens and combined value
+    final int tokenCount = tokens.length;
+    final double totalValue = tokens.fold(
+        0.0,
+        (sum, token) =>
+            sum + (double.tryParse(token.currentMarketInfo.price) ?? 0.0));
+    final double totalOriginalValue = tokens.fold(
+        0.0,
+        (sum, token) =>
+            sum + (double.tryParse(token.purchaseInfo.price) ?? 0.0));
+
+    // Calculate overall profit/loss
+    final double profitLoss = totalValue - totalOriginalValue;
+    final double profitLossPercentage =
+        totalOriginalValue > 0 ? (profitLoss / totalOriginalValue) * 100 : 0.0;
+
+    // Format values
+    final formattedTotalValue = "${totalValue.toStringAsFixed(4)} ETH";
+    final formattedProfitLoss =
+        "${profitLoss >= 0 ? '+' : ''}${profitLoss.toStringAsFixed(4)} ETH";
+    final formattedPercentage =
+        "${profitLossPercentage >= 0 ? '+' : ''}${profitLossPercentage.toStringAsFixed(2)}%";
+
+    // Is any token from this land listed?
+    final bool anyListed = tokens.any((token) => token.isListed);
+
+    return InkWell(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/land',
+          arguments: landId,
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.paddingM),
+        child: Row(
+          children: [
+            _buildLandImage(land.imageUrl),
+            const SizedBox(width: AppDimensions.paddingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    land.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          land.location,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        "$tokenCount tokens owned",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (anyListed)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            "Some Listed",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  token.land.title,
+                  formattedTotalValue,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  token.land.location,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      profitLoss >= 0
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
+                      color: profitLoss >= 0 ? Colors.green : Colors.red,
+                      size: 16,
+                    ),
+                    Text(
+                      formattedPercentage,
+                      style: TextStyle(
+                        color: profitLoss >= 0 ? Colors.green : Colors.red,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                token.currentMarketInfo.formattedPrice,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              Row(
-                children: [
-                  Icon(
-                    token.currentMarketInfo.change >= 0
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward,
-                    color: token.currentMarketInfo.change >= 0
-                        ? Colors.green
-                        : Colors.red,
-                    size: 16,
-                  ),
-                  Text(
-                    token.currentMarketInfo.changeFormatted,
-                    style: TextStyle(
-                      color: token.currentMarketInfo.change >= 0
-                          ? Colors.green
-                          : Colors.red,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTokenImage(String? imageUrl) {
+  Widget _buildLandImage(String? imageUrl) {
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -277,6 +356,15 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 60,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -355,7 +443,9 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
           ),
           const SizedBox(height: AppDimensions.paddingM),
           TextButton.icon(
-            onPressed: _loadTokens,
+            onPressed: () {
+              context.read<InvestmentBloc>().add(LoadEnhancedTokens());
+            },
             icon: const Icon(Icons.refresh),
             label: const Text("Try Again"),
             style: TextButton.styleFrom(
