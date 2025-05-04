@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/widgets/app_nav_bar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,6 +20,7 @@ import '../../../../core/di/dependency_injection.dart';
 import '../../../../core/services/prop_service.dart';
 import '../pages/valuation/land_valuation_home_screen.dart';
 import '../pages/valuation/land_valuation_screen_with_nav.dart';
+import 'howitworks_page.dart';
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -37,11 +37,11 @@ class AppNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    print('[2025-04-16 10:05:23] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
+    print('[${DateTime.now().toString().split('.')[0]}] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
 
     return BlocBuilder<LoginBloc, LoginState>(
       builder: (context, state) {
-        print('[2025-04-16 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
+        print('[${DateTime.now().toString().split('.')[0]}] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
         final isAuthenticated = state is LoginSuccess;
         final user = isAuthenticated ? state.user : null;
 
@@ -84,24 +84,22 @@ class AppNavBar extends StatelessWidget {
                   children: [
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
                     _NavLink('Features', route: '/features', currentRoute: currentRoute),
-                    // Modified to open land valuation screen instead of '/how-it-works'
-                                        _NavLink(
+                    // Modified to use HowItWorksPage instead of LandValuationHomeScreen
+                    _NavLink(
                       'How It Works', 
                       route: '/how-it-works', 
                       currentRoute: currentRoute,
                       onNavigate: () {
-                        // Create a properly initialized ApiService instance
-                        final apiService = getIt<ApiService>(); // ✅ Get a properly initialized ApiService
-
-Navigator.of(context).push(
-  MaterialPageRoute(
-    builder: (context) => LandValuationHomeScreen(apiService: apiService),
-  ),
-);
-
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => HowItWorksPage(), // Now using HowItWorksPage
+                          ),
+                        );
                       },
                     ),
-                    _NavLink('Invest', route: '/invest', currentRoute: currentRoute),
+                    // Only show Invest if user is authenticated
+                    if (isAuthenticated)
+                      _NavLink('Invest', route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More', route: '/learn-more', currentRoute: currentRoute),
                   ],
                 ),
@@ -181,8 +179,12 @@ Navigator.of(context).push(
     );
   }
 
-  // Add method to handle mobile drawer with land valuation navigation
+  // Updated buildMobileDrawer to reflect the same changes
   Widget buildMobileDrawer(BuildContext context) {
+    // Check if user is authenticated to show/hide Invest option
+    final state = context.watch<LoginBloc>().state;
+    final isAuthenticated = state is LoginSuccess;
+    
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -223,26 +225,28 @@ Navigator.of(context).push(
             },
           ),
           ListTile(
-            leading: const Icon(Icons.map),
-            title: const Text('Land Valuation'),
+            leading: const Icon(Icons.help_outline),
+            title: const Text('How It Works'),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const LandValuationHomeScreen(),
+                  builder: (context) => HowItWorksPage(), // Updated to HowItWorksPage
                 ),
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.token),
-            title: const Text('Invest'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/invest');
-            },
-          ),
+          // Only show Invest option if authenticated
+          if (isAuthenticated)
+            ListTile(
+              leading: const Icon(Icons.token),
+              title: const Text('Invest'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/invest');
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.book),
             title: const Text('Learn More'),
@@ -409,14 +413,14 @@ Navigator.of(context).push(
                 ListTile(leading: const Icon(Icons.person, color: AppColors.primary), title: const Text('My Profile'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/profile'); }),
                 ListTile(leading: const Icon(Icons.token, color: AppColors.primary), title: const Text('My Investments'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, AppRoutes.invest); }),
                 ListTile(
-                  leading: const Icon(Icons.map, color: AppColors.primary), 
-                  title: const Text('Land Valuation'), 
+                  leading: const Icon(Icons.help_outline, color: AppColors.primary), 
+                  title: const Text('How It Works'), 
                   onTap: () { 
                     Navigator.pop(context); 
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const LandValuationHomeScreen(),
+                        builder: (context) => HowItWorksPage(), // Updated to HowItWorksPage
                       ),
                     );
                   }

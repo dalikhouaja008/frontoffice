@@ -1,59 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'widgets/app_nav_bar.dart';
+
 class FeaturesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Color(0xFF2E7D32)),
-          onPressed: () => Navigator.pop(context),
+      // Use the existing AppNavBar component with the current route
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80),
+        child: AppNavBar(
+          // Pass the current route to highlight the correct nav item
+          currentRoute: '/features',
         ),
-        title: Row(
-          children: [
-            Icon(Icons.landscape, color: Color(0xFF2E7D32), size: 24),
-            SizedBox(width: 8),
-            Text(
-              'TheBoost',
-              style: GoogleFonts.montserrat(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2E7D32),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {}, // Navigate to Login page
-            child: Text(
-              'Login',
-              style: TextStyle(
-                color: Color(0xFF2E7D32),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(width: 16),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: ElevatedButton(
-              onPressed: () {}, // Navigate to Sign Up page
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text('Get Started'),
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -77,6 +38,8 @@ class FeaturesPage extends StatelessWidget {
           ],
         ),
       ),
+      // Add the mobile drawer from AppNavBar for consistent mobile navigation
+      endDrawer: AppNavBar().buildMobileDrawer(context),
     );
   }
 }

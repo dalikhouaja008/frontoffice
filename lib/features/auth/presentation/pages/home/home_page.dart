@@ -7,6 +7,7 @@ import '../../widgets/hero_section.dart';
 import '../../widgets/features_grid.dart';
 import '../../widgets/steps_section.dart';
 import '../base_page.dart';
+import '../register_land_page,.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -47,54 +48,60 @@ class HomePage extends StatelessWidget {
       );
   }
   Widget _buildHeroSection(BuildContext context) {
-    return HeroSection(
-      title: 'Invest in Land\nThe Smart Way',
-      subtitle: 'Buy, sell, and exchange tokenized land assets with full transparency and security through blockchain technology.',
-      primaryButtonText: 'Start Investing',
-      secondaryButtonText: 'How it works',
-      onPrimaryButtonPressed: () {
-        Navigator.of(context).pushNamed('/invest');
-      },
-      onSecondaryButtonPressed: () {
-        Navigator.of(context).pushNamed('/how-it-works');
-      },
-      image: Container(
-        height: 400,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            Container(
-              color: Colors.grey[300],
-              child: Center(
-                child: Icon(Icons.image, size: 64, color: Colors.grey[400]),
-              ),
-            ),
-            Positioned.fill(
-              child: Center(
-                child: Text(
-                  "Application Screenshot",
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.bold,
-                  ),
+  return HeroSection(
+ title: 'Invest in Land\nThe Smart Way',
+subtitle: 'Buy, sell, and exchange tokenized land assets with full transparency and security through blockchain technology.',
+primaryButtonText: 'Start Investing',
+secondaryButtonText: 'Register Your Land', // Changed text to describe land registration
+onPrimaryButtonPressed: () {
+  Navigator.of(context).pushNamed('/invest');
+},
+onSecondaryButtonPressed: () {
+  // Navigate to the RegisterLandPage we created
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => RegisterLandPage(),
+    ),
+  );
+},
+    image: Container(
+      height: 400,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Image.asset(
+            'assets/1.jpg', // Replace with your actual asset path
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          Positioned.fill(
+            child: Center(
+              child: Text(
+                "",
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildFeaturesSection(BuildContext context) {
     return FeaturesGrid(

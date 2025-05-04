@@ -11,7 +11,7 @@ class ApiService {
   final String baseUrl;
   
   // Constructor with default value from .env or hardcoded fallback
-  ApiService() : baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://172.20.10.6:5000/api';
+  ApiService() : baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000/api';
   
   // Get current ETH price
   Future<Map<String, dynamic>> getEthPrice() async {
