@@ -64,6 +64,7 @@ dependencies:
   photo_view: ^0.15.0
   cached_network_image: ^3.4.0
   internet_connection_checker: ^3.0.1
+  timeago: ^3.7.0
 
 
 dev_dependencies:

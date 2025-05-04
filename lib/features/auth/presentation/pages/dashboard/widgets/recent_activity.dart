@@ -1,163 +1,124 @@
-// presentation/pages/dashboard/widgets/recent_activity.dart
 import 'package:flutter/material.dart';
+import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
-import 'package:the_boost/core/utils/responsive_helper.dart';
-
 
 class RecentActivity extends StatelessWidget {
-  // Sample data - in a real app, this would come from your API/database
-  final List<Map<String, dynamic>> activities = [
-    {
-      'type': 'purchase',
-      'property': 'Urban Development Land - Downtown Metro',
-      'amount': 2500,
-      'tokens': 50,
-      'date': '2025-02-15',
-    },
-    {
-      'type': 'dividend',
-      'property': 'Commercial District - Tech Corridor',
-      'amount': 250,
-      'date': '2025-02-10',
-    },
-    {
-      'type': 'purchase',
-      'property': 'Residential Development - Lakeside Community',
-      'amount': 3000,
-      'tokens': 40,
-      'date': '2025-01-28',
-    },
-    {
-      'type': 'sale',
-      'property': 'Mixed-Use Development - Harbor District',
-      'amount': 1800,
-      'tokens': 12,
-      'date': '2025-01-15',
-    },
-  ];
-
-  RecentActivity({super.key});
+  const RecentActivity({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Placeholder data for recent activities
+    // In a real app, you would fetch this from a service
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: Offset(0, 5),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        itemCount: activities.length,
-        separatorBuilder: (context, index) => Divider(height: 1),
-        itemBuilder: (context, index) {
-          final activity = activities[index];
-          return _buildActivityItem(context, activity);
-        },
+      child: Column(
+        children: [
+          _buildActivityItem(
+            icon: Icons.real_estate_agent,
+            color: Colors.green,
+            title: "Token Purchase",
+            description: "You purchased 5 tokens of Villa Azur",
+            timeAgo: "2 days ago",
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          _buildActivityItem(
+            icon: Icons.trending_up,
+            color: Colors.blue,
+            title: "Value Increase",
+            description: "Mountain Lodge tokens increased by 3.2%",
+            timeAgo: "4 days ago",
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          _buildActivityItem(
+            icon: Icons.monetization_on,
+            color: Colors.orange,
+            title: "Dividend Payout",
+            description: "Received \$125 from Urban Heights property",
+            timeAgo: "1 week ago",
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppDimensions.paddingM),
+            child: TextButton(
+              onPressed: () {
+                // Navigate to activity history page
+              },
+              child: const Text(
+                "View All Activity",
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildActivityItem(BuildContext context, Map<String, dynamic> activity) {
-    final isMobile = ResponsiveHelper.isMobile(context);
-    
-    IconData icon;
-    Color iconColor;
-    String actionText;
-    
-    switch (activity['type']) {
-      case 'purchase':
-        icon = Icons.add_circle;
-        iconColor = Colors.green;
-        actionText = "Purchased ${activity['tokens']} tokens";
-        break;
-      case 'sale':
-        icon = Icons.remove_circle;
-        iconColor = Colors.red;
-        actionText = "Sold ${activity['tokens']} tokens";
-        break;
-      case 'dividend':
-        icon = Icons.attach_money;
-        iconColor = Colors.amber;
-        actionText = "Received dividend";
-        break;
-      default:
-        icon = Icons.info;
-        iconColor = Colors.blue;
-        actionText = "Transaction";
-    }
-    
-    final date = DateTime.parse(activity['date']);
-    final formattedDate = "${date.month}/${date.day}/${date.year}";
-    
+  Widget _buildActivityItem({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String description,
+    required String timeAgo,
+  }) {
     return Padding(
-      padding: EdgeInsets.all(AppDimensions.paddingL),
+      padding: const EdgeInsets.all(AppDimensions.paddingM),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(AppDimensions.paddingM),
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: iconColor,
+              color: color,
+              size: 24,
             ),
           ),
-          SizedBox(width: AppDimensions.paddingM),
+          const SizedBox(width: AppDimensions.paddingM),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  actionText,
-                  style: TextStyle(
+                  title,
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    fontSize: 16,
                   ),
                 ),
-                SizedBox(height: 4),
                 Text(
-                  activity['property'],
+                  description,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black54,
+                    color: Colors.grey[600],
+                    fontSize: 14,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          if (!isMobile) SizedBox(width: AppDimensions.paddingM),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "\$${activity['amount']}",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                formattedDate,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black54,
-                ),
-              ),
-            ],
+          Text(
+            timeAgo,
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+            ),
           ),
         ],
       ),

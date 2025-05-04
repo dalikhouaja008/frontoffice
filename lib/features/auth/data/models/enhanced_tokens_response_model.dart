@@ -1,29 +1,20 @@
-import '../../domain/entities/enhanced_tokens_response.dart';
-import 'token_model.dart';
-import 'investment_stats_model.dart';
+import 'package:the_boost/features/auth/data/models/investment_stats_model.dart';
+import 'package:the_boost/features/auth/data/models/token_model.dart';
+import 'package:the_boost/features/auth/domain/entities/enhanced_tokens_response.dart';
 
 class EnhancedTokensResponseModel extends EnhancedTokensResponse {
   EnhancedTokensResponseModel({
-    required bool success,
     required EnhancedTokensDataModel data,
-    required int count,
-    required String message,
-    required String timestamp,
+    required DateTime timestamp,
   }) : super(
-          success: success,
           data: data,
-          count: count,
-          message: message,
           timestamp: timestamp,
         );
 
   factory EnhancedTokensResponseModel.fromJson(Map<String, dynamic> json) {
     return EnhancedTokensResponseModel(
-      success: json['success'],
       data: EnhancedTokensDataModel.fromJson(json['data']),
-      count: json['count'],
-      message: json['message'],
-      timestamp: json['timestamp'],
+      timestamp: DateTime.parse(json['timestamp']),
     );
   }
 }

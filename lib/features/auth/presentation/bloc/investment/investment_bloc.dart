@@ -6,7 +6,6 @@ import 'package:the_boost/features/auth/domain/entities/investment_stats.dart';
 import 'package:the_boost/features/auth/domain/entities/token.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_enhanced_tokens_usecase.dart';
 
-
 part 'investment_event.dart';
 part 'investment_state.dart';
 
@@ -31,7 +30,7 @@ class InvestmentBloc extends Bloc<InvestmentEvent, InvestmentState> {
       (data) => emit(InvestmentLoaded(
         tokens: data.data.tokens,
         stats: data.data.stats,
-        timestamp: data.timestamp,
+        timestamp: data.timestamp.toString(),
       )),
     );
   }
@@ -57,16 +56,16 @@ class InvestmentBloc extends Bloc<InvestmentEvent, InvestmentState> {
       (data) => emit(InvestmentLoaded(
         tokens: data.data.tokens,
         stats: data.data.stats,
-        timestamp: data.timestamp,
+        timestamp: data.timestamp.toString(),
       )),
     );
   }
 
   String _mapFailureToMessage(Failure failure) {
     switch (failure.runtimeType) {
-      case ServerFailure _:
+      case ServerFailure:
         return (failure as ServerFailure).message ?? 'Erreur de serveur';
-      case NetworkFailure _:
+      case NetworkFailure:
         return 'Vérifiez votre connexion internet';
       default:
         return 'Erreur inattendue';

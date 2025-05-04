@@ -1,4 +1,3 @@
-// lib/features/investment/data/datasources/investment_remote_data_source.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/enhanced_tokens_response_model.dart';
@@ -27,7 +26,7 @@ class InvestmentRemoteDataSourceImpl implements InvestmentRemoteDataSource {
     }
 
     final response = await client.get(
-      Uri.parse('$baseUrl/marketplace/enhanced-tokens'),
+      Uri.parse('$baseUrl/enhanced-tokens'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
