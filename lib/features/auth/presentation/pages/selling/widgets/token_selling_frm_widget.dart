@@ -112,24 +112,6 @@ class TokenSellingFormWidget extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Icon(
-              Icons.person,
-              size: 16,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Logged in as: $username',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -166,7 +148,8 @@ class TokenSellingFormWidget extends StatelessWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  helperText: 'Available: ${selectedToken['ownedTokens']} tokens',
+                  helperText:
+                      'Available: ${selectedToken['ownedTokens']} tokens',
                 ),
                 keyboardType: TextInputType.number,
                 onChanged: onTokensChanged,
@@ -271,8 +254,8 @@ class TokenSellingFormWidget extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(4),
@@ -288,8 +271,8 @@ class TokenSellingFormWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(4),
@@ -412,10 +395,11 @@ class TokenSellingFormWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _buildFeeRow('Platform Fee (2%)', '\$${formatter.format(platformFee)}'),
+          _buildFeeRow(
+              'Platform Fee (2%)', '\$${formatter.format(platformFee)}'),
           const SizedBox(height: 8),
           _buildFeeRow(
-            'Gas Fee (Estimated)', 
+            'Gas Fee (Estimated)',
             '\$2.50',
             showInfoIcon: true,
             tooltip: 'Gas fees vary based on network congestion',
@@ -432,10 +416,10 @@ class TokenSellingFormWidget extends StatelessWidget {
   }
 
   Widget _buildFeeRow(
-    String label, 
+    String label,
     String value, {
-    bool isBold = false, 
-    bool showInfoIcon = false, 
+    bool isBold = false,
+    bool showInfoIcon = false,
     String? tooltip,
   }) {
     return Row(

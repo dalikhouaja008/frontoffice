@@ -9,12 +9,12 @@ class TokenSelectionWidget extends StatelessWidget {
   final NumberFormat formatter;
 
   const TokenSelectionWidget({
-    Key? key,
+    super.key,
     required this.tokens,
     required this.selectedIndex,
     required this.onTokenSelected,
     required this.formatter,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
