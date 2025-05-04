@@ -12,12 +12,12 @@ class SaleSummaryWidget extends StatelessWidget {
   final NumberFormat formatter;
   final Function(bool?) onTermsAccepted;
   final VoidCallback?
-      onSellPressed; // Modifié pour accepter null lors du traitement
+      onSellPressed; 
   final VoidCallback onCancelPressed;
   final VoidCallback onSaveDraftPressed;
 
   const SaleSummaryWidget({
-    Key? key,
+    super.key,
     required this.selectedToken,
     required this.tokensToSell,
     required this.pricePerToken,
@@ -29,7 +29,7 @@ class SaleSummaryWidget extends StatelessWidget {
     required this.onSellPressed,
     required this.onCancelPressed,
     required this.onSaveDraftPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -226,15 +226,15 @@ class SaleSummaryWidget extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.show_chart,
                 size: 18,
                 color: AppColors.primary,
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Market Insights',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,

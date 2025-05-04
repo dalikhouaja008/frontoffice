@@ -13,7 +13,7 @@ import 'package:the_boost/features/auth/presentation/pages/selling/widgets/hero_
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/sale_summary_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/success_dialog_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/token_selection_widget.dart';
-import 'package:the_boost/features/auth/presentation/pages/selling/widgets/token_selling_frm_widget.dart';
+import 'package:the_boost/features/auth/presentation/pages/selling/widgets/token_selling_form_widget.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 
 class TokenSellingPage extends StatefulWidget {
@@ -228,37 +228,55 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
   }
 
   void _handleTokenSale() {
+    final currentDateTime = '2025-05-04 21:20:30';
+    final username = 'nesssim';
+
     if (_ownedTokens.isEmpty) return;
 
     final token = _ownedTokens[_selectedTokenIndex];
     final tokenCount = int.tryParse(_tokensToSellController.text) ?? 0;
 
     if (tokenCount <= 0) {
+      _showErrorMessage('Please enter a valid quantity of tokens to sell');
+      return;
+    }
+
+    // Vérifions que l'utilisateur ne tente pas de vendre plus de tokens qu'il ne possède
+    final availableTokens = token['ownedTokens'] ?? 0;
+    if (tokenCount > availableTokens) {
       _showErrorMessage(
-          'Veuillez entrer une quantité valide de tokens à vendre');
+          'You cannot sell more tokens than you own (max: $availableTokens)');
       return;
     }
 
     final price = _pricePerTokenController.text.replaceAll(',', '');
     if (double.tryParse(price) == null || double.tryParse(price)! <= 0) {
-      _showErrorMessage('Veuillez entrer un prix valide');
+      _showErrorMessage('Please enter a valid price');
       return;
     }
 
+    print(
+        '[$currentDateTime] $username - Tentative de mise en vente de $tokenCount tokens au prix de $price ETH');
+
+    // Si tout est bon, procéder avec la vente
     setState(() {
       _isProcessing = true;
     });
 
+    // Sélection intelligente: listToken ou listMultipleTokens selon le nombre de tokens
     if (tokenCount == 1) {
-      // Single token listing
+      // Si un seul token, utiliser la fonction simple listToken
       final tokenId = token['actualTokens'][0].tokenId;
+      print(
+          '[$currentDateTime] $username - Utilisation de listToken pour token #$tokenId');
+
       _marketplaceBloc.add(ListTokenEvent(tokenId: tokenId, price: price));
     } else {
-      // Multiple tokens listing
+      // Si plusieurs tokens, utiliser listMultipleTokens
       final List<int> tokenIds = [];
       final List<String> prices = [];
 
-      // Get the actual tokenIds and set the same price for each
+      // Préparer les listes de tokenIds et prix
       for (int i = 0; i < tokenCount; i++) {
         if (i < token['actualTokens'].length) {
           tokenIds.add(token['actualTokens'][i].tokenId);
@@ -270,9 +288,12 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
         setState(() {
           _isProcessing = false;
         });
-        _showErrorMessage('Aucun token valide sélectionné');
+        _showErrorMessage('No valid tokens selected');
         return;
       }
+
+      print(
+          '[$currentDateTime] $username - Utilisation de listMultipleTokens pour ${tokenIds.length} tokens');
 
       _marketplaceBloc
           .add(ListMultipleTokensEvent(tokenIds: tokenIds, prices: prices));
