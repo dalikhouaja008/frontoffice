@@ -19,7 +19,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
   final MapController _mapController = MapController();
   bool _mapLoaded = false;
   bool _showFullDescription = false;
-  
+
   // Définir la constante du nom du réseau
   final String _networkName = 'sepolia'; // ou 'mainnet' selon votre besoin
 
@@ -59,7 +59,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
           // Header gradient banner - TITRE RÉDUIT
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Réduit
+            padding: const EdgeInsets.symmetric(
+                vertical: 12, horizontal: 16), // Réduit
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -100,7 +101,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
               ],
             ),
           ),
-          
+
           // Content
           Padding(
             padding: const EdgeInsets.all(20.0),
@@ -123,7 +124,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                     ),
                     const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: _getStatusColor(),
                         borderRadius: BorderRadius.circular(20),
@@ -148,9 +150,9 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Price with animation effect
                 TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0.8, end: 1.0),
@@ -162,7 +164,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -193,9 +196,9 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Property info cards
                 Wrap(
                   spacing: 16,
@@ -210,7 +213,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                         backgroundColor: Colors.blue.withOpacity(0.1),
                         iconColor: Colors.blue,
                       ),
-                    
+
                     // Land type
                     if (widget.land.landtype != null)
                       _buildInfoCard(
@@ -220,7 +223,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                         backgroundColor: Colors.amber.withOpacity(0.1),
                         iconColor: Colors.amber[700]!,
                       ),
-                      
+
                     // Listed date
                     _buildInfoCard(
                       icon: Icons.calendar_today,
@@ -229,7 +232,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                       backgroundColor: Colors.green.withOpacity(0.1),
                       iconColor: Colors.green,
                     ),
-                    
+
                     // Availability
                     if (widget.land.availability != null)
                       _buildInfoCard(
@@ -241,11 +244,12 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Blockchain info
-                if (widget.land.ownerAddress != null && widget.land.ownerAddress!.isNotEmpty) ...[
+                if (widget.land.ownerAddress != null &&
+                    widget.land.ownerAddress!.isNotEmpty) ...[
                   _buildBlockchainInfo(),
                 ],
               ],
@@ -255,7 +259,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
       ),
     );
   }
-  
+
   Widget _buildInfoCard({
     required IconData icon,
     required String title,
@@ -264,7 +268,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
     required Color iconColor,
   }) {
     return Container(
-      width: MediaQuery.of(context).size.width > 600 
+      width: MediaQuery.of(context).size.width > 600
           ? (MediaQuery.of(context).size.width - 80) / 3
           : (MediaQuery.of(context).size.width - 80) / 2,
       padding: const EdgeInsets.all(16),
@@ -305,7 +309,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
       ),
     );
   }
-  
+
   Widget _buildBlockchainInfo() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -353,11 +357,12 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
             ],
           ),
           const SizedBox(height: 16),
-          if (widget.land.ownerAddress != null && widget.land.ownerAddress!.isNotEmpty) ...[
+          if (widget.land.ownerAddress != null &&
+              widget.land.ownerAddress!.isNotEmpty) ...[
             Row(
               children: [
-                const Icon(Icons.account_balance_wallet, 
-                  size: 16, color: Colors.blueGrey),
+                const Icon(Icons.account_balance_wallet,
+                    size: 16, color: Colors.blueGrey),
                 const SizedBox(width: 8),
                 const Text(
                   'Owner Address:',
@@ -403,10 +408,9 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
   Widget _buildDescriptionSection() {
     final description = widget.land.description ?? 'No description available';
     final shouldTruncate = description.length > 300 && !_showFullDescription;
-    final displayedText = shouldTruncate 
-        ? '${description.substring(0, 300)}...' 
-        : description;
-    
+    final displayedText =
+        shouldTruncate ? '${description.substring(0, 300)}...' : description;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -516,12 +520,12 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
       ),
     );
   }
-  
+
   Widget _buildTokenizationDetails() {
     if (widget.land.totalTokens == null && widget.land.pricePerToken == null) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -565,7 +569,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Stats in cards
           Row(
             children: [
@@ -590,9 +594,9 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                 ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           if (widget.land.blockchainLandId != null) ...[
             ElevatedButton.icon(
               onPressed: () => _launchBlockchainExplorer(),
@@ -601,7 +605,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -612,7 +617,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
       ),
     );
   }
-  
+
   Widget _buildStatCard({
     required String title,
     required String value,
@@ -661,8 +666,9 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
   }
 
   Widget _buildLocationSection() {
-    final hasCoordinates = widget.land.latitude != null && widget.land.longitude != null;
-    
+    final hasCoordinates =
+        widget.land.latitude != null && widget.land.longitude != null;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -682,7 +688,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
           // TITRE RÉDUIT
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Réduit
+            padding: const EdgeInsets.symmetric(
+                vertical: 12, horizontal: 16), // Réduit
             decoration: BoxDecoration(
               color: Colors.teal,
               gradient: LinearGradient(
@@ -724,7 +731,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
               ],
             ),
           ),
-          
+
           // Content
           Padding(
             padding: const EdgeInsets.all(20),
@@ -773,10 +780,10 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                     ],
                   ),
                 ),
-                
+
                 if (hasCoordinates) ...[
                   const SizedBox(height: 20),
-                  
+
                   // Map
                   Container(
                     height: 250,
@@ -797,7 +804,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                           FlutterMap(
                             mapController: _mapController,
                             options: MapOptions(
-                              center: LatLng(widget.land.latitude!, widget.land.longitude!),
+                              center: LatLng(widget.land.latitude!,
+                                  widget.land.longitude!),
                               zoom: 14.0,
                               interactiveFlags: InteractiveFlag.all,
                               onMapReady: () {
@@ -808,7 +816,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                             ),
                             children: [
                               TileLayer(
-                                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                urlTemplate:
+                                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                                 subdomains: const ['a', 'b', 'c'],
                                 userAgentPackageName: 'com.theboost.app',
                               ),
@@ -817,22 +826,26 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                                   Marker(
                                     width: 50.0,
                                     height: 50.0,
-                                    point: LatLng(widget.land.latitude!, widget.land.longitude!),
-                                    builder: (ctx) => TweenAnimationBuilder<double>(
-                                      tween: Tween<double>(begin: 0.7, end: 1.0),
-                                      duration: const Duration(milliseconds: 500),
+                                    point: LatLng(widget.land.latitude!,
+                                        widget.land.longitude!),
+                                    // Remplacer 'builder' par 'child'
+                                    child: TweenAnimationBuilder<double>(
+                                      tween:
+                                          Tween<double>(begin: 0.7, end: 1.0),
+                                      duration:
+                                          const Duration(milliseconds: 500),
                                       curve: Curves.elasticOut,
+                                      child: const Icon(
+                                        Icons.location_on,
+                                        color: Colors.red,
+                                        size: 50,
+                                      ),
                                       builder: (context, value, child) {
                                         return Transform.scale(
                                           scale: value,
                                           child: child,
                                         );
                                       },
-                                      child: const Icon(
-                                        Icons.location_on,
-                                        color: Colors.red,
-                                        size: 50,
-                                      ),
                                     ),
                                   ),
                                 ],
@@ -855,10 +868,12 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                                 ],
                               ),
                               child: IconButton(
-                                icon: const Icon(Icons.fullscreen, color: Colors.teal),
+                                icon: const Icon(Icons.fullscreen,
+                                    color: Colors.teal),
                                 onPressed: () {
                                   _mapController.move(
-                                    LatLng(widget.land.latitude!, widget.land.longitude!),
+                                    LatLng(widget.land.latitude!,
+                                        widget.land.longitude!),
                                     16.0,
                                   );
                                 },
@@ -870,9 +885,9 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // GPS coordinates
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -913,7 +928,8 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.copy, color: Colors.teal, size: 18),
+                          icon: const Icon(Icons.copy,
+                              color: Colors.teal, size: 18),
                           onPressed: () {
                             // Copy coordinates to clipboard
                             // Implement clipboard functionality
@@ -925,9 +941,9 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Open in Maps button
                   SizedBox(
                     width: double.infinity,
@@ -988,7 +1004,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
   String _formatDate(DateTime date) {
     return DateFormat('MMM dd, yyyy').format(date);
   }
-  
+
   String _truncateAddress(String address) {
     if (address.length <= 14) return address;
     return '${address.substring(0, 6)}...${address.substring(address.length - 6)}';
@@ -996,10 +1012,11 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
 
   void _launchMapsUrl() async {
     if (widget.land.latitude == null || widget.land.longitude == null) return;
-    
-    final url = 'https://www.google.com/maps/search/?api=1&query=${widget.land.latitude},${widget.land.longitude}';
+
+    final url =
+        'https://www.google.com/maps/search/?api=1&query=${widget.land.latitude},${widget.land.longitude}';
     final uri = Uri.parse(url);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -1016,7 +1033,7 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
   void _launchEtherscanAddress(String address) async {
     final url = 'https://${_networkName}.etherscan.io/address/$address';
     final uri = Uri.parse(url);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -1028,15 +1045,16 @@ class _LandGeneralInfoWidgetState extends State<LandGeneralInfoWidget> {
       );
     }
   }
-  
+
   // Méthode pour ouvrir l'explorateur blockchain pour ce terrain
   void _launchBlockchainExplorer() async {
     if (widget.land.blockchainLandId == null) return;
-    
+
     // Vous pouvez adapter cette URL selon votre explorateur de blockchain spécifique
-    final url = 'https://${_networkName}.etherscan.io/token/${widget.land.blockchainLandId}';
+    final url =
+        'https://${_networkName}.etherscan.io/token/${widget.land.blockchainLandId}';
     final uri = Uri.parse(url);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {

@@ -1,19 +1,17 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/domain/entities/login_response.dart';
-import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'two_factor_auth_event.dart';
 import 'two_factor_auth_state.dart';
 
 class TwoFactorAuthBloc extends Bloc<TwoFactorAuthEvent, TwoFactorAuthState> {
-
   final TwoFactorAuthRepository repository;
   static const int _maxConcurrentRequests = 1;
   static const String _timestamp = '2025-02-17 11:58:43';
   static const String _user = 'raednas';
   int _currentRequests = 0;
 
-  TwoFactorAuthBloc({required this.repository}) :super(const TwoFactorAuthInitial()) {
+  TwoFactorAuthBloc({required this.repository}) : super(const TwoFactorAuthInitial()) {
     on<EnableTwoFactorAuthEvent>(_onEnableTwoFactorAuth);
     on<VerifyTwoFactorAuthEvent>(_onVerifyTwoFactorAuth);
     on<VerifyTwoFactorLoginEvent>(_onVerifyTwoFactorLogin);
@@ -118,10 +116,10 @@ class TwoFactorAuthBloc extends Bloc<TwoFactorAuthEvent, TwoFactorAuthState> {
         if (response.accessToken != null && response.refreshToken != null) {
           print('[$_timestamp] TwoFactorAuthBloc: ✅ Login successful'
                 '\n└─ User: $_user'
-                '\n└─ Email: ${response.user?.email}');
+                '\n└─ Email: ${response.user.email}');
 
           emit(TwoFactorAuthLoginSuccess(
-            user: response.user!,
+            user: response.user,
             accessToken: response.accessToken!,
             refreshToken: response.refreshToken!,
           ));

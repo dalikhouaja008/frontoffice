@@ -12,8 +12,8 @@ class LandMapCarouselView extends StatefulWidget {
   final bool isFullScreen;
 
   const LandMapCarouselView({
-    Key? key, 
-    required this.land, 
+    Key? key,
+    required this.land,
     this.isFullScreen = false,
   }) : super(key: key);
 
@@ -39,12 +39,12 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
 
   void _loadImages() {
     _imageList = [];
-    
+
     // Utiliser imageUrls en priorité, sinon imageCIDs
     if (widget.land.imageUrls != null && widget.land.imageUrls!.isNotEmpty) {
       _imageList.addAll(widget.land.imageUrls!);
-    } 
-    else if (widget.land.imageCIDs != null && widget.land.imageCIDs!.isNotEmpty) {
+    } else if (widget.land.imageCIDs != null &&
+        widget.land.imageCIDs!.isNotEmpty) {
       _imageList.addAll(widget.land.imageCIDs!);
     }
   }
@@ -59,15 +59,16 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
   @override
   Widget build(BuildContext context) {
     // Vérifier si les coordonnées sont disponibles
-    final hasCoordinates = widget.land.latitude != null && widget.land.longitude != null;
-    
-    return _showFullScreen 
+    final hasCoordinates =
+        widget.land.latitude != null && widget.land.longitude != null;
+
+    return _showFullScreen
         ? _buildFullScreenCarousel()
         : LayoutBuilder(
             builder: (context, constraints) {
               // Décider de la mise en page en fonction de la largeur
               final isWideScreen = constraints.maxWidth > 700;
-              
+
               if (isWideScreen) {
                 return _buildWideLayout(hasCoordinates);
               } else {
@@ -76,7 +77,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
             },
           );
   }
-  
+
   Widget _buildWideLayout(bool hasCoordinates) {
     return Card(
       margin: const EdgeInsets.all(0),
@@ -88,11 +89,9 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
           // CARTE (CÔTÉ GAUCHE)
           Expanded(
             flex: 1,
-            child: hasCoordinates 
-                ? _buildMap()
-                : _buildNoMapAvailable(),
+            child: hasCoordinates ? _buildMap() : _buildNoMapAvailable(),
           ),
-          
+
           // CAROUSEL (CÔTÉ DROIT)
           Expanded(
             flex: 1,
@@ -104,7 +103,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
       ),
     );
   }
-  
+
   Widget _buildNarrowLayout(bool hasCoordinates) {
     return Column(
       children: [
@@ -115,15 +114,13 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
               ? _buildCarousel()
               : _buildNoImagesContainer(),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // CARTE (BAS)
         SizedBox(
           height: 250,
-          child: hasCoordinates 
-              ? _buildMap()
-              : _buildNoMapAvailable(),
+          child: hasCoordinates ? _buildMap() : _buildNoMapAvailable(),
         ),
       ],
     );
@@ -156,7 +153,8 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
                   width: 50.0,
                   height: 50.0,
                   point: LatLng(widget.land.latitude!, widget.land.longitude!),
-                  builder: (ctx) => TweenAnimationBuilder<double>(
+                  // Remplacer builder par child selon la nouvelle API
+                  child: TweenAnimationBuilder<double>(
                     tween: Tween<double>(begin: 0.7, end: 1.0),
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.elasticOut,
@@ -177,7 +175,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
             ),
           ],
         ),
-        
+
         // Overlay d'information
         Positioned(
           left: 10,
@@ -220,7 +218,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
             ),
           ),
         ),
-        
+
         // Boutons de contrôle de la carte
         Positioned(
           right: 10,
@@ -301,7 +299,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
       ],
     );
   }
-  
+
   Widget _buildNoMapAvailable() {
     return Container(
       color: Colors.grey[200],
@@ -335,7 +333,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
       ),
     );
   }
-  
+
   Widget _buildCarousel() {
     return Stack(
       children: [
@@ -363,7 +361,8 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
                     color: Colors.grey[200],
                     child: const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.primary),
                         strokeWidth: 2,
                       ),
                     ),
@@ -373,18 +372,13 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.error_outline, 
-                          color: Colors.grey[400],
-                          size: 40
-                        ),
+                        Icon(Icons.error_outline,
+                            color: Colors.grey[400], size: 40),
                         const SizedBox(height: 8),
                         Text(
                           'Failed to load image',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12
-                          ),
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                       ],
                     ),
@@ -394,7 +388,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
             );
           },
         ),
-        
+
         // Navigation arrows if multiple images
         if (_imageList.length > 1) ...[
           // Previous button
@@ -428,7 +422,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
               ),
             ),
           ),
-          
+
           // Next button
           Positioned(
             right: 10,
@@ -461,7 +455,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
             ),
           ),
         ],
-        
+
         // Counter badge
         Positioned(
           top: 15,
@@ -493,7 +487,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
             ),
           ),
         ),
-        
+
         // Fullscreen button
         Positioned(
           bottom: 15,
@@ -521,7 +515,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
       ],
     );
   }
-  
+
   Widget _buildNoImagesContainer() {
     return Container(
       color: Colors.grey[200],
@@ -554,7 +548,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
       ),
     );
   }
-  
+
   Widget _buildFullScreenCarousel() {
     return Scaffold(
       backgroundColor: Colors.black,
@@ -568,7 +562,8 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
                 imageProvider: CachedNetworkImageProvider(_imageList[index]),
                 minScale: PhotoViewComputedScale.contained,
                 maxScale: PhotoViewComputedScale.covered * 2,
-                heroAttributes: PhotoViewHeroAttributes(tag: 'property_image_$index'),
+                heroAttributes:
+                    PhotoViewHeroAttributes(tag: 'property_image_$index'),
               );
             },
             scrollPhysics: const BouncingScrollPhysics(),
@@ -586,13 +581,14 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
                 child: CircularProgressIndicator(
                   value: event == null
                       ? 0
-                      : event.cumulativeBytesLoaded / (event.expectedTotalBytes ?? 1),
+                      : event.cumulativeBytesLoaded /
+                          (event.expectedTotalBytes ?? 1),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
             ),
           ),
-          
+
           // Close button
           Positioned(
             top: 40,
@@ -617,7 +613,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
               ),
             ),
           ),
-          
+
           // Image counter
           Positioned(
             top: 40,
@@ -642,7 +638,7 @@ class _LandMapCarouselViewState extends State<LandMapCarouselView> {
       ),
     );
   }
-  
+
   String _getLandTypeDisplay(LandType landType) {
     switch (landType) {
       case LandType.residential:

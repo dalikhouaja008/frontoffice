@@ -81,29 +81,12 @@ Future<void> saveTokens({
       _storage.delete(key: _refreshTokenKey),
     ]);
   }
-
-
-    Future<void> write({
-    required String key,
-    required String value,
-  }) async {
-    final timestamp = DateTime.now().toIso8601String();
-    print('[$timestamp] 💾 Writing to secure storage'
-          '\n└─ Key: $key'
-          '\n└─ Value length: ${value.length}');
-
-    try {
-      await _storage.write(key: key, value: value);
-      print('[$timestamp] ✅ Data saved successfully'
-            '\n└─ Key: $key');
-    } catch (e) {
-      print('[$timestamp] ❌ Failed to write data'
-            '\n└─ Key: $key'
-            '\n└─ Error: $e');
-      throw Exception('Failed to write data: $e');
-    }
+  
+  // General purpose methods for working with secure storage
+  
+  Future<void> write({required String key, required String value}) async {
+    await _storage.write(key: key, value: value);
   }
-
 Future<String?> read({required String key}) async {
     final timestamp = '2025-03-09 10:35:22';
     print('[$timestamp] 🔐 Attempting to read data'
@@ -140,5 +123,4 @@ Future<String?> read({required String key}) async {
   Future<void> deleteAll() async {
     await _storage.deleteAll();
   }
-
 }
