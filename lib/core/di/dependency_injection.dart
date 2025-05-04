@@ -1,4 +1,3 @@
-// lib/core/di/dependency_injection.dart
 import 'package:get_it/get_it.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
@@ -8,6 +7,7 @@ import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/services/prop_service.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/services/session_service.dart';
+import 'package:the_boost/core/services/token_minting_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/property_repository_impl.dart';
@@ -24,7 +24,6 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import '../services/gemini_service.dart';
 import '../../features/chatbot/presentation/controllers/chat_controller.dart';
-
 import '../../features/auth/data/datasources/preferences_remote_data_source.dart';
 import '../../features/auth/data/repositories/preferences_repository.dart';
 import '../../features/auth/data/repositories/preferences_repository_impl.dart';
@@ -32,6 +31,7 @@ import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.
 import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
 import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
 import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+
 final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
@@ -46,7 +46,7 @@ Future<void> initDependencies() async {
   
   // Register LandService as singleton
   getIt.registerLazySingleton<LandService>(() => LandService());
-  getIt.registerLazySingleton<ApiService>(() => ApiService()); // ✅ ADD THIS
+  getIt.registerLazySingleton<ApiService>(() => ApiService());
 
   // Register NotificationService (removed storageService parameter)
   getIt.registerLazySingleton<NotificationService>(
@@ -56,6 +56,9 @@ Future<void> initDependencies() async {
   );
   
   getIt.registerLazySingleton<PreferencesService>(() => PreferencesService());
+  
+  // Register TokenMintingService
+  getIt.registerLazySingleton(() => TokenMintingService());
 
   await _initAuthFeature();
   await _initPropertyFeature();
@@ -66,14 +69,17 @@ Future<void> initDependencies() async {
 
 Future<void> registerChatbotDependencies() async {
   // Register Gemini service with API key
-  final geminiApiKey = const String.fromEnvironment(
+  const geminiApiKey = String.fromEnvironment(
     'GEMINI_API_KEY',
     defaultValue:
         'AIzaSyAvEtQjkAjwld1rTx4EtPXJ97iM1_5CqT8', // Replace with your actual API key when not using --dart-define
   );
 
   getIt.registerLazySingleton<GeminiService>(
-    () => GeminiService(apiKey: geminiApiKey, modelName: 'gemini-1.5-pro',),
+    () => GeminiService(
+      apiKey: geminiApiKey, 
+      modelName: 'gemini-1.5-pro',
+    ),
   );
 
   // Register chat controller
@@ -217,6 +223,13 @@ Future<void> _initPropertyFeature() async {
     // Register LandBloc
     getIt.registerFactory<LandBloc>(
       () => LandBloc(),
+    );
+    
+    // Register PropertyBloc
+    getIt.registerFactory<PropertyBloc>(
+      () => PropertyBloc(
+        getPropertiesUseCase: getIt<GetPropertiesUseCase>(),
+      ),
     );
 
     print('[${DateTime.now()}] DependencyInjection: ✅ Property feature initialized');
