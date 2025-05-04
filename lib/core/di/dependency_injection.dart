@@ -12,21 +12,28 @@ import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/core/services/token_minting_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/datasources/investment_remote_data_source.dart';
+import 'package:the_boost/features/auth/data/datasources/marketplace_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/Investment_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:the_boost/features/auth/data/repositories/marketplace_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/property_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/investment_repository.dart';
+import 'package:the_boost/features/auth/domain/repositories/marketplace_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/property_repository.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_enhanced_tokens_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
+import 'package:the_boost/features/auth/domain/use_cases/marketplace/cancel_listing_usecase.dart';
+import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_multiple_tokens_usecase.dart';
+import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_token_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import '../services/gemini_service.dart';
@@ -38,12 +45,12 @@ import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.
 import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
 import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
 import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
-import 'package:http/http.dart' as http; 
+import 'package:http/http.dart' as http;
+
 final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
 Future<void> initDependencies() async {
-  
   print('DependencyInjection: 🚀 Initializing dependencies');
 
   //=== Core ===//
@@ -52,7 +59,7 @@ Future<void> initDependencies() async {
       () => SecureStorageService());
   getIt.registerLazySingleton<GraphQLClient>(() => GraphQLService.client);
   getIt.registerLazySingleton<SessionService>(() => SessionService());
-  
+
   // Register HTTP Client
   getIt.registerLazySingleton<http.Client>(() => http.Client());
 
@@ -82,12 +89,14 @@ Future<void> initDependencies() async {
   await _initPropertyFeature();
   await _initPreferencesFeature();
   await _initInvestmentFeature();
+  await _initMarketplaceFeature();
 
   print('DependencyInjection: ✅ Dependencies initialized');
 }
 
 Future<void> _initInvestmentFeature() async {
-  print('[${DateTime.now()}] DependencyInjection: 🔄 Initializing investment feature');
+  print(
+      '[${DateTime.now()}] DependencyInjection: 🔄 Initializing investment feature');
 
   try {
     // Data Sources
@@ -95,10 +104,10 @@ Future<void> _initInvestmentFeature() async {
       () => InvestmentRemoteDataSourceImpl(
         client: getIt<http.Client>(),
         secureStorage: getIt<SecureStorageService>(),
-        baseUrl: 'http://localhost:5000/marketplace', // Replace with your actual API base URL
+        baseUrl: 'http://localhost:5000/marketplace',
       ),
     );
-    
+
     // Repositories
     getIt.registerLazySingleton<InvestmentRepository>(
       () => InvestmentRepositoryImpl(
@@ -106,22 +115,77 @@ Future<void> _initInvestmentFeature() async {
         networkInfo: getIt<NetworkInfo>(),
       ),
     );
-    
+
     // Use Cases
     getIt.registerLazySingleton<GetEnhancedTokensUseCase>(
       () => GetEnhancedTokensUseCase(getIt<InvestmentRepository>()),
     );
-    
+
     // BLoCs
     getIt.registerFactory<InvestmentBloc>(
       () => InvestmentBloc(
         getEnhancedTokensUseCase: getIt<GetEnhancedTokensUseCase>(),
       ),
     );
-    
-    print('[${DateTime.now()}] DependencyInjection: ✅ Investment feature initialized');
+
+    print(
+        '[${DateTime.now()}] DependencyInjection: ✅ Investment feature initialized');
   } catch (e) {
-    print('[${DateTime.now()}] DependencyInjection: ❌ Error initializing investment feature'
+    print(
+        '[${DateTime.now()}] DependencyInjection: ❌ Error initializing investment feature'
+        '\n└─ Error: $e');
+  }
+}
+
+Future<void> _initMarketplaceFeature() async {
+  print(
+      '[2025-05-04 20:29:04] DependencyInjection: 🔄 Initializing marketplace feature');
+
+  try {
+    // Data Sources
+    getIt.registerLazySingleton<MarketplaceRemoteDataSource>(
+      () => MarketplaceRemoteDataSourceImpl(
+        client: getIt<http.Client>(),
+        secureStorage: getIt<SecureStorageService>(),
+        baseUrl: 'http://localhost:5000',
+      ),
+    );
+
+    // Repositories
+    getIt.registerLazySingleton<MarketplaceRepository>(
+      () => MarketplaceRepositoryImpl(
+        remoteDataSource: getIt<MarketplaceRemoteDataSource>(),
+        networkInfo: getIt<NetworkInfo>(),
+      ),
+    );
+
+    // Use Cases
+    getIt.registerLazySingleton<ListTokenUseCase>(
+      () => ListTokenUseCase(getIt<MarketplaceRepository>()),
+    );
+
+    getIt.registerLazySingleton<ListMultipleTokensUseCase>(
+      () => ListMultipleTokensUseCase(getIt<MarketplaceRepository>()),
+    );
+
+    getIt.registerLazySingleton<CancelListingUseCase>(
+      () => CancelListingUseCase(getIt<MarketplaceRepository>()),
+    );
+
+    // BLoCs
+    getIt.registerFactory<MarketplaceBloc>(
+      () => MarketplaceBloc(
+        listTokenUseCase: getIt<ListTokenUseCase>(),
+        listMultipleTokensUseCase: getIt<ListMultipleTokensUseCase>(),
+        cancelListingUseCase: getIt<CancelListingUseCase>(),
+      ),
+    );
+
+    print(
+        '[2025-05-04 20:29:04] DependencyInjection: ✅ Marketplace feature initialized');
+  } catch (e) {
+    print(
+        '[2025-05-04 20:29:04] DependencyInjection: ❌ Error initializing marketplace feature'
         '\n└─ Error: $e');
   }
 }

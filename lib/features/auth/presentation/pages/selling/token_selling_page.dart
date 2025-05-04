@@ -6,11 +6,15 @@ import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
 import 'package:intl/intl.dart';
 import 'package:the_boost/features/auth/domain/entities/token.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_event.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_state.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/hero_banner_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/sale_summary_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/success_dialog_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/token_selection_widget.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/widgets/token_selling_frm_widget.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 
 class TokenSellingPage extends StatefulWidget {
   final List<Map<String, dynamic>>? preselectedTokens;
@@ -39,12 +43,14 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
   String _selectedDuration = '7 days';
   int _selectedTokenIndex = 0;
   final formatter = NumberFormat("#,##0.00");
+  bool _isProcessing = false;
 
   // Current date and username from requirements
-  final String currentDate = DateTime.now().toString();
+  final String currentDate = "2025-05-04 20:14:53";
 
   // Liste des tokens disponibles
   late List<Map<String, dynamic>> _ownedTokens;
+  late MarketplaceBloc _marketplaceBloc;
 
   final List<String> _durations = [
     '1 day',
@@ -58,6 +64,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
   @override
   void initState() {
     super.initState();
+    _marketplaceBloc = getIt<MarketplaceBloc>();
 
     // Initialiser avec les tokens présélectionnés ou une liste vide
     _ownedTokens = widget.preselectedTokens ?? [];
@@ -89,23 +96,26 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
       return;
     }
 
-    // Regrouper les tokens par terrain
+    // Filter tokens that are not already listed
+    final nonListedTokens = tokens.where((token) => !token.isListed).toList();
+
+    // Group by landId
     final Map<int, List<Token>> groupedTokens = {};
-    for (final token in tokens) {
+    for (final token in nonListedTokens) {
       if (!groupedTokens.containsKey(token.landId)) {
         groupedTokens[token.landId] = [];
       }
       groupedTokens[token.landId]!.add(token);
     }
 
-    // Convertir en format utilisable par l'interface
+    // Process tokens into the required format
     final processedTokens = groupedTokens.entries.map((entry) {
       final landId = entry.key;
       final tokensForLand = entry.value;
       final referenceToken = tokensForLand.first;
       final land = referenceToken.land;
 
-      // Calcul de la valeur moyenne
+      // Calculate average market price
       final totalValue = tokensForLand.fold(
           0.0,
           (sum, token) =>
@@ -113,17 +123,21 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
       final avgPrice =
           tokensForLand.isNotEmpty ? totalValue / tokensForLand.length : 0.0;
 
+      // Extract actual tokenIds for API call
+      final tokenIds = tokensForLand.map((t) => t.tokenId).toList();
+
       return {
         'id': 'TOK-$landId-2025',
         'name': land.title,
         'location': land.location,
-        'totalTokens': 1000, // Valeur par défaut si non disponible
+        'totalTokens': 1000, // Default value if not available
         'ownedTokens': tokensForLand.length,
         'marketPrice': avgPrice,
-        'imageUrl': land.imageUrl,
-        'lastTraded': '2025-05-01', // À remplacer par données réelles
-        'priceChange': '+2.4%', // À calculer à partir de l'historique
-        'actualTokens': tokensForLand, // Conserver pour référence
+        'imageUrl': land.imageUrl ?? 'assets/1.jpg',
+        'lastTraded': '2025-05-01', // Replace with actual data if available
+        'priceChange': '+2.4%', // Calculate from history if available
+        'actualTokens': tokensForLand, // Keep for reference
+        'tokenIds': tokenIds, // Add tokenIds for API call
       };
     }).toList();
 
@@ -214,7 +228,345 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
   }
 
   void _handleTokenSale() {
-    // This would be replaced with actual logic to process the token sale
+    if (_ownedTokens.isEmpty) return;
+
+    final token = _ownedTokens[_selectedTokenIndex];
+    final tokenCount = int.tryParse(_tokensToSellController.text) ?? 0;
+
+    if (tokenCount <= 0) {
+      _showErrorMessage(
+          'Veuillez entrer une quantité valide de tokens à vendre');
+      return;
+    }
+
+    final price = _pricePerTokenController.text.replaceAll(',', '');
+    if (double.tryParse(price) == null || double.tryParse(price)! <= 0) {
+      _showErrorMessage('Veuillez entrer un prix valide');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    if (tokenCount == 1) {
+      // Single token listing
+      final tokenId = token['actualTokens'][0].tokenId;
+      _marketplaceBloc.add(ListTokenEvent(tokenId: tokenId, price: price));
+    } else {
+      // Multiple tokens listing
+      final List<int> tokenIds = [];
+      final List<String> prices = [];
+
+      // Get the actual tokenIds and set the same price for each
+      for (int i = 0; i < tokenCount; i++) {
+        if (i < token['actualTokens'].length) {
+          tokenIds.add(token['actualTokens'][i].tokenId);
+          prices.add(price);
+        }
+      }
+
+      if (tokenIds.isEmpty) {
+        setState(() {
+          _isProcessing = false;
+        });
+        _showErrorMessage('Aucun token valide sélectionné');
+        return;
+      }
+
+      _marketplaceBloc
+          .add(ListMultipleTokensEvent(tokenIds: tokenIds, prices: prices));
+    }
+  }
+
+  void _saveDraft() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Brouillon sauvegardé avec succès'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = ResponsiveHelper.isDesktop(context);
+    final isTablet = ResponsiveHelper.isTablet(context);
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _marketplaceBloc),
+      ],
+      child: MultiBlocListener(
+        listeners: [
+          // Écouter les mises à jour du bloc Investment
+          BlocListener<InvestmentBloc, InvestmentState>(
+            listener: (context, state) {
+              if (state is InvestmentLoaded && _ownedTokens.isEmpty) {
+                _processTokensFromBloc(state.tokens);
+              }
+            },
+          ),
+          // Écouter les réponses du bloc Marketplace
+          BlocListener<MarketplaceBloc, MarketplaceState>(
+            listener: (context, state) {
+              if (state is MarketplaceLoading) {
+                // No additional handling needed here as we have a local isProcessing state
+              } else if (state is TokenListingSuccess) {
+                setState(() {
+                  _isProcessing = false;
+                });
+                _showSuccessDialog();
+              } else if (state is MultipleTokensListingSuccess) {
+                setState(() {
+                  _isProcessing = false;
+                });
+                _showSuccessDialog();
+              } else if (state is MarketplaceError) {
+                setState(() {
+                  _isProcessing = false;
+                });
+                _showErrorMessage('Erreur: ${state.message}');
+              }
+            },
+          ),
+        ],
+        child: BasePage(
+          title: widget.landName.isNotEmpty
+              ? 'Sell ${widget.landName} Tokens'
+              : 'Sell Tokens',
+          currentRoute: '/token-selling',
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                widget.landName.isNotEmpty
+                    ? _buildContextualHeroBanner(widget.landName)
+                    : const HeroBannerWidget(),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.landName.isNotEmpty
+                            ? 'Sell Your ${widget.landName} Tokens'
+                            : 'Select Tokens to Sell',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Section de sélection de token (n'afficher que si nous n'avons pas de terrain présélectionné)
+                      if (widget.landName.isEmpty || _ownedTokens.length > 1)
+                        TokenSelectionWidget(
+                          tokens: _ownedTokens,
+                          selectedIndex: _selectedTokenIndex,
+                          onTokenSelected: _handleSelectToken,
+                          formatter: formatter,
+                        ),
+
+                      const SizedBox(height: 32),
+
+                      if (_ownedTokens.isNotEmpty)
+                        if (isDesktop || isTablet)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  children: [
+                                    TokenSellingFormWidget(
+                                      tokensToSellController:
+                                          _tokensToSellController,
+                                      pricePerTokenController:
+                                          _pricePerTokenController,
+                                      descriptionController:
+                                          _descriptionController,
+                                      selectedToken:
+                                          _ownedTokens[_selectedTokenIndex],
+                                      durations: _durations,
+                                      selectedDuration: _selectedDuration,
+                                      isMarketPrice: _isMarketPrice,
+                                      currentDate: currentDate,
+                                      username: '',
+                                      formatter: formatter,
+                                      totalAmount: _totalAmount,
+                                      onTokensChanged: _handleTokensChange,
+                                      onPriceChanged: _handlePriceChange,
+                                      onIncrementTokens: _incrementTokens,
+                                      onDecrementTokens: _decrementTokens,
+                                      onMarketPriceToggled: _toggleMarketPrice,
+                                      onDurationChanged: _handleDurationChange,
+                                    ),
+
+                                    // Ajouter l'analyse de prix et transactions récentes si un terrain est présélectionné
+                                    if (widget.landName.isNotEmpty) ...[
+                                      const SizedBox(height: 24),
+                                      _buildPriceAnalysis(
+                                        double.tryParse(_pricePerTokenController
+                                                .text
+                                                .replaceAll(',', '')) ??
+                                            0,
+                                        _ownedTokens[_selectedTokenIndex]
+                                            ['marketPrice'],
+                                      ),
+                                      const SizedBox(height: 24),
+                                      _buildRecentTransactions(widget.landName),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                flex: 2,
+                                child: Stack(
+                                  children: [
+                                    SaleSummaryWidget(
+                                      selectedToken:
+                                          _ownedTokens[_selectedTokenIndex],
+                                      tokensToSell: double.tryParse(
+                                              _tokensToSellController.text) ??
+                                          0,
+                                      pricePerToken: double.tryParse(
+                                              _pricePerTokenController.text
+                                                  .replaceAll(',', '')) ??
+                                          0,
+                                      selectedDuration: _selectedDuration,
+                                      totalAmount: _totalAmount,
+                                      termsAccepted: _termsAccepted,
+                                      formatter: formatter,
+                                      onTermsAccepted: _handleTermsAccepted,
+                                      onSellPressed: _isProcessing
+                                          ? null
+                                          : _handleTokenSale,
+                                      onCancelPressed: () =>
+                                          Navigator.pop(context),
+                                      onSaveDraftPressed: _saveDraft,
+                                    ),
+                                    if (_isProcessing)
+                                      Positioned.fill(
+                                        child: Container(
+                                          color: Colors.white.withOpacity(0.7),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Column(
+                            children: [
+                              TokenSellingFormWidget(
+                                tokensToSellController: _tokensToSellController,
+                                pricePerTokenController:
+                                    _pricePerTokenController,
+                                descriptionController: _descriptionController,
+                                selectedToken:
+                                    _ownedTokens[_selectedTokenIndex],
+                                durations: _durations,
+                                selectedDuration: _selectedDuration,
+                                isMarketPrice: _isMarketPrice,
+                                currentDate: currentDate,
+                                username: '',
+                                formatter: formatter,
+                                totalAmount: _totalAmount,
+                                onTokensChanged: _handleTokensChange,
+                                onPriceChanged: _handlePriceChange,
+                                onIncrementTokens: _incrementTokens,
+                                onDecrementTokens: _decrementTokens,
+                                onMarketPriceToggled: _toggleMarketPrice,
+                                onDurationChanged: _handleDurationChange,
+                              ),
+
+                              // Ajouter l'analyse de prix et transactions récentes si un terrain est présélectionné
+                              if (widget.landName.isNotEmpty) ...[
+                                const SizedBox(height: 24),
+                                _buildPriceAnalysis(
+                                  double.tryParse(_pricePerTokenController.text
+                                          .replaceAll(',', '')) ??
+                                      0,
+                                  _ownedTokens[_selectedTokenIndex]
+                                      ['marketPrice'],
+                                ),
+                                const SizedBox(height: 24),
+                                _buildRecentTransactions(widget.landName),
+                              ],
+
+                              const SizedBox(height: 24),
+                              Stack(
+                                children: [
+                                  SaleSummaryWidget(
+                                    selectedToken:
+                                        _ownedTokens[_selectedTokenIndex],
+                                    tokensToSell: double.tryParse(
+                                            _tokensToSellController.text) ??
+                                        0,
+                                    pricePerToken: double.tryParse(
+                                            _pricePerTokenController.text
+                                                .replaceAll(',', '')) ??
+                                        0,
+                                    selectedDuration: _selectedDuration,
+                                    totalAmount: _totalAmount,
+                                    termsAccepted: _termsAccepted,
+                                    formatter: formatter,
+                                    onTermsAccepted: _handleTermsAccepted,
+                                    onSellPressed:
+                                        _isProcessing ? null : _handleTokenSale,
+                                    onCancelPressed: () =>
+                                        Navigator.pop(context),
+                                    onSaveDraftPressed: _saveDraft,
+                                  ),
+                                  if (_isProcessing)
+                                    Positioned.fill(
+                                      child: Container(
+                                        color: Colors.white.withOpacity(0.7),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          )
+                      // Afficher un état de chargement si pas encore de tokens
+                      else
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessDialog() {
     final tokenCount = int.tryParse(_tokensToSellController.text) ?? 0;
     final price =
         double.tryParse(_pricePerTokenController.text.replaceAll(',', '')) ?? 0;
@@ -233,219 +585,15 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
         selectedDuration: _selectedDuration,
         formatter: formatter,
       ),
-    );
-  }
+    ).then((_) {
+      // Refresh the investment data after successful listing
+      context.read<InvestmentBloc>().add(LoadEnhancedTokens());
 
-  void _saveDraft() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Draft saved successfully'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDesktop = ResponsiveHelper.isDesktop(context);
-    final isTablet = ResponsiveHelper.isTablet(context);
-
-    // Écouter les mises à jour du bloc Investment
-    return BlocListener<InvestmentBloc, InvestmentState>(
-      listener: (context, state) {
-        if (state is InvestmentLoaded && _ownedTokens.isEmpty) {
-          _processTokensFromBloc(state.tokens);
-        }
-      },
-      child: BasePage(
-        title: widget.landName.isNotEmpty
-            ? 'Sell ${widget.landName} Tokens'
-            : 'Sell Tokens',
-        currentRoute: '/token-selling',
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              widget.landName.isNotEmpty
-                  ? _buildContextualHeroBanner(widget.landName)
-                  : const HeroBannerWidget(),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.landName.isNotEmpty
-                          ? 'Sell Your ${widget.landName} Tokens'
-                          : 'Select Tokens to Sell',
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Section de sélection de token (n'afficher que si nous n'avons pas de terrain présélectionné)
-                    if (widget.landName.isEmpty || _ownedTokens.length > 1)
-                      TokenSelectionWidget(
-                        tokens: _ownedTokens,
-                        selectedIndex: _selectedTokenIndex,
-                        onTokenSelected: _handleSelectToken,
-                        formatter: formatter,
-                      ),
-
-                    const SizedBox(height: 32),
-
-                    if (_ownedTokens.isNotEmpty)
-                      if (isDesktop || isTablet)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                children: [
-                                  TokenSellingFormWidget(
-                                    tokensToSellController:
-                                        _tokensToSellController,
-                                    pricePerTokenController:
-                                        _pricePerTokenController,
-                                    descriptionController:
-                                        _descriptionController,
-                                    selectedToken:
-                                        _ownedTokens[_selectedTokenIndex],
-                                    durations: _durations,
-                                    selectedDuration: _selectedDuration,
-                                    isMarketPrice: _isMarketPrice,
-                                    currentDate: currentDate,
-                                    username: widget.landName,
-                                    formatter: formatter,
-                                    totalAmount: _totalAmount,
-                                    onTokensChanged: _handleTokensChange,
-                                    onPriceChanged: _handlePriceChange,
-                                    onIncrementTokens: _incrementTokens,
-                                    onDecrementTokens: _decrementTokens,
-                                    onMarketPriceToggled: _toggleMarketPrice,
-                                    onDurationChanged: _handleDurationChange,
-                                  ),
-
-                                  // Ajouter l'analyse de prix et transactions récentes si un terrain est présélectionné
-                                  if (widget.landName.isNotEmpty) ...[
-                                    const SizedBox(height: 24),
-                                    _buildPriceAnalysis(
-                                      double.tryParse(_pricePerTokenController
-                                              .text
-                                              .replaceAll(',', '')) ??
-                                          0,
-                                      _ownedTokens[_selectedTokenIndex]
-                                          ['marketPrice'],
-                                    ),
-                                    const SizedBox(height: 24),
-                                    _buildRecentTransactions(widget.landName),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            Expanded(
-                              flex: 2,
-                              child: SaleSummaryWidget(
-                                selectedToken:
-                                    _ownedTokens[_selectedTokenIndex],
-                                tokensToSell: double.tryParse(
-                                        _tokensToSellController.text) ??
-                                    0,
-                                pricePerToken: double.tryParse(
-                                        _pricePerTokenController.text
-                                            .replaceAll(',', '')) ??
-                                    0,
-                                selectedDuration: _selectedDuration,
-                                totalAmount: _totalAmount,
-                                termsAccepted: _termsAccepted,
-                                formatter: formatter,
-                                onTermsAccepted: _handleTermsAccepted,
-                                onSellPressed: _handleTokenSale,
-                                onCancelPressed: () => Navigator.pop(context),
-                                onSaveDraftPressed: _saveDraft,
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Column(
-                          children: [
-                            TokenSellingFormWidget(
-                              tokensToSellController: _tokensToSellController,
-                              pricePerTokenController: _pricePerTokenController,
-                              descriptionController: _descriptionController,
-                              selectedToken: _ownedTokens[_selectedTokenIndex],
-                              durations: _durations,
-                              selectedDuration: _selectedDuration,
-                              isMarketPrice: _isMarketPrice,
-                              currentDate: currentDate,
-                              username: '',
-                              formatter: formatter,
-                              totalAmount: _totalAmount,
-                              onTokensChanged: _handleTokensChange,
-                              onPriceChanged: _handlePriceChange,
-                              onIncrementTokens: _incrementTokens,
-                              onDecrementTokens: _decrementTokens,
-                              onMarketPriceToggled: _toggleMarketPrice,
-                              onDurationChanged: _handleDurationChange,
-                            ),
-
-                            // Ajouter l'analyse de prix et transactions récentes si un terrain est présélectionné
-                            if (widget.landName.isNotEmpty) ...[
-                              const SizedBox(height: 24),
-                              _buildPriceAnalysis(
-                                double.tryParse(_pricePerTokenController.text
-                                        .replaceAll(',', '')) ??
-                                    0,
-                                _ownedTokens[_selectedTokenIndex]
-                                    ['marketPrice'],
-                              ),
-                              const SizedBox(height: 24),
-                              _buildRecentTransactions(widget.landName),
-                            ],
-
-                            const SizedBox(height: 24),
-                            SaleSummaryWidget(
-                              selectedToken: _ownedTokens[_selectedTokenIndex],
-                              tokensToSell: double.tryParse(
-                                      _tokensToSellController.text) ??
-                                  0,
-                              pricePerToken: double.tryParse(
-                                      _pricePerTokenController.text
-                                          .replaceAll(',', '')) ??
-                                  0,
-                              selectedDuration: _selectedDuration,
-                              totalAmount: _totalAmount,
-                              termsAccepted: _termsAccepted,
-                              formatter: formatter,
-                              onTermsAccepted: _handleTermsAccepted,
-                              onSellPressed: _handleTokenSale,
-                              onCancelPressed: () => Navigator.pop(context),
-                              onSaveDraftPressed: _saveDraft,
-                            ),
-                          ],
-                        )
-                    // Afficher un état de chargement si pas encore de tokens
-                    else
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+      // Navigate back to the dashboard after a short delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        Navigator.of(context).pop();
+      });
+    });
   }
 
   Widget _buildContextualHeroBanner(String landName) {
@@ -615,7 +763,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.history, size: 18, color: AppColors.primary),
+              const Icon(Icons.history, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Recent $landName Transactions',
