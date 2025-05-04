@@ -11,7 +11,8 @@ class SaleSummaryWidget extends StatelessWidget {
   final bool termsAccepted;
   final NumberFormat formatter;
   final Function(bool?) onTermsAccepted;
-  final VoidCallback onSellPressed;
+  final VoidCallback?
+      onSellPressed; // Modifié pour accepter null lors du traitement
   final VoidCallback onCancelPressed;
   final VoidCallback onSaveDraftPressed;
 
@@ -90,7 +91,7 @@ class SaleSummaryWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   image: DecorationImage(
-                    image: AssetImage(selectedToken['imageUrl']),
+                    image: _getTokenImage(),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -199,11 +200,21 @@ class SaleSummaryWidget extends StatelessWidget {
     );
   }
 
+  // Helper method to safely get token image
+  ImageProvider _getTokenImage() {
+    try {
+      return AssetImage(selectedToken['imageUrl']);
+    } catch (e) {
+      // Fallback to placeholder if image loading fails
+      return const AssetImage('assets/placeholder.jpg');
+    }
+  }
+
   Widget _buildMarketInsights() {
-    final priceDifferenceText = _getPriceDifferenceText(
-        pricePerToken, selectedToken['marketPrice']);
-    final priceDifferenceColor = _getPriceDifferenceColor(
-        pricePerToken, selectedToken['marketPrice']);
+    final priceDifferenceText =
+        _getPriceDifferenceText(pricePerToken, selectedToken['marketPrice']);
+    final priceDifferenceColor =
+        _getPriceDifferenceColor(pricePerToken, selectedToken['marketPrice']);
 
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -302,6 +313,9 @@ class SaleSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildActionButtons(bool canSell) {
+    // Vérifier si un traitement est en cours (onSellPressed est null)
+    final isProcessing = onSellPressed == null;
+
     return Column(
       children: [
         SizedBox(
@@ -317,13 +331,22 @@ class SaleSummaryWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              'List For Sale',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: isProcessing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.0,
+                    ),
+                  )
+                : const Text(
+                    'List For Sale',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 12),
@@ -365,7 +388,8 @@ class SaleSummaryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMarketInsightRow(String label, String value, {Color? valueColor}) {
+  Widget _buildMarketInsightRow(String label, String value,
+      {Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
