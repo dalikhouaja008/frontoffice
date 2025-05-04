@@ -18,13 +18,15 @@ class SimpleBlocObserver extends BlocObserver {
   @override
   void onChange(BlocBase bloc, Change change) {
     super.onChange(bloc, change);
-    print('${bloc.runtimeType} State Change: ${change.currentState.runtimeType} -> ${change.nextState.runtimeType}');
+    print(
+        '${bloc.runtimeType} State Change: ${change.currentState.runtimeType} -> ${change.nextState.runtimeType}');
   }
 
   @override
   void onTransition(Bloc bloc, Transition transition) {
     super.onTransition(bloc, transition);
-    print('${bloc.runtimeType} Transition: ${transition.event.runtimeType} -> ${transition.nextState.runtimeType}');
+    print(
+        '${bloc.runtimeType} Transition: ${transition.event.runtimeType} -> ${transition.nextState.runtimeType}');
   }
 
   @override
@@ -37,16 +39,16 @@ class SimpleBlocObserver extends BlocObserver {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = SimpleBlocObserver();
-  
+
   // Initialiser les dépendances
   await initDependencies();
   await registerChatbotDependencies();
-  
+
   // Ne vérifiez pas la session ici, laissez le bloc le faire
-  
+
   // Préparez le provider MetaMask
   final metamaskProvider = MetamaskProvider();
-  
+
   // Run the app
   runApp(
     MultiProvider(
@@ -69,11 +71,16 @@ class TheBoostApp extends StatelessWidget {
       providers: [
         // Créez le bloc et vérifiez la session immédiatement
         BlocProvider<LoginBloc>(
-          create: (_) {
+          create: (context) {
             final bloc = getIt<LoginBloc>();
-            // Important: Vérifiez la session au démarrage de l'app
-            print('[2025-05-03 19:31:16] TheBoostApp: 🔄 Initializing LoginBloc and checking session');
-            bloc.add(CheckSession());
+
+            // Vérifiez la session mais avec un petit délai pour permettre à l'UI de s'initialiser
+            Future.delayed(Duration(milliseconds: 100), () {
+              print(
+                  '[2025-05-03 20:01:48] TheBoostApp: 🔍 Checking session after initialization');
+              bloc.add(CheckSession());
+            });
+
             return bloc;
           },
         ),
@@ -85,7 +92,8 @@ class TheBoostApp extends StatelessWidget {
       child: BlocConsumer<LoginBloc, LoginState>(
         listenWhen: (previous, current) {
           // Important: loggez chaque changement d'état pour débogage
-          print('[2025-05-03 19:31:16] TheBoostApp: 🔍 Auth state changed: ${previous.runtimeType} -> ${current.runtimeType}');
+          print(
+              '[2025-05-03 19:31:16] TheBoostApp: 🔍 Auth state changed: ${previous.runtimeType} -> ${current.runtimeType}');
           return previous.runtimeType != current.runtimeType;
         },
         listener: (context, state) {
@@ -103,10 +111,12 @@ class TheBoostApp extends StatelessWidget {
         builder: (context, state) {
           // Utilisez l'état passé par le BlocConsumer
           final isAuthenticated = state is LoginSuccess;
-          
-          print('[2025-05-03 19:31:16] TheBoostApp: 🏗️ Building app with auth state: ${state.runtimeType}');
-          print('[2025-05-03 19:31:16] TheBoostApp: 🔑 IsAuthenticated: $isAuthenticated');
-          
+
+          print(
+              '[2025-05-03 19:31:16] TheBoostApp: 🏗️ Building app with auth state: ${state.runtimeType}');
+          print(
+              '[2025-05-03 19:31:16] TheBoostApp: 🔑 IsAuthenticated: $isAuthenticated');
+
           return MaterialApp(
             title: 'TheBoost - Land Investment via Tokenization',
             theme: ThemeData(
@@ -122,7 +132,8 @@ class TheBoostApp extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -130,21 +141,25 @@ class TheBoostApp extends StatelessWidget {
               ),
             ),
             debugShowCheckedModeBanner: false,
-            initialRoute: isAuthenticated ? AppRoutes.dashboard : AppRoutes.home,
+            initialRoute:
+                isAuthenticated ? AppRoutes.dashboard : AppRoutes.home,
             onGenerateRoute: AppRoutes.generateRoute,
             builder: (context, child) {
               // Utilisez l'état déjà disponible via closure
               if (child?.key == const ValueKey('AuthPage') && isAuthenticated) {
-                print('[2025-05-03 19:31:16] TheBoostApp: 🔄 Redirecting from auth to dashboard');
+                print(
+                    '[2025-05-03 19:31:16] TheBoostApp: 🔄 Redirecting from auth to dashboard');
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+                  Navigator.of(context)
+                      .pushReplacementNamed(AppRoutes.dashboard);
                 });
               }
               if ((child?.key == const ValueKey('DashboardPage') ||
                       child?.key == const ValueKey('InvestPage') ||
                       child?.key == const ValueKey('PropertyDetailsPage')) &&
                   !isAuthenticated) {
-                print('[2025-05-03 19:31:16] TheBoostApp: 🔄 Redirecting to auth');
+                print(
+                    '[2025-05-03 19:31:16] TheBoostApp: 🔄 Redirecting to auth');
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
                 });

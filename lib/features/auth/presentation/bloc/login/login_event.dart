@@ -33,3 +33,12 @@ class InitializeAuth extends LoginEvent {
   @override
   String toString() => 'InitializeAuth';
 }
+
+class RefreshAuthState extends LoginEvent {
+  final User user;
+  
+  RefreshAuthState(this.user);
+  
+  @override
+  List<Object> get props => [user];
+}

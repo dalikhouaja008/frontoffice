@@ -32,12 +32,26 @@ class AppNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    print('[2025-05-03 19:47:18] AppNavBar: 🔄 Building navbar');
+    print('[2025-05-03 20:01:48] AppNavBar: 🔄 Building navbar');
 
-    // Obtenir directement l'état actuel
+    // Obtenir directement l'état actuel - GARDEZ CETTE APPROCHE
     final loginState = context.watch<LoginBloc>().state;
+
+    // MAIS ajoutez une vérification supplémentaire après le rendu
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Si nous sommes à l'écran d'accueil mais que nous sommes authentifiés,
+      // vérifions à nouveau l'état (utile après une navigation)
+      if (currentRoute == '/' || currentRoute == AppRoutes.home) {
+        if (loginState is LoginSuccess) {
+          print(
+              '[2025-05-03 20:01:48] AppNavBar: ✅ Authenticated at home route, refreshing state');
+          context.read<LoginBloc>().add(RefreshAuthState(loginState.user));
+        }
+      }
+    });
+
     final isAuthenticated = loginState is LoginSuccess;
-    final user = isAuthenticated ? (loginState as LoginSuccess).user : null;
+    final user = isAuthenticated ? (loginState).user : null;
 
     // Log détaillé
     print(

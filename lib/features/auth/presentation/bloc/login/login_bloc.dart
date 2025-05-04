@@ -1,6 +1,7 @@
 // lib/features/auth/presentation/bloc/login/login_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'dart:developer' as developer;
 
 import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
@@ -27,10 +28,21 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckSession>(_onCheckSession);
+    on<RefreshAuthState>(_onRefreshAuthState);
     
     // Automatically check for existing session when bloc is created
     add(CheckSession());
   }
+
+  Future<void> _onRefreshAuthState(
+  RefreshAuthState event,
+  Emitter<LoginState> emit,
+) async {
+  developer.log('LoginBloc: 🔄 Refreshing auth state for user: ${event.user.username}');
+  
+  // Réémettez l'état LoginSuccess pour forcer une mise à jour des widgets
+  emit(LoginSuccess(user: event.user));
+}
 
   Future<void> _onCheckSession(
     CheckSession event,

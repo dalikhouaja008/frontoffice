@@ -50,41 +50,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLoginStateChanges(BuildContext context, LoginState state) {
-    print('LoginScreen: 📣 Login state changed: ${state.runtimeType}');
+    developer.log('LoginScreen: 📣 Login state changed: ${state.runtimeType}');
 
     if (state is LoginSuccess) {
       print('LoginScreen: ✅ Login successful'
           '\n└─ User: ${state.user.username}'
           '\n└─ Role: ${state.user.role}');
-
-      // IMPORTANT: Plutôt que de naviguer immédiatement,
-      // attendez que l'état ait eu le temps de se propager
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Force une mise à jour de l'UI pour s'assurer que tous les widgets reçoivent l'état
         final bloc = context.read<LoginBloc>();
-
-        // Cette ligne force un "rebuild" en réémettant le même état
-        bloc.emit(LoginSuccess(user: state.user));
+        bloc.add(RefreshAuthState(state.user));
 
         // Puis naviguez après un court délai
-        Future.delayed(Duration(milliseconds: 300), () {
+        Future.delayed(const Duration(milliseconds: 300), () {
           Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
         });
       });
     } else if (state is LoginRequires2FA) {
-      print('LoginScreen: 🔐 2FA required'
+      developer.log('LoginScreen: 🔐 2FA required'
+          '\n└─ User: ${state.user.username}'
           '\n└─ Email: ${state.user.email}');
 
       _show2FADialog(context, state);
     } else if (state is LoginFailure) {
-      print('LoginScreen: ❌ Login failed'
+      developer.log('LoginScreen: ❌ Login failed'
           '\n└─ Error: ${state.error}');
 
       _showErrorDialog(context, state.error);
     } else if (state is LoginLoading) {
-      print('LoginScreen: ⏳ Authentication in progress...');
+      developer.log('LoginScreen: ⏳ Authentication in progress...');
     } else if (state is LoginInitial) {
-      print('LoginScreen: 🔄 Login view initialized');
+      developer.log('LoginScreen: 🔄 Login view initialized');
     }
   }
 
