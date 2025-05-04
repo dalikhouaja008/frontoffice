@@ -1,196 +1,118 @@
 // lib/features/chatbot/presentation/widgets/chat_bubble.dart
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
-import 'package:the_boost/core/constants/dimensions.dart';
-import '../../domain/entities/chat_message.dart';
+import 'package:the_boost/features/chatbot/domain/entities/message.dart';
 
 class ChatBubble extends StatelessWidget {
-  final ChatMessage message;
+  final Message message;
 
-  const ChatBubble({
-    Key? key,
-    required this.message,
-  }) : super(key: key);
+  const ChatBubble({Key? key, required this.message}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return message.sender == MessageSender.user
-        ? UserMessageBubble(message: message)
-        : AssistantMessageBubble(message: message);
-  }
-}
-
-class UserMessageBubble extends StatelessWidget {
-  final ChatMessage message;
-
-  const UserMessageBubble({
-    Key? key,
-    required this.message,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        margin: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.paddingM,
-          vertical: AppDimensions.paddingS,
-        ),
-        padding: const EdgeInsets.all(AppDimensions.paddingM),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              message.text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _formatTime(message.timestamp),
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
+    final isUser = message.isFromUser;
+    
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isUser ? 60 : 16,
+        right: isUser ? 16 : 60,
+        bottom: 12,
       ),
-    );
-  }
-}
-
-class AssistantMessageBubble extends StatelessWidget {
-  final ChatMessage message;
-
-  const AssistantMessageBubble({
-    Key? key,
-    required this.message,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    if (message.isLoading) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          margin: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.paddingM,
-            vertical: AppDimensions.paddingS,
-          ),
-          padding: const EdgeInsets.all(AppDimensions.paddingM),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Thinking...',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        margin: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.paddingM,
-          vertical: AppDimensions.paddingS,
-        ),
-        padding: const EdgeInsets.all(AppDimensions.paddingM),
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser) ...[
+            _buildAvatar(isUser),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.assistant,
-                  color: AppColors.primary,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Investment Assistant',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isUser ? AppColors.primary : Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(20),
+                      topRight: const Radius.circular(20),
+                      bottomLeft: Radius.circular(isUser ? 20 : 4),
+                      bottomRight: Radius.circular(isUser ? 4 : 20),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        offset: const Offset(0, 2),
+                        blurRadius: 5,
+                      ),
+                    ],
                   ),
+                  child: Text(
+                    message.content,
+                    style: TextStyle(
+                      color: isUser ? Colors.white : Colors.black87,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _formatTime(message.timestamp),
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 11,
+                      ),
+                    ),
+                    if (isUser) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        message.isSent ? Icons.done_all : Icons.done,
+                        size: 14,
+                        color: message.isSent ? AppColors.primary : Colors.grey[400],
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              message.text,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _formatTime(message.timestamp),
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 12,
-              ),
-            ),
+          ),
+          if (isUser) ...[
+            const SizedBox(width: 8),
+            _buildAvatar(isUser),
           ],
-        ),
+        ],
       ),
     );
   }
-}
 
-// Helper function to format time
-String _formatTime(DateTime timestamp) {
-  final hour = timestamp.hour.toString().padLeft(2, '0');
-  final minute = timestamp.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
+  Widget _buildAvatar(bool isUser) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: isUser ? AppColors.primary : Colors.grey[200],
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isUser ? AppColors.primary.withOpacity(0.1) : Colors.grey[300]!,
+          width: 1,
+        ),
+      ),
+      child: Icon(
+        isUser ? Icons.person : Icons.assistant,
+        color: isUser ? Colors.white : AppColors.primary,
+        size: 20,
+      ),
+    );
+  }
+
+  String _formatTime(DateTime timestamp) {
+    final hour = timestamp.hour.toString().padLeft(2, '0');
+    final minute = timestamp.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
 }
