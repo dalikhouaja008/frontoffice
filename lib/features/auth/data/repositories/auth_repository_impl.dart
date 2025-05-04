@@ -24,7 +24,7 @@ class AuthRepositoryImpl implements AuthRepository {
       // Si les tokens sont null mais qu'on a un utilisateur, c'est un cas de 2FA
       if (response.accessToken == null) {
         print('AuthRepositoryImpl:🔐 2FA required'
-              '\n└─ Email: ${response.user?.email}');
+              '\n└─ Email: ${response.user.email}');
 
         return LoginResponse(
           user: response.user,
@@ -36,7 +36,7 @@ class AuthRepositoryImpl implements AuthRepository {
       // Cas normal : on a les tokens
       if (response.accessToken != null && response.refreshToken != null) {
         print('AuthRepositoryImpl: ✅ Login successful'
-              '\n└─ Email: ${response.user?.email}');
+              '\n└─ Email: ${response.user.email}');
 
         return response;
       }

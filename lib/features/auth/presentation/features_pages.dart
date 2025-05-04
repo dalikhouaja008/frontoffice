@@ -93,7 +93,7 @@ class _HeroBanner extends StatelessWidget {
         horizontal: isMobile ? 24 : 80,
         vertical: 60,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Color(0xFFE8F5E9),
       ),
       child: Column(
@@ -108,7 +108,7 @@ class _HeroBanner extends StatelessWidget {
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Container(
             width: isMobile ? double.infinity : 700,
             child: Text(
@@ -1592,7 +1592,7 @@ class _CallToActionSection extends StatelessWidget {
         horizontal: isMobile ? 24 : 80,
         vertical: 80,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

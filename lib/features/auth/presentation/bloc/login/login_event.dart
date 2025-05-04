@@ -19,26 +19,5 @@ class LoginRequested extends LoginEvent {
 
 class LogoutRequested extends LoginEvent {}
 
-class CheckSession extends LoginEvent {
+class CheckSession extends LoginEvent {}
 
-
-  @override
-  List<Object> get props => [];
-}
-
-class InitializeAuth extends LoginEvent {
-  @override
-  List<Object> get props => [];
-
-  @override
-  String toString() => 'InitializeAuth';
-}
-
-class RefreshAuthState extends LoginEvent {
-  final User user;
-  
-  RefreshAuthState(this.user);
-  
-  @override
-  List<Object> get props => [user];
-}

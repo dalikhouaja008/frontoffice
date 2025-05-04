@@ -13,9 +13,6 @@ class LoginUseCase {
   }) async {
     return await this.repository.login(email: email, password: password);
   }
-
-
-  
 }
 
 // Classe pour encapsuler le résultat du login

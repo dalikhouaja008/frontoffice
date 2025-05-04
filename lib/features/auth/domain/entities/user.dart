@@ -9,7 +9,6 @@ class User {
   final String role;
   final String? twoFactorSecret;
   final bool isTwoFactorEnabled;
-  final String? publicKey;
   final DateTime createdAt;
   final DateTime updatedAt;
   final UserPreferences? preferences;
@@ -22,7 +21,6 @@ class User {
     required this.role,
     this.twoFactorSecret,
     this.isTwoFactorEnabled = false,
-    this.publicKey,
     required this.createdAt,
     required this.updatedAt,
     this.preferences,
@@ -31,7 +29,7 @@ class User {
 
   // Ajout de la méthode fromJson
 factory User.fromJson(Map<String, dynamic> json) {
-  print('🔄 Parsing User from JSON:'
+  print('[2025-02-13 20:50:39] 🔄 Parsing User from JSON:'
         '\n${const JsonEncoder.withIndent('  ').convert(json)}');
         
   try {
@@ -49,7 +47,6 @@ factory User.fromJson(Map<String, dynamic> json) {
       role: json['role'] as String? ?? '',
       twoFactorSecret: json['twoFactorSecret'] as String?,
       isTwoFactorEnabled: json['isTwoFactorEnabled'] as bool? ?? false,
-      publicKey: json['publickey'] as String? ?? '',
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
@@ -76,7 +73,6 @@ Map<String, dynamic> toJson() {
     'role': role,
     'twoFactorSecret': twoFactorSecret,
     'isTwoFactorEnabled': isTwoFactorEnabled,
-    'publickey': publicKey,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -106,7 +102,6 @@ Map<String, dynamic> toJson() {
       role: role ?? this.role,
       twoFactorSecret: twoFactorSecret ?? this.twoFactorSecret,
       isTwoFactorEnabled: isTwoFactorEnabled ?? this.isTwoFactorEnabled,
-      publicKey: publicKey ?? this.publicKey,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       preferences: preferences ?? this.preferences,

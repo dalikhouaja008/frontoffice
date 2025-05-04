@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/widgets/app_nav_bar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,8 +13,13 @@ import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 import 'package:the_boost/features/auth/presentation/widgets/notification_bell.dart';
-import 'package:the_boost/features/metamask/presentation/widgets/compact_metamask_button.dart';
-import 'dart:developer' as developer;
+import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
+import 'dart:convert';
+
+import '../../../../core/di/dependency_injection.dart';
+import '../../../../core/services/prop_service.dart';
+import '../pages/valuation/land_valuation_home_screen.dart';
+import '../pages/valuation/land_valuation_screen_with_nav.dart';
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -32,56 +36,37 @@ class AppNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    print('[2025-05-03 20:01:48] AppNavBar: 🔄 Building navbar');
-
-    // Obtenir directement l'état actuel - GARDEZ CETTE APPROCHE
-    final loginState = context.watch<LoginBloc>().state;
-
-    // MAIS ajoutez une vérification supplémentaire après le rendu
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Si nous sommes à l'écran d'accueil mais que nous sommes authentifiés,
-      // vérifions à nouveau l'état (utile après une navigation)
-      if (currentRoute == '/' || currentRoute == AppRoutes.home) {
-        if (loginState is LoginSuccess) {
-          print(
-              '[2025-05-03 20:01:48] AppNavBar: ✅ Authenticated at home route, refreshing state');
-          context.read<LoginBloc>().add(RefreshAuthState(loginState.user));
-        }
-      }
-    });
-
-    final isAuthenticated = loginState is LoginSuccess;
-    final user = isAuthenticated ? (loginState).user : null;
-
-    // Log détaillé
     print(
-        '[2025-05-03 19:47:18] AppNavBar: 🔍 Current state: ${loginState.runtimeType}');
-    print(
-        '[2025-05-03 19:47:18] AppNavBar: 🔑 IsAuthenticated: $isAuthenticated');
+        '[2025-04-16 10:05:23] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
 
-    if (isAuthenticated) {
-      print('[2025-05-03 19:47:18] AppNavBar: 👤 User: ${user?.username}');
-    }
+    return BlocBuilder<LoginBloc, LoginState>(
+      builder: (context, state) {
+        print(
+            '[2025-04-16 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
+        final isAuthenticated = state is LoginSuccess;
+        final user = isAuthenticated ? state.user : null;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal:
-            isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
-        vertical: AppDimensions.paddingM,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal:
+                isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
+            vertical: AppDimensions.paddingM,
           ),
-        ],
-      ),
-      child: isMobile
-          ? _buildMobileNavBar(context, isAuthenticated, user)
-          : _buildDesktopNavBar(context, isAuthenticated, user),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: isMobile
+              ? _buildMobileNavBar(context, isAuthenticated, user)
+              : _buildDesktopNavBar(context, isAuthenticated, user),
+        );
+      },
     );
   }
 
@@ -103,8 +88,24 @@ class AppNavBar extends StatelessWidget {
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
                     _NavLink('Features',
                         route: '/features', currentRoute: currentRoute),
-                    _NavLink('How It Works',
-                        route: '/how-it-works', currentRoute: currentRoute),
+                    // Modified to open land valuation screen instead of '/how-it-works'
+                    _NavLink(
+                      'How It Works',
+                      route: '/how-it-works',
+                      currentRoute: currentRoute,
+                      onNavigate: () {
+                        // Create a properly initialized ApiService instance
+                        final apiService = getIt<
+                            ApiService>(); // ✅ Get a properly initialized ApiService
+
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                LandValuationHomeScreen(apiService: apiService),
+                          ),
+                        );
+                      },
+                    ),
                     _NavLink('Invest',
                         route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More',
@@ -112,16 +113,6 @@ class AppNavBar extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
-                // Afficher le bouton MetaMask uniquement si l'utilisateur est connecté et publicKey est nul
-                if (isAuthenticated &&
-                    (user?.publicKey == null || user!.publicKey!.isEmpty)) ...[
-                  CompactMetamaskButton(
-                    onUpdatePublicKey: (context, address) async {
-                      await _updateUserPublicKey(context, address);
-                    },
-                  ),
-                  const SizedBox(width: AppDimensions.paddingM),
-                ],
                 if (isAuthenticated)
                   Row(
                     children: [
@@ -176,16 +167,6 @@ class AppNavBar extends StatelessWidget {
         _buildLogo(context),
         Row(
           children: [
-            // Afficher le bouton MetaMask uniquement si l'utilisateur est connecté et publicKey est nul
-            if (isAuthenticated &&
-                (user?.publicKey == null || user!.publicKey!.isEmpty))
-              CompactMetamaskButton(
-                onUpdatePublicKey: (context, address) async {
-                  await _updateUserPublicKey(context, address);
-                },
-                // Pour mobile, ajuster le padding pour un look plus compact
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              ),
             if (isAuthenticated) ...[
               NotificationBell(
                 onOpenPreferences: () =>
@@ -217,37 +198,79 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
-  Future<void> _updateUserPublicKey(
-      BuildContext context, String address) async {
-    try {
-      // TODO: Implémentez l'appel à votre API pour mettre à jour la clé publique
-      // Exemple:
-      // final result = await YourApi.updateUserPublicKey(address);
-
-      developer.log('AppNavBar: ✅ Public key update requested'
-          '\n└─ Address: $address');
-
-      // Afficher un message de confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ethereum address saved successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Rafraîchir l'état utilisateur
-      context.read<LoginBloc>().add(CheckSession());
-    } catch (e) {
-      developer.log('AppNavBar: ❌ Failed to update public key'
-          '\n└─ Error: $e');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update public key: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  // Add method to handle mobile drawer with land valuation navigation
+  Widget buildMobileDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.landscape, color: Colors.white, size: 32),
+                const SizedBox(width: 8),
+                Text(
+                  'TheBoost',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Home'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.featured_play_list),
+            title: const Text('Features'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/features');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.map),
+            title: const Text('Land Valuation'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LandValuationHomeScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.token),
+            title: const Text('Invest'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/invest');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.book),
+            title: const Text('Learn More'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/learn-more');
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _checkAndShowPreferences(BuildContext context, User user) async {
@@ -478,6 +501,18 @@ class AppNavBar extends StatelessWidget {
                       Navigator.pushNamed(context, AppRoutes.invest);
                     }),
                 ListTile(
+                    leading: const Icon(Icons.map, color: AppColors.primary),
+                    title: const Text('Land Valuation'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LandValuationHomeScreen(),
+                        ),
+                      );
+                    }),
+                ListTile(
                     leading: const Icon(Icons.tune, color: AppColors.primary),
                     title: const Text('Investment Preferences'),
                     onTap: () {
@@ -514,14 +549,30 @@ class _NavLink extends StatelessWidget {
   final String title;
   final String route;
   final String? currentRoute;
+  final VoidCallback? onNavigate;
 
-  const _NavLink(this.title, {required this.route, this.currentRoute});
+  const _NavLink(
+    this.title, {
+    required this.route,
+    this.currentRoute,
+    this.onNavigate,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isActive = currentRoute == route;
     return TextButton(
-      onPressed: () => !isActive ? Navigator.pushNamed(context, route) : null,
+      onPressed: () {
+        if (isActive) return;
+
+        // If custom navigation is provided, use it
+        if (onNavigate != null) {
+          onNavigate!();
+        } else {
+          // Otherwise use standard navigation
+          Navigator.pushNamed(context, route);
+        }
+      },
       child: Text(
         title,
         style: TextStyle(

@@ -21,3 +21,8 @@ class NavigatingToLandDetails extends LandState {
   final Land land;
   NavigatingToLandDetails({required this.land});
 }
+
+class LandTypesLoaded extends LandState {
+  final List<String> landTypes;
+  LandTypesLoaded(this.landTypes);
+}

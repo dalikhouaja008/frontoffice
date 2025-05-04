@@ -46,20 +46,12 @@ dependencies:
   fl_chart: ^0.68.0
   flutter_tts: ^3.8.5
   share_plus: ^9.0.0
-  flutter_image_slideshow: ^0.1.6
-  google_maps_flutter: ^2.5.0
-  url_launcher: ^6.2.1
-  carousel_slider: ^4.2.1
-  photo_view: ^0.14.0
-  cached_network_image: ^3.3.0
-  flutter_map: ^5.0.0
+  flutter_map: ^6.0.1
   latlong2: ^0.9.0
-  device_info_plus: ^9.1.1
-  flutter_web3: ^2.1.9
-   
-
-
-
+  url_launcher: ^6.2.5
+  flutter_image_slideshow: ^0.1.4
+  geolocator: ^11.0.0
+  flutter_dotenv: ^5.1.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -68,7 +60,10 @@ dependencies:
   dartz: ^0.10.1
   json_annotation: ^4.9.0
   provider: ^6.1.2
-  universal_html: ^2.2.4
+  google_maps_flutter: ^2.12.1
+  photo_view: ^0.15.0
+  cached_network_image: ^3.4.0
+
 
 dev_dependencies:
   # The "build_runner" package makes it easy to build and analyze your Flutter apps.
@@ -98,6 +93,8 @@ flutter:
     - assets/3.jpg
     - assets/4.jpg
     - assets/5.jpg
+    - assets/.env
+    
 
 
   # The following line ensures that the Material Icons font is

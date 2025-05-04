@@ -1,17 +1,11 @@
 import 'dart:convert';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
-import 'package:the_boost/features/auth/data/models/device_info_model.dart';
 import 'package:the_boost/features/auth/domain/entities/login_response.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import '../../../../core/network/graphql_client.dart';
 import '../models/user_model.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:universal_html/html.dart' if (dart.library.html) 'dart:html' show window;
-
 
 abstract class AuthRemoteDataSource {
   Future<LoginResponse> login(String email, String password);
@@ -31,23 +25,20 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final SecureStorageService _secureStorage;
-  final DeviceInfoPlugin _deviceInfo;
 
   AuthRemoteDataSourceImpl({
     required GraphQLClient client,
     required SecureStorageService secureStorage,
-  })  : _secureStorage = secureStorage,
-        _deviceInfo = DeviceInfoPlugin();
+  }) : _secureStorage = secureStorage;
 
- Future<LoginResponse> login(String email, String password) async {
-  final timestamp = DateTime.now().toIso8601String();
-  print('AuthRemoteDataSourceImpl: 🌐 Sending login request'
-        '\n└─ Email: $email'
-        '\n└─ Timestamp: $timestamp');
+  Future<LoginResponse> login(String email, String password) async {
+    DateTime.now().toIso8601String();
+    print('AuthRemoteDataSourceImpl: 🌐 Sending login request'
+        '\n└─ Email: $email');
 
-  final GraphQLClient client = GraphQLService.client;
+    final GraphQLClient client = GraphQLService.client;
 
-  const String loginMutation = """
+    const String loginMutation = """
     mutation Login(\$credentials: LoginInput!) {
       login(credentials: \$credentials) {
         accessToken
@@ -58,45 +49,44 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           _id
           email
           username
-          role
-          publicKey
+          
         }
       }
     }
   """;
 
-  try {
-    final QueryResult result = await client.mutate(
-      MutationOptions(
-        document: gql(loginMutation),
-        variables: {
-          "credentials": {
-            "email": email,
-            "password": password,
+    try {
+      final QueryResult result = await client.mutate(
+        MutationOptions(
+          document: gql(loginMutation),
+          variables: {
+            "credentials": {
+              "email": email,
+              "password": password,
+            },
           },
-        },
-      ),
-    );
+        ),
+      );
 
-    if (result.hasException) {
-      print('AuthRemoteDataSourceImpl: ❌ GraphQL error'
+      if (result.hasException) {
+        print('AuthRemoteDataSourceImpl: ❌ GraphQL error'
             '\n└─ Error: ${result.exception.toString()}');
-      throw Exception(result.exception.toString());
-    }
+        throw Exception(result.exception.toString());
+      }
 
       print('AuthRemoteDataSourceImpl: 📥 Raw GraphQL response:'
           '\n${JsonEncoder.withIndent('  ').convert(result.data)}');
 
       final loginData = result.data?['login'];
       if (loginData == null) {
-        print('[$timestamp] ❌ No login data received');
+        print('[2025-02-15 16:44:26] ❌ No login data received');
         throw Exception('No login data received');
       }
 
       // Vérifier les données utilisateur
       final userData = loginData['user'];
       if (userData == null) {
-        print('AuthRemoteDataSourceImpl: ❌ No user data in response');
+        print('AuthRemoteDataSourceImpl:❌ No user data in response');
         throw Exception('No user data in response');
       }
 
@@ -106,7 +96,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'email': userData['email'],
         'username': userData['username'],
         'role': userData['role'],
-        'isTwoFactorEnabled': userData['isTwoFactorEnabled'] ?? false,
       });
 
       // Vérifier si 2FA est requis
@@ -128,16 +117,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           tempToken: tempToken,
           accessToken: null,
           refreshToken: null,
-          sessionId: null,
-          deviceInfo: null,
         );
       }
 
-      // Vérifier les tokens et la session pour le login normal
+      // Vérifier les tokens pour le login normal
       final accessToken = loginData['accessToken'];
       final refreshToken = loginData['refreshToken'];
-      final sessionId = loginData['sessionId'];
-      final deviceInfoResponse = loginData['deviceInfo'];
 
       if (accessToken == null || refreshToken == null) {
         print('AuthRemoteDataSourceImpl: ❌ Missing tokens'
@@ -147,16 +132,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw Exception('Missing required tokens');
       }
 
-      // Créer l'objet DeviceInfo
-      final deviceInfoModel = deviceInfoResponse != null
-          ? DeviceInfoModel.fromJson(deviceInfoResponse)
-          : null;
-
-      print('AuthRemoteDataSourceImpl: ✅ Login successful'
+      print('AuthRemoteDataSourceImpl:✅ Login successful'
           '\n└─ Email: ${user.email}'
-          '\n└─ Role: ${user.role}'
-          '\n└─ Session ID: $sessionId'
-          '\n└─ Device: ${deviceInfoModel?.device ?? "Unknown"}');
+          '\n└─ Role: ${user.role}');
 
       return LoginResponse(
         user: user,
@@ -164,8 +142,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         refreshToken: refreshToken,
         requiresTwoFactor: false,
         tempToken: null,
-        sessionId: sessionId,
-        deviceInfo: deviceInfoModel,
       );
     } catch (e) {
       final errorMessage = 'Failed to login: $e';
@@ -176,59 +152,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
- Future<Map<String, String>> _getDeviceInfo() async {
-  try {
-    if (Platform.isAndroid) {
-      final androidInfo = await _deviceInfo.androidInfo;
-      return {
-        'device': androidInfo.model,
-        'deviceType': 'mobile', // Ajout du type d'appareil
-        'userAgent': 'Flutter/${androidInfo.version.release} (Android; ${androidInfo.model})',
-      };
-    } else if (Platform.isIOS) {
-      final iosInfo = await _deviceInfo.iosInfo;
-      return {
-        'device': iosInfo.model,
-        'deviceType': 'mobile', // Ajout du type d'appareil
-        'userAgent': 'Flutter/${iosInfo.systemVersion} (iOS; ${iosInfo.model})',
-      };
-    } else if (kIsWeb) {
-      return {
-        'device': 'Web Browser',
-        'deviceType': 'web',
-        'userAgent': window.navigator.userAgent,
-      };
-    }
-    return {
-      'device': 'Unknown Device',
-      'deviceType': 'unknown',
-      'userAgent': 'Flutter/Unknown',
-    };
-  } catch (e) {
-    print('AuthRemoteDataSourceImpl: ⚠️ Error getting device info: $e');
-    return {
-      'device': 'Unknown Device',
-      'deviceType': 'unknown',
-      'userAgent': 'Flutter/Unknown',
-    };
-  }
-}
-  @override
-  Future<UserModel> signUp(String username, String email, String password,
-      String role, String? publicKey) async {
-    final GraphQLClient client = GraphQLService.client;
+@override
+Future<UserModel> signUp(String username, String email, String password,
+    String role, String? publicKey) async {
+  final GraphQLClient client = GraphQLService.client;
 
-    const String signUpMutation = """
-      mutation SignUp(\$signupData: UserInput!) {
-        signUp(signupData: \$signupData) {
-          _id
-          username
-          email
-          role
-        }
+  const String signUpMutation = """
+    mutation SignUp(\$signupData: UserInput!) {
+      signUp(signupData: \$signupData) {
+        _id
+        username
+        email
+        role
+        isTwoFactorEnabled
+        isVerified
+        createdAt
+        updatedAt
+        phoneNumber
       }
-    """;
+    }
+  """;
 
+  try {
     final QueryResult result = await client.mutate(
       MutationOptions(
         document: gql(signUpMutation),
@@ -238,19 +183,67 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             "email": email,
             "password": password,
             "role": role,
-            "publicKey": publicKey,
+            if (publicKey != null) "publicKey": publicKey,
           },
         },
       ),
     );
 
+    // Detailed error handling
     if (result.hasException) {
-      throw Exception(result.exception.toString());
+      print('Signup Mutation Errors:');
+      
+      // Comprehensive error logging
+      if (result.exception?.graphqlErrors.isNotEmpty == true) {
+        result.exception?.graphqlErrors.forEach((error) {
+          print('GraphQL Error: ${error.message}');
+          print('Error Locations: ${error.locations}');
+          print('Error Extensions: ${error.message}');
+          
+          // Specific error handling
+          if (error.message.contains('Email already in use')) {
+            throw Exception('This email is already registered');
+          }
+          if (error.message.contains('Phone number already in use')) {
+            throw Exception('This phone number is already registered');
+          }
+        });
+      }
+
+      // Log network errors
+      if (result.exception?.linkException != null) {
+        print('Network Error: ${result.exception?.linkException}');
+      }
+
+      // Generic error message
+      final errorMessage = result.exception?.graphqlErrors.isNotEmpty == true 
+          ? result.exception!.graphqlErrors.first.message 
+          : 'Signup failed due to an unknown error';
+      
+      throw Exception(errorMessage);
     }
 
+    // Validate user data
     final userData = result.data?['signUp'];
-    return UserModel.fromJson(userData);
+    if (userData == null) {
+      throw Exception('No user data returned from signup');
+    }
+
+    // Debug print to see exact user data structure
+    print('User Data from Signup: $userData');
+
+    // Return UserModel, ensuring all necessary data is present
+    return UserModel.fromJson({
+      'user': userData,
+      'accessToken': '', 
+      'refreshToken': ''
+    });
+
+  } catch (e) {
+    print('Detailed Signup Error: $e');
+    rethrow;
   }
+}
 
 //partie 2FA
 
@@ -306,23 +299,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  @override
-  Future<LoginResponse> verifyLoginOtp(
-    String tempToken,
-    String otpCode,
-  ) async {
-    const timestamp = '2025-02-17 11:55:47';
-    const user = 'raednas';
+ @override
+Future<LoginResponse> verifyLoginOtp(
+  String tempToken,
+  String otpCode,
+) async {
+  const timestamp = '2025-02-17 11:55:47';
+  const user = 'raednas';
 
-    print('[$timestamp] AuthRemoteDataSource: 🔐 Verifying login OTP'
+  print('[$timestamp] AuthRemoteDataSource: 🔐 Verifying login OTP'
         '\n└─ User: $user'
         '\n└─ OTP length: ${otpCode.length}');
 
-    try {
-      // Créer un client avec le token temporaire
-      final client = GraphQLService.getClientWithToken(tempToken);
+  try {
+    // Créer un client avec le token temporaire
+    final client = GraphQLService.getClientWithToken(tempToken);
 
-      const String verifyTwoFactorMutation = r'''
+    const String verifyTwoFactorMutation = r'''
       mutation VerifyTwoFactorLogin($token: String!) {
         verifyTwoFactorLogin(token: $token) {
           accessToken
@@ -339,79 +332,79 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     ''';
 
-      print('[$timestamp] AuthRemoteDataSource: 🌐 Sending verification request'
+    print('[$timestamp] AuthRemoteDataSource: 🌐 Sending verification request'
           '\n└─ User: $user'
           '\n└─ Has tempToken: ${tempToken.isNotEmpty}'
           '\n└─ OTP length: ${otpCode.length}');
 
-      final QueryResult result = await client.mutate(
-        MutationOptions(
-          document: gql(verifyTwoFactorMutation),
-          variables: {
-            'token': otpCode,
-          },
-          fetchPolicy: FetchPolicy.noCache,
-        ),
-      );
+    final QueryResult result = await client.mutate(
+      MutationOptions(
+        document: gql(verifyTwoFactorMutation),
+        variables: {
+          'token': otpCode,
+        },
+        fetchPolicy: FetchPolicy.noCache,
+      ),
+    );
 
-      print('[$timestamp] AuthRemoteDataSource: 📥 Raw GraphQL response:'
+    print('[$timestamp] AuthRemoteDataSource: 📥 Raw GraphQL response:'
           '\n${result.data}');
 
-      if (result.hasException) {
-        final error = result.exception?.graphqlErrors.firstOrNull?.message ??
-            result.exception.toString();
-
-        print('[$timestamp] AuthRemoteDataSource: ❌ GraphQL error'
+    if (result.hasException) {
+      final error = result.exception?.graphqlErrors.firstOrNull?.message ?? 
+                   result.exception.toString();
+      
+      print('[$timestamp] AuthRemoteDataSource: ❌ GraphQL error'
             '\n└─ User: $user'
             '\n└─ Error: $error');
+      
+      throw Exception(error);
+    }
 
-        throw Exception(error);
-      }
-
-      final data = result.data?['verifyTwoFactorLogin'];
-      if (data == null) {
-        print('[$timestamp] AuthRemoteDataSource: ❌ No data in response'
+    final data = result.data?['verifyTwoFactorLogin'];
+    if (data == null) {
+      print('[$timestamp] AuthRemoteDataSource: ❌ No data in response'
             '\n└─ User: $user');
-        throw Exception('Réponse invalide du serveur');
-      }
+      throw Exception('Réponse invalide du serveur');
+    }
 
-      // Vérifier les tokens
-      final accessToken = data['accessToken'];
-      final refreshToken = data['refreshToken'];
+    // Vérifier les tokens
+    final accessToken = data['accessToken'];
+    final refreshToken = data['refreshToken'];
 
-      if (accessToken == null || refreshToken == null) {
-        print('[$timestamp] AuthRemoteDataSource: ❌ Missing tokens'
+    if (accessToken == null || refreshToken == null) {
+      print('[$timestamp] AuthRemoteDataSource: ❌ Missing tokens'
             '\n└─ User: $user'
             '\n└─ Has accessToken: ${accessToken != null}'
             '\n└─ Has refreshToken: ${refreshToken != null}');
-        throw Exception('Tokens manquants dans la réponse');
-      }
+      throw Exception('Tokens manquants dans la réponse');
+    }
 
-      // Sauvegarder les nouveaux tokens
-      await _secureStorage.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      );
+    // Sauvegarder les nouveaux tokens
+    await _secureStorage.saveTokens(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
 
-      print('[$timestamp] AuthRemoteDataSource: ✅ 2FA verification successful'
+    print('[$timestamp] AuthRemoteDataSource: ✅ 2FA verification successful'
           '\n└─ User: $user'
           '\n└─ Tokens stored: true');
 
-      return LoginResponse(
-        user: User.fromJson(data['user']),
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        requiresTwoFactor: false,
-        tempToken: null,
-      );
-    } catch (e) {
-      print('[$timestamp] AuthRemoteDataSource: ❌ Verification failed'
+    return LoginResponse(
+      user: User.fromJson(data['user']),
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      requiresTwoFactor: false,
+      tempToken: null,
+    );
+
+  } catch (e) {
+    print('[$timestamp] AuthRemoteDataSource: ❌ Verification failed'
           '\n└─ User: $user'
           '\n└─ Error: $e');
-      throw Exception('Erreur lors de la vérification: ${e.toString()}');
-    }
+    throw Exception('Erreur lors de la vérification: ${e.toString()}');
   }
-
+}
   @override
   Future<String> enableTwoFactorAuth() async {
     print('AuthRemoteDataSource:🔐 Initiating 2FA activation'

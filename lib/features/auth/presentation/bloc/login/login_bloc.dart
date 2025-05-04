@@ -1,9 +1,6 @@
 // lib/features/auth/presentation/bloc/login/login_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:the_boost/features/auth/domain/entities/user.dart';
-import 'dart:developer' as developer;
-
 import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
@@ -24,38 +21,26 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _secureStorage = secureStorage,
         _sessionService = sessionService,
         super(LoginInitial()) {
-
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckSession>(_onCheckSession);
-    on<RefreshAuthState>(_onRefreshAuthState);
     
     // Automatically check for existing session when bloc is created
     add(CheckSession());
   }
 
-  Future<void> _onRefreshAuthState(
-  RefreshAuthState event,
-  Emitter<LoginState> emit,
-) async {
-  developer.log('LoginBloc: 🔄 Refreshing auth state for user: ${event.user.username}');
-  
-  // Réémettez l'état LoginSuccess pour forcer une mise à jour des widgets
-  emit(LoginSuccess(user: event.user));
-}
-
   Future<void> _onCheckSession(
     CheckSession event,
     Emitter<LoginState> emit,
   ) async {
-    developer.log('LoginBloc: 🔍 Checking for existing session');
+    print('LoginBloc: 🔍 Checking for existing session');
     emit(LoginLoading());
     
     try {
       final sessionData = await _sessionService.getSession();
       
       if (sessionData != null) {
-        developer.log('LoginBloc: ✅ Found existing session'
+        print('LoginBloc: ✅ Found existing session'
               '\n└─ User: ${sessionData.user.username}'
               '\n└─ Email: ${sessionData.user.email}');
         
@@ -68,11 +53,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         // Emit logged in state
         emit(LoginSuccess(user: sessionData.user));
       } else {
-        developer.log('LoginBloc: ℹ️ No existing session found');
+        print('LoginBloc: ℹ️ No existing session found');
         emit(LoginInitial());
       }
     } catch (e) {
-      developer.log('LoginBloc: ❌ Error checking session'
+      print('LoginBloc: ❌ Error checking session'
             '\n└─ Error: $e');
       emit(LoginInitial());
     }
@@ -82,8 +67,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     LoginRequested event,
     Emitter<LoginState> emit,
   ) async {
-    developer.log('LoginBloc: 🚀 Processing login request'
-        '\n└─ Email: ${event.email}');
+    print('LoginBloc: 🚀 Processing login request'
+          '\n└─ Email: ${event.email}');
 
     try {
       emit(LoginLoading());
@@ -93,45 +78,42 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         password: event.password,
       );
 
-      // Debug log response
-      developer.log('LoginBloc: 📥 Login response received'
-          '\n└─ AccessToken: ${response.accessToken != null ? "Present" : "Missing"}'
-          '\n└─ User: ${response.user?.username ?? "Missing"}');
+      if (response.requiresTwoFactor) {
+        print('LoginBloc: 🔐 2FA required'
+              '\n└─ Email: ${response.user.email}');
 
-      // Sauvegarder les tokens immédiatement après une connexion réussie
-      if (!response.requiresTwoFactor && response.accessToken != null && response.refreshToken != null) {
+        emit(LoginRequires2FA(
+          user: response.user,
+          tempToken: response.tempToken!,
+        ));
+        return;
+      }
+
+      if (response.accessToken != null && response.refreshToken != null) {
+        print('LoginBloc: ✅ Login successful'
+              '\n└─ Email: ${response.user.email}');
+
+        // Save tokens to secure storage
         await _secureStorage.saveTokens(
           accessToken: response.accessToken!,
           refreshToken: response.refreshToken!,
         );
-      }
-
-      if (response.requiresTwoFactor) {
-        emit(LoginRequires2FA(
-          user: response.user!,
-          tempToken: response.tempToken!,
-        ));
-      } else if (response.accessToken != null && response.refreshToken != null && response.user != null) {
-        developer.log('LoginBloc: ✅ Login successful'
-            '\n└─ User: ${response.user?.username}'
-            '\n└─ Email: ${response.user?.email}');
-
+        
         // Save session data
         await _sessionService.saveSession(
-          user: response.user!,
+          user: response.user,
           accessToken: response.accessToken!,
           refreshToken: response.refreshToken!,
         );
 
-        // Important: Émettre l'état LoginSuccess en dernier pour permettre 
-        // aux widgets d'observer le changement
-        emit(LoginSuccess(user: response.user!));
+        emit(LoginSuccess(user: response.user));
       } else {
-        throw Exception('Invalid login response: missing tokens or user data');
+        throw Exception('Invalid login response: missing tokens');
       }
     } catch (e) {
-      developer.log('LoginBloc: ❌ Login failed'
+      print('LoginBloc: ❌ Login failed'
             '\n└─ Error: $e');
+
       emit(LoginFailure(e.toString()));
     }
   }
@@ -140,7 +122,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     LogoutRequested event,
     Emitter<LoginState> emit,
   ) async {
-    developer.log('LoginBloc: 🔄 Logout initiated');
+    print('LoginBloc: 🔄 Logout initiated');
     
     // Clear secure storage
     await _secureStorage.deleteTokens();
@@ -149,6 +131,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     await _sessionService.clearSession();
     
     emit(LoginInitial());
-    developer.log('LoginBloc: ✅ Logout successful');
+    print('LoginBloc: ✅ Logout successful');
   }
 }

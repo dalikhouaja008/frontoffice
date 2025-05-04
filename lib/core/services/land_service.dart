@@ -14,7 +14,6 @@ Future<List<Land>> fetchLands() async {
   try {
 
     print('LandService: 🚀 Fetching lands from $_catalogueUrl');
-    print('LandService: 👤 User: nesssim');
     
     final sessionData = await _sessionService.getSession();
     if (sessionData == null || sessionData.accessToken.isEmpty) {
@@ -97,6 +96,44 @@ Future<List<Land>> fetchLands() async {
     rethrow;
   }
 }
+
+  // New method to fetch available land types
+Future<List<String>> getLandTypes() async {
+  print('[${DateTime.now()}] LandService: 🚀 Fetching available land types');
+  try {
+    final sessionData = await _sessionService.getSession();
+    if (sessionData == null || sessionData.accessToken.isEmpty) {
+      throw Exception('No authentication token available');
+    }
+
+    final token = sessionData.accessToken;
+    final response = await http.get(
+      Uri.parse('http://localhost:5000/lands/types'), // 📌 Assuming you have an endpoint /lands/types
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+    );
+
+    print('[${DateTime.now()}] LandService: 📡 Response status (types): ${response.statusCode}');
+
+    if (response.body.length > 500) {
+      print('[${DateTime.now()}] LandService: 📡 Response body (truncated): ${response.body.substring(0, 500)}...');
+    } else {
+      print('[${DateTime.now()}] LandService: 📡 Response body: ${response.body}');
+    }
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final List<String> landTypes = data.map((type) => type.toString()).toList();
+      print('[${DateTime.now()}] LandService: ✅ Successfully fetched ${landTypes.length} land types');
+      return landTypes;
+    }
+
+    throw Exception('Failed to load land types: ${response.statusCode}');
+  } catch (e) {
+    print('[${DateTime.now()}] LandService: ❌ Error fetching land types: $e');
+    rethrow;
+  }
+}
+
 
   Future<Land?> fetchLandById(String id) async {
     print('[${DateTime.now()}] LandService: 🚀 Fetching land with ID: $id');

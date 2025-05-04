@@ -6,19 +6,18 @@ import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
-import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:the_boost/features/auth/presentation/pages/sign_up_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/otp_dialog.dart';
+import '../bloc/login/login_bloc.dart';
 import '../widgets/buttons/custom_button.dart';
 import '../widgets/textfields/custom_text_field.dart';
 import '../widgets/dialogs/error_popup.dart';
-import '../bloc/routes.dart';
-import 'dart:developer' as developer;
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function? updateView;
-
+  
   const LoginScreen({super.key, this.updateView});
 
   @override
@@ -32,16 +31,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool _obscureText = true;
 
-  @override
-  void initState() {
-    super.initState();
-    developer.log('LoginScreen: 🎬 Initializing login screen');
-  }
-
   void _showErrorDialog(BuildContext context, String error) {
     final formattedError = _formatErrorMessage(error);
-    developer.log('LoginScreen: ❌ Showing error dialog'
-        '\n└─ Error: $formattedError');
+    print('LoginScreen❌ Showing error dialog'
+          '\n└─ Error: $formattedError');
 
     showDialog(
       context: context,
@@ -50,36 +43,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLoginStateChanges(BuildContext context, LoginState state) {
-    developer.log('LoginScreen: 📣 Login state changed: ${state.runtimeType}');
-
     if (state is LoginSuccess) {
-      print('LoginScreen: ✅ Login successful'
-          '\n└─ User: ${state.user.username}'
-          '\n└─ Role: ${state.user.role}');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final bloc = context.read<LoginBloc>();
-        bloc.add(RefreshAuthState(state.user));
+      print('LoginScreen ✅ Login successful'
+            '\n└─ Email: ${state.user.email}'
+            '\n└─ Role: ${state.user.role}');
 
-        // Puis naviguez après un court délai
-        Future.delayed(const Duration(milliseconds: 300), () {
-          Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
-        });
-      });
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(user: state.user),
+        ),
+      );
     } else if (state is LoginRequires2FA) {
-      developer.log('LoginScreen: 🔐 2FA required'
-          '\n└─ User: ${state.user.username}'
-          '\n└─ Email: ${state.user.email}');
+      print('LoginScreen 🔐 2FA required'
+            '\n└─ Email: ${state.user.email}');
 
       _show2FADialog(context, state);
     } else if (state is LoginFailure) {
-      developer.log('LoginScreen: ❌ Login failed'
-          '\n└─ Error: ${state.error}');
+      print('LoginScreen ❌ Login failed'
+            '\n└─ Error: ${state.error}');
 
       _showErrorDialog(context, state.error);
     } else if (state is LoginLoading) {
-      developer.log('LoginScreen: ⏳ Authentication in progress...');
+      print('LoginScreen ⏳ Authentication in progress...');
     } else if (state is LoginInitial) {
-      developer.log('LoginScreen: 🔄 Login view initialized');
+      print('LoginScreen🔄 Login view initialized');
     }
   }
 
@@ -87,46 +74,48 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     bool isMobile = size.width < 800;
-    developer.log('LoginScreen: 🔄 Building login screen (mobile: $isMobile)');
 
-    return BlocConsumer<LoginBloc, LoginState>(
-      listenWhen: (previous, current) {
-        developer.log(
-            'LoginScreen: 🔍 State change: ${previous.runtimeType} -> ${current.runtimeType}');
-        return previous.runtimeType != current.runtimeType;
-      },
-      listener: _handleLoginStateChanges,
-      builder: (context, state) {
-        return Scaffold(
-          body: SafeArea(
-            child: Container(
-              width: size.width,
-              height: size.height,
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/background.jpg'),
-                  fit: BoxFit.cover,
+    // Utilisez BlocProvider.value si le LoginBloc est fourni par un parent
+    // ou créez-en un nouveau si nécessaire
+    return Scaffold(
+      body: BlocProvider(
+        // Utilisez getIt pour obtenir vos dépendances
+        create: (context) => getIt<LoginBloc>(),
+        child: BlocConsumer<LoginBloc, LoginState>(
+          listenWhen: (previous, current) => previous != current,
+          buildWhen: (previous, current) => previous != current,
+          listener: _handleLoginStateChanges,
+          builder: (context, state) {
+            return SafeArea(
+              child: Container(
+                width: size.width,
+                height: size.height,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/background.jpg'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: isMobile
+                        ? _buildMobileLayout(context, state)
+                        : _buildWebLayout(context, state),
+                  ),
                 ),
               ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: isMobile
-                      ? _buildMobileLayout(context, state)
-                      : _buildWebLayout(context, state),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 
   void _show2FADialog(BuildContext context, LoginRequires2FA state) {
-    developer.log('LoginScreen: 🔐 Showing 2FA dialog'
-        '\n└─ User: ${state.user.username}'
-        '\n└─ Email: ${state.user.email}');
+    print('[2025-02-17 09:44:06] LoginScreen: 🔐 Showing 2FA dialog'
+          '\n└─ User: raednas'
+          '\n└─ Email: ${state.user.email}');
 
     // Utilisez getIt pour obtenir le repository
     final twoFactorAuthRepository = getIt<TwoFactorAuthRepository>();
@@ -142,18 +131,20 @@ class _LoginScreenState extends State<LoginScreen> {
         child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
           listener: (context, twoFactorState) {
             if (twoFactorState is TwoFactorAuthLoginSuccess) {
-              developer.log('LoginScreen: ✅ 2FA verification successful'
-                  '\n└─ User: ${state.user.username}'
-                  '\n└─ Email: ${twoFactorState.user.email}');
+              print('[2025-02-17 09:44:06] LoginScreen: ✅ 2FA verification successful'
+                    '\n└─ User: raednas'
+                    '\n└─ Email: ${twoFactorState.user.email}');
 
               Navigator.of(dialogContext).pop();
-
-              // Important: Push replacement avec nommé
-              Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => HomeScreen(user: twoFactorState.user),
+                ),
+              );
             } else if (twoFactorState is TwoFactorAuthError) {
-              developer.log('LoginScreen: ❌ 2FA verification failed'
-                  '\n└─ User: ${state.user.username}'
-                  '\n└─ Error: ${twoFactorState.message}');
+              print('[2025-02-17 09:44:06] LoginScreen: ❌ 2FA verification failed'
+                    '\n└─ User: raednas'
+                    '\n└─ Error: ${twoFactorState.message}');
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -244,6 +235,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// 🔐 **Right Section: Login Form + Animation**
   Widget _buildLoginForm(BuildContext context, LoginState state) {
+    const timestamp = '2025-02-17 13:34:21';
+    const user = 'raednas';
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -258,8 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 20),
           Text(
             "Login to TheBoost",
-            style:
-                GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           Form(
@@ -331,8 +324,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   isLoading: state is LoginLoading,
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      developer.log('LoginScreen: 🚀 Login button pressed'
-                          '\n└─ Email: ${_emailController.text.trim()}');
+                      print('[$timestamp] LoginScreen: 🚀 Login button pressed'
+                            '\n└─ User: $user'
+                            '\n└─ Email: ${_emailController.text.trim()}');
 
                       context.read<LoginBloc>().add(
                             LoginRequested(
@@ -354,8 +348,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        developer.log('LoginScreen: 📝 Navigate to signup');
-
+                        print('[$timestamp] LoginScreen: 📝 Navigate to signup'
+                              '\n└─ User: $user');
+                              
                         // Si widget.updateView est fourni, utilisez-le
                         if (widget.updateView != null) {
                           widget.updateView!();
