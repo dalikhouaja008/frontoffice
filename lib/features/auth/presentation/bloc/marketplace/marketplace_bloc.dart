@@ -54,15 +54,53 @@ Future<void> _onListToken(
   ));
 }
 
-  Future<void> _onListMultipleTokens(
-      ListMultipleTokensEvent event, Emitter<MarketplaceState> emit) async {
-    emit(MarketplaceLoading());
-    final result = await listMultipleTokensUseCase(event.tokenIds, event.prices);
-    emit(result.fold(
-      (failure) => MarketplaceError(failure.message!),
-      (response) => MultipleTokensListingSuccess(response),
-    ));
+Future<void> _onListMultipleTokens(
+    ListMultipleTokensEvent event, Emitter<MarketplaceState> emit) async {
+  emit(MarketplaceLoading());
+  
+  // Date actuelle pour le logging
+  final currentDateTime = '2025-05-04 21:03:55';
+  print('[$currentDateTime] - Tentative de liste multiple de ${event.tokenIds.length} tokens');
+  
+  // Vérification des données d'entrée
+  if (event.tokenIds.isEmpty || event.prices.isEmpty) {
+    emit(MarketplaceError('No tokens or prices provided'));
+    return;
   }
+  
+  if (event.tokenIds.length != event.prices.length) {
+    emit(MarketplaceError('The number of tokens and prices must match'));
+    return;
+  }
+  
+  final result = await listMultipleTokensUseCase(event.tokenIds, event.prices);
+  
+  emit(result.fold(
+    (failure) {
+      // Analysons le message d'erreur pour fournir un message plus convivial
+      final errorMessage = failure.message!.toLowerCase();
+      
+      if (errorMessage.contains('execution reverted') || 
+          errorMessage.contains('estimategas')) {
+        return const MarketplaceError('Insufficient funds to pay for network fees. Please add more ETH to your wallet.');
+      } else if (errorMessage.contains('unauthori') || 
+                 errorMessage.contains('not owner')) {
+        return const MarketplaceError('You are not authorized to sell these tokens. Only the owner can list them for sale.');
+      } else if (errorMessage.contains('already listed')) {
+        return const MarketplaceError('One or more tokens are already listed for sale.');
+      } else if (errorMessage.contains('connect')) {
+        return const MarketplaceError('Cannot connect to the blockchain network. Please check your internet connection and try again.');
+      } else if (errorMessage.contains('exceed') || errorMessage.contains('limit')) {
+        return const MarketplaceError('Transaction exceeds gas limit. Try selling fewer tokens at once.');
+      } else {
+        // Add detailed debugging info in logs but simplified message for user
+        print('[$currentDateTime] Error details: ${failure.message}');
+        return const MarketplaceError('An error occurred while listing multiple tokens. Please try again with fewer tokens or contact support.');
+      }
+    },
+    (response) => MultipleTokensListingSuccess(response),
+  ));
+}
 
   Future<void> _onCancelListing(
       CancelListingEvent event, Emitter<MarketplaceState> emit) async {
