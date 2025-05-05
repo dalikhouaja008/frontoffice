@@ -6,3 +6,8 @@ class ServerException implements Exception {
   @override
   String toString() => 'ServerException: $message';
 }
+class CacheException implements Exception {}
+
+class NetworkException implements Exception {}
+
+class AuthenticationException implements Exception {}

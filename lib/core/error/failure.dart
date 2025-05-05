@@ -1,23 +1,26 @@
 import 'package:equatable/equatable.dart';
 
-abstract class Failure extends Equatable {
-  final String? message;
-
-  const Failure({this.message});
-
+abstract class Failure {
+  final String message;
+  
+  const Failure(this.message);
+  
   @override
-  List<Object?> get props => [message];
+  String toString() => message;
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure({String? message}) : super(message: message);
+  const ServerFailure(String message) : super(message);
+}
+
+class CacheFailure extends Failure {
+  const CacheFailure(String message) : super(message);
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure({String? message}) : super(message: message);
+  const NetworkFailure([String message = 'Network connection failed']) : super(message);
 }
 
-// You might want to add other failure types based on your application needs
-class UnexpectedFailure extends Failure {
-  const UnexpectedFailure({String? message}) : super(message: message);
+class AuthFailure extends Failure {
+  const AuthFailure(String message) : super(message);
 }
