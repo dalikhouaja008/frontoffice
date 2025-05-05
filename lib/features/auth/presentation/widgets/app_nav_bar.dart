@@ -22,7 +22,11 @@ import '../../../../core/services/prop_service.dart';
 import '../../../metamask/data/models/metamask_provider.dart';
 import '../pages/valuation/land_valuation_home_screen.dart';
 import '../pages/valuation/land_valuation_screen_with_nav.dart';
+
+import '../../../../features/marketplace/presentation/pages/marketplace_page.dart';
+
 import 'howitworks_page.dart';
+
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -377,10 +381,29 @@ class AppNavBar extends StatelessWidget {
                         );
                       },
                     ),
-                    // Only show Invest if user is authenticated
+
+                    // Add Marketplace link only when authenticated
                     if (isAuthenticated)
-                      _NavLink('Invest', route: '/invest', currentRoute: currentRoute),
-                    _NavLink('Learn More', route: '/learn-more', currentRoute: currentRoute),
+                      _NavLink(
+                        'Marketplace',
+                        route: '/marketplace',
+                        currentRoute: currentRoute,
+                        onNavigate: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => MarketplacePage(
+                                walletAddress: _getUserWalletAddress(user),
+                              ),
+                            ),
+                          );
+                        },
+                        isNew: true, // Highlight as a new feature
+                      ),
+                    _NavLink('Invest',
+                        route: '/invest', currentRoute: currentRoute),
+                    _NavLink('Learn More',
+                        route: '/learn-more', currentRoute: currentRoute),
+
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
@@ -475,132 +498,203 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
-  // Method to handle mobile drawer with land valuation navigation
+
+  // Helper method to get or generate wallet address
+  String _getUserWalletAddress(User? user) {
+    // If your User model doesn't have a wallet address,
+    // you could use another identifier like email or userId
+    // This is just a placeholder - replace with actual wallet address retrieval logic
+    if (user == null) return '';
+    final String baseString = user.id.isNotEmpty
+        ? user.id
+        : (user.username.isNotEmpty ? user.username : 'user');
+
+    // Pad the string if needed to ensure it's long enough
+    final String paddedString = baseString.padRight(40, '0');
+
+    // Create a fixed-length wallet address without substring
+    return '0x${paddedString.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase().substring(0, 40)}';
+  }
+
+  // Add method to handle mobile drawer with land valuation navigation
   Widget buildMobileDrawer(BuildContext context) {
-    // Check if user is authenticated to show/hide Invest option
-    final state = context.watch<LoginBloc>().state;
-    final isAuthenticated = state is LoginSuccess;
-    final user = isAuthenticated ? (state as LoginSuccess).user : null;
-    
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.landscape, color: Colors.white, size: 32),
-                const SizedBox(width: 8),
-                Text(
-                  'TheBoost',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+    return BlocBuilder<LoginBloc, LoginState>(
+      builder: (context, state) {
+        final isAuthenticated = state is LoginSuccess;
+        final user = isAuthenticated ? state.user : null;
+
+        return Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
                 ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.featured_play_list),
-            title: const Text('Features'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/features');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.help_outline),
-            title: const Text('How It Works'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HowItWorksPage(),
-                ),
-              );
-            },
-          ),
-          // Only show Invest option if authenticated
-          if (isAuthenticated)
-            ListTile(
-              leading: const Icon(Icons.token),
-              title: const Text('Invest'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/invest');
-              },
-            ),
-          ListTile(
-            leading: const Icon(Icons.book),
-            title: const Text('Learn More'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/learn-more');
-            },
-          ),
-          // Add wallet management option to drawer
-          Consumer<MetamaskProvider>(
-            builder: (context, provider, _) {
-              return ListTile(
-                leading: const Icon(Icons.account_balance_wallet),
-                title: Row(
+                child: Row(
                   children: [
-                    const Text('Wallet'),
-                    const SizedBox(width: 10),
-                    if (provider.isLoading) 
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else if (provider.currentAddress.isNotEmpty)
-                      Icon(Icons.check_circle, color: Colors.green, size: 14),
+                    const Icon(Icons.landscape, color: Colors.white, size: 32),
+                    const SizedBox(width: 8),
+                    Text(
+                      'TheBoost',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
-                subtitle: provider.currentAddress.isNotEmpty 
-                  ? Text(
-                      '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
-                      style: TextStyle(fontSize: 12),
-                    )
-                  : null,
+              ),
+              ListTile(
+                leading: const Icon(Icons.home),
+                title: const Text('Home'),
                 onTap: () {
                   Navigator.pop(context);
-                  if (provider.currentAddress.isNotEmpty) {
-                    _showWalletOptions(context, provider, user);
-                  } else {
-                    provider.connect().then((success) {
-                      if (success) {
-                        _handlePublicKeyUpdate(context, provider.currentAddress, user);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to connect wallet: ${provider.error}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    });
-                  }
+                  Navigator.pushNamed(context, '/');
                 },
-              );
-            },
+              ),
+              ListTile(
+                leading: const Icon(Icons.featured_play_list),
+                title: const Text('Features'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/features');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.help_outline),
+                title: const Text('How It Works'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HowItWorksPage(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.map),
+                title: const Text('Land Valuation'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LandValuationHomeScreen(),
+                    ),
+                  );
+                },
+              ),
+              // Add Marketplace option only when user is authenticated
+              if (isAuthenticated)
+                ListTile(
+                  leading: const Icon(Icons.shopping_cart),
+                  title: Row(
+                    children: [
+                      const Text('Marketplace'),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          //color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'NEW',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MarketplacePage(
+                          walletAddress: _getUserWalletAddress(user),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.token),
+                title: const Text('Invest'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/invest');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.book),
+                title: const Text('Learn More'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/learn-more');
+                },
+              ),
+              // Add wallet management option to drawer
+              Consumer<MetamaskProvider>(
+                builder: (context, provider, _) {
+                  return ListTile(
+                    leading: const Icon(Icons.account_balance_wallet),
+                    title: Row(
+                      children: [
+                        const Text('Wallet'),
+                        const SizedBox(width: 10),
+                        if (provider.isLoading) 
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else if (provider.currentAddress.isNotEmpty)
+                          Icon(Icons.check_circle, color: Colors.green, size: 14),
+                      ],
+                    ),
+                    subtitle: provider.currentAddress.isNotEmpty 
+                      ? Text(
+                          '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
+                          style: TextStyle(fontSize: 12),
+                        )
+                      : null,
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (provider.currentAddress.isNotEmpty) {
+                        _showWalletOptions(context, provider, user);
+                      } else {
+                        provider.connect().then((success) {
+                          if (success) {
+                            _handlePublicKeyUpdate(context, provider.currentAddress, user);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to connect wallet: ${provider.error}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        });
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -695,6 +789,33 @@ class AppNavBar extends StatelessWidget {
               SizedBox(width: AppDimensions.paddingM),
               Text('My Profile')
             ])),
+        // Add new Marketplace menu item
+        PopupMenuItem(
+            value: 'marketplace',
+            child: Row(children: [
+              const Icon(Icons.shopping_cart, color: Colors.black54),
+              const SizedBox(width: AppDimensions.paddingM),
+              const Text('Marketplace'),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  //color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                /*child: const Text(
+                  'NEW',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),*/
+              ),
+            ])),
         const PopupMenuItem(
             value: 'invest',
             child: Row(children: [
@@ -749,6 +870,16 @@ class AppNavBar extends StatelessWidget {
             break;
           case 'profile':
             Navigator.pushNamed(context, '/profile');
+            break;
+          case 'marketplace':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MarketplacePage(
+                  walletAddress: _getUserWalletAddress(user),
+                ),
+              ),
+            );
             break;
           case 'invest':
             Navigator.pushNamed(context, AppRoutes.invest);
@@ -847,100 +978,106 @@ class AppNavBar extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                      leading:
-                          const Icon(Icons.dashboard, color: AppColors.primary),
-                      title: const Text('Dashboard'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, AppRoutes.dashboard);
-                      }),
+                    leading: const Icon(Icons.dashboard, color: AppColors.primary),
+                    title: const Text('Dashboard'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.dashboard);
+                    }
+                  ),
                   ListTile(
-                      leading: const Icon(Icons.person, color: AppColors.primary),
-                      title: const Text('My Profile'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/profile');
-                      }),
+                    leading: const Icon(Icons.person, color: AppColors.primary),
+                    title: const Text('My Profile'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/profile');
+                    }
+                  ),
+                  // Add Marketplace menu item
                   ListTile(
-                      leading: const Icon(Icons.token, color: AppColors.primary),
-                      title: const Text('My Investments'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, AppRoutes.invest);
-                      }),
-                  ListTile(
-                      leading: const Icon(Icons.help_outline, color: AppColors.primary),
-                      title: const Text('How It Works'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HowItWorksPage(),
+                    leading: const Icon(Icons.shopping_cart, color: AppColors.primary),
+                    title: Row(
+                      children: [
+                        const Text('Marketplace'),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
                           ),
-                        );
-                      }),
-                  // Add wallet management option
-                  Consumer<MetamaskProvider>(
-                    builder: (context, provider, _) {
-                      return ListTile(
-                        leading: const Icon(Icons.account_balance_wallet, color: AppColors.primary),
-                        title: const Text('Manage Wallet'),
-                        subtitle: provider.currentAddress.isNotEmpty 
-                          ? Text(
-                              '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
-                              style: TextStyle(fontSize: 12),
-                            )
-                          : Text('Not connected', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                        trailing: provider.currentAddress.isNotEmpty
-                          ? Icon(Icons.check_circle, color: Colors.green, size: 16)
-                          : Icon(Icons.arrow_forward_ios, size: 14),
-                        onTap: () {
-                          Navigator.pop(context);
-                          if (provider.currentAddress.isNotEmpty) {
-                            _showWalletOptions(context, provider, user);
-                          } else {
-                            provider.connect().then((success) {
-                              if (success) {
-                                _handlePublicKeyUpdate(context, provider.currentAddress, user);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to connect wallet: ${provider.error}'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            });
-                          }
-                        },
+                          decoration: BoxDecoration(
+                            //color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          /*child: const Text(
+                            'NEW',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),*/
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MarketplacePage(
+                            walletAddress: _getUserWalletAddress(user),
+                          ),
+                        ),
                       );
                     }
                   ),
                   ListTile(
-                      leading: const Icon(Icons.tune, color: AppColors.primary),
-                      title: const Text('Investment Preferences'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        if (user != null) _checkAndShowPreferences(context, user);
-                      }),
+                    leading: const Icon(Icons.token, color: AppColors.primary),
+                    title: const Text('My Investments'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.invest);
+                    }
+                  ),
                   ListTile(
-                      leading:
-                          const Icon(Icons.settings, color: AppColors.primary),
-                      title: const Text('Settings'),
-                      onTap: () {
-                        Navigator.pop(context);
-                      }),
+                    leading: const Icon(Icons.map, color: AppColors.primary),
+                    title: const Text('Land Valuation'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LandValuationHomeScreen(),
+                        ),
+                      );
+                    }
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.tune, color: AppColors.primary),
+                    title: const Text('Investment Preferences'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (user != null) _checkAndShowPreferences(context, user);
+                    }
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.settings, color: AppColors.primary),
+                    title: const Text('Settings'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    }
+                  ),
                   const Divider(),
                   ListTile(
-                      leading: const Icon(Icons.logout, color: Colors.red),
-                      title: const Text('Logout',
-                          style: TextStyle(color: Colors.red)),
-                      onTap: () {
-                        Navigator.pop(context);
-                        context.read<LoginBloc>().add(LogoutRequested());
-                        Navigator.pushReplacementNamed(context, AppRoutes.home);
-                      }),
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.read<LoginBloc>().add(LogoutRequested());
+                      Navigator.pushReplacementNamed(context, AppRoutes.home);
+                    }
+                  ),
                 ],
               ),
             ),
@@ -956,12 +1093,14 @@ class _NavLink extends StatelessWidget {
   final String route;
   final String? currentRoute;
   final VoidCallback? onNavigate;
+  final bool isNew;
 
   const _NavLink(
     this.title, {
     required this.route,
     this.currentRoute,
     this.onNavigate,
+    this.isNew = false,
   });
 
   @override
@@ -979,12 +1118,38 @@ class _NavLink extends StatelessWidget {
           Navigator.pushNamed(context, route);
         }
       },
-      child: Text(
-        title,
-        style: TextStyle(
-          color: isActive ? AppColors.primary : AppColors.textPrimary,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isActive ? AppColors.primary : AppColors.textPrimary,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+          if (isNew) ...[
+            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              /*child: const Text(
+                'NEW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),*/
+            ),
+          ],
+        ],
       ),
     );
   }

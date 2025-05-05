@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:the_boost/core/network/auth_interceptor.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/network/network_info.dart';
 import 'package:the_boost/core/services/land_service.dart';
@@ -47,6 +48,19 @@ import '../../features/auth/domain/use_cases/preferences/save_preferences_usecas
 import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Marketplace imports
+import '../../features/marketplace/data/datasources/marketplace_remote_datasource.dart';
+import '../../features/marketplace/data/datasources/marketplace_local_datasource.dart';
+import '../../features/marketplace/data/repositories/marketplace_repository_impl.dart';
+import '../../features/marketplace/domain/repositories/marketplace_repository.dart';
+import '../../features/marketplace/domain/usecases/get_all_listings.dart';
+import '../../features/marketplace/domain/usecases/get_filtered_listings.dart';
+import '../../features/marketplace/domain/usecases/get_listing_details.dart';
+import '../../features/marketplace/domain/usecases/purchase_token.dart';
+import '../../features/marketplace/presentation/bloc/marketplace_bloc.dart';
+
 final GetIt getIt = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
@@ -89,9 +103,90 @@ Future<void> initDependencies() async {
   await _initPropertyFeature();
   await _initPreferencesFeature();
   await _initInvestmentFeature();
-  await _initMarketplaceFeature();
 
-  print('DependencyInjection: ✅ Dependencies initialized');
+  await _initMarketplaceFeature();
+  await _initListingFeature();
+
+  print(
+      '[2025-05-05 03:35:15] DependencyInjection: ✅ Dependencies initialized');
+}
+
+// New marketplace feature initialization
+Future<void> _initMarketplaceFeature() async {
+  print(
+      '[2025-05-05 03:35:15] DependencyInjection: 🔄 Initializing marketplace feature');
+
+  try {
+    // Register SharedPreferences instance
+    final sharedPreferences = await SharedPreferences.getInstance();
+    if (!getIt.isRegistered<SharedPreferences>()) {
+      getIt.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+    }
+    // Data Sources
+    getIt.registerLazySingleton<MarketplaceRemoteDataSource>(
+      () => MarketplaceRemoteDataSourceImpl(
+        client: getIt<http.Client>(),
+        baseUrl: 'http://localhost:5000', // Use your actual API URL
+        secureStorage: getIt<SecureStorageService>(), // Added this
+      ),
+    );
+    // Register auth interceptor
+    getIt.registerLazySingleton<AuthInterceptor>(
+      () => AuthInterceptor(
+        secureStorage: getIt<SecureStorageService>(),
+        baseUrl: 'http://localhost:5000', // Use your actual API URL
+      ),
+    );
+
+    getIt.registerLazySingleton<MarketplaceLocalDataSource>(
+      () => MarketplaceLocalDataSourceImpl(
+        sharedPreferences: getIt<SharedPreferences>(),
+      ),
+    );
+
+    // Repository
+    getIt.registerLazySingleton<MarketplaceRepository>(
+      () => MarketplaceRepositoryImpl(
+        remoteDataSource: getIt<MarketplaceRemoteDataSource>(),
+        localDataSource: getIt<MarketplaceLocalDataSource>(),
+        networkInfo: getIt<NetworkInfo>(),
+      ),
+    );
+
+    // Use Cases
+    getIt.registerLazySingleton<GetAllListings>(
+      () => GetAllListings(getIt<MarketplaceRepository>()),
+    );
+
+    getIt.registerLazySingleton<GetFilteredListings>(
+      () => GetFilteredListings(getIt<MarketplaceRepository>()),
+    );
+
+    getIt.registerLazySingleton<GetListingDetails>(
+      () => GetListingDetails(getIt<MarketplaceRepository>()),
+    );
+
+    getIt.registerLazySingleton<PurchaseToken>(
+      () => PurchaseToken(getIt<MarketplaceRepository>()),
+    );
+
+    // Bloc
+    getIt.registerFactory<MarketplaceBloc>(
+      () => MarketplaceBloc(
+        getAllListings: getIt<GetAllListings>(),
+        getFilteredListings: getIt<GetFilteredListings>(),
+        getListingDetails: getIt<GetListingDetails>(),
+        purchaseToken: getIt<PurchaseToken>(),
+      ),
+    );
+
+    print(
+        '[2025-05-05 03:35:15] DependencyInjection: ✅ Marketplace feature initialized');
+  } catch (e) {
+    print(
+        '[2025-05-05 03:35:15] DependencyInjection: ❌ Error initializing marketplace feature'
+        '\n└─ Error: $e');
+  }
 }
 
 Future<void> _initInvestmentFeature() async {
@@ -137,7 +232,7 @@ Future<void> _initInvestmentFeature() async {
   }
 }
 
-Future<void> _initMarketplaceFeature() async {
+Future<void> _initListingFeature() async {
   print(
       '[2025-05-04 20:29:04] DependencyInjection: 🔄 Initializing marketplace feature');
 
@@ -281,7 +376,8 @@ Future<void> _initPreferencesFeature() async {
 
 /// Initialise les dépendances de la fonctionnalité d'authentification
 Future<void> _initAuthFeature() async {
-  print(' DependencyInjection: 🔄 Initializing auth feature');
+  print(
+      '[2025-05-05 03:35:15] DependencyInjection: 🔄 Initializing auth feature');
 
   // Data Sources
   getIt.registerLazySingleton<AuthRemoteDataSource>(
@@ -326,7 +422,7 @@ Future<void> _initAuthFeature() async {
       ));
 
   print(
-      '[2025-03-02 17:01:24] DependencyInjection: ✅ Auth feature initialized');
+      '[2025-05-05 03:35:15] DependencyInjection: ✅ Auth feature initialized');
 }
 
 /// Initialise les dépendances de la fonctionnalité de gestion des propriétés
