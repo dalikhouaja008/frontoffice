@@ -109,53 +109,61 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _show2FADialog(BuildContext context, LoginRequires2FA state) {
-    print('[2025-05-04 23:18:06] LoginScreen: 🔐 Showing 2FA dialog'
+    print('[2025-05-05 00:17:01] LoginScreen: 🔐 Showing 2FA dialog'
         '\n└─ User: nesssim'
         '\n└─ Email: ${state.user.email}');
 
     // Get the repository from getIt
     final twoFactorAuthRepository = getIt<TwoFactorAuthRepository>();
 
-    // Obtenir le LoginBloc existant
+    // Capture la référence au LoginBloc actuel
     final loginBloc = BlocProvider.of<LoginBloc>(context);
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => BlocProvider<TwoFactorAuthBloc>(
-        create: (context) => TwoFactorAuthBloc(
-          repository: twoFactorAuthRepository,
-        ),
+      builder: (dialogContext) => MultiBlocProvider(
+        providers: [
+          // Fournir explicitement le LoginBloc existant au dialogue
+          BlocProvider<LoginBloc>.value(value: loginBloc),
+
+          // Créer un nouveau TwoFactorAuthBloc comme avant
+          BlocProvider<TwoFactorAuthBloc>(
+            create: (context) => TwoFactorAuthBloc(
+              repository: twoFactorAuthRepository,
+            ),
+          ),
+        ],
         child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
           listener: (context, twoFactorState) {
             if (twoFactorState is TwoFactorAuthLoginSuccess) {
               print(
-                  '[2025-05-04 23:18:06] LoginScreen: ✅ 2FA verification successful'
+                  '[2025-05-05 00:17:01] LoginScreen: ✅ 2FA verification successful'
                   '\n└─ User: nesssim'
                   '\n└─ Email: ${twoFactorState.user.email}');
 
               Navigator.of(dialogContext).pop();
 
-              // IMPORTANT : Mettre à jour l'état du LoginBloc avec les informations d'authentification
-              loginBloc.add(Set2FASuccessEvent(
-                user: twoFactorState.user,
-                accessToken: twoFactorState.accessToken,
-                refreshToken: twoFactorState.refreshToken,
-              ));
+              // Émettre l'événement pour mettre à jour l'état du LoginBloc
+              loginBloc.add(
+                Set2FASuccessEvent(
+                  user: twoFactorState.user,
+                  accessToken: twoFactorState.accessToken,
+                  refreshToken: twoFactorState.refreshToken,
+                ),
+              );
 
               // Utiliser un délai pour s'assurer que l'état est correctement propagé
-              Future.delayed(const Duration(milliseconds: 100), () {
+              Future.delayed(const Duration(milliseconds: 300), () {
                 Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
 
                 print(
-                    '[2025-05-04 23:18:06] LoginScreen: 🔄 Navigating to dashboard after 2FA'
-
+                    '[2025-05-05 00:17:01] LoginScreen: 🔄 Navigating to dashboard after 2FA'
                     '\n└─ Email: ${twoFactorState.user.email}');
               });
             } else if (twoFactorState is TwoFactorAuthError) {
               print(
-                  '[2025-05-04 23:18:06] LoginScreen: ❌ 2FA verification failed'
-                  '\n└─ User: nesssim'
+                  '[2025-05-05 00:17:01] LoginScreen: ❌ 2FA verification failed'
                   '\n└─ Error: ${twoFactorState.message}');
 
               ScaffoldMessenger.of(context).showSnackBar(
