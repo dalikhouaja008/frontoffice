@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/preferences_service.dart';
@@ -13,6 +14,8 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
+import 'dart:developer' as developer;
 
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -40,32 +43,36 @@ void main() async {
   // ✅ FIRST Load .env file before anything else
   await dotenv.load(fileName: "assets/.env"); // ✅ Notice the assets/ prefix
 
-
   Bloc.observer = SimpleBlocObserver();
 
   await initDependencies();
   await registerChatbotDependencies();
+  
+  // Register MetamaskProvider in the dependency injection
+  getIt.registerSingleton<MetamaskProvider>(MetamaskProvider());
+  developer.log('[2025-05-05 00:05:53] Main: 🔄 Registered MetamaskProvider in dependency injection');
+
   await _checkExistingSession();
 
   runApp(const TheBoostApp());
 }
 
 Future<void> _checkExistingSession() async {
-  print('[2025-04-16 10:15:23] Main: 🔄 Checking for existing session');
+  print('[2025-05-05 00:05:53] Main: 🔄 Checking for existing session');
   try {
     final sessionService = getIt<SessionService>();
     final sessionData = await sessionService.getSession();
     if (sessionData != null) {
-      print('[2025-04-16 10:15:23] Main: ✅ Found existing session'
-          '\n└─ User: ${sessionData.user.username}'
+      print('[2025-05-05 00:05:53] Main: ✅ Found existing session'
+          '\n└─ User: ${sessionData.user.username} (${sessionData.user.id})'
           '\n└─ Email: ${sessionData.user.email}');
       getIt<LoginBloc>().add(CheckSession());
       await Future.delayed(const Duration(milliseconds: 100));
     } else {
-      print('[2025-04-16 10:15:23] Main: ℹ️ No existing session found');
+      print('[2025-05-05 00:05:53] Main: ℹ️ No existing session found');
     }
   } catch (e) {
-    print('[2025-04-16 10:15:23] Main: ❌ Error checking session'
+    print('[2025-05-05 00:05:53] Main: ❌ Error checking session'
           '\n└─ Error: $e');
   }
 }
@@ -75,76 +82,103 @@ class TheBoostApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    developer.log('[2025-05-05 00:05:53] TheBoostApp: 🔄 Building app with user: raednas');
+    
+    return MultiProvider(
       providers: [
-        BlocProvider<LoginBloc>.value(value: getIt<LoginBloc>()),
-        BlocProvider<SignUpBloc>(create: (_) => getIt<SignUpBloc>()),
-        BlocProvider<PropertyBloc>(create: (_) => getIt<PropertyBloc>()),
-        BlocProvider<PreferencesBloc>(create: (_) => getIt<PreferencesBloc>()),
-        BlocProvider<LandBloc>(create: (_) => getIt<LandBloc>()),
+        // Add MetamaskProvider using ChangeNotifierProvider from the dependency injection
+        ChangeNotifierProvider<MetamaskProvider>.value(value: getIt<MetamaskProvider>()),
       ],
-      child: BlocConsumer<LoginBloc, LoginState>(
-        listener: (context, state) {
-          final preferencesService = getIt<PreferencesService>();
-          if (state is LoginSuccess) {
-            print('[2025-04-16 10:15:23] TheBoostApp: 👤 User authenticated'
-                '\n└─ User: ${state.user.username}'
-                '\n└─ Email: ${state.user.email}');
-            preferencesService.startPeriodicMatching(state.user.id);
-          } else if (state is LoginInitial) {
-            print('[2025-04-16 10:15:23] TheBoostApp: 🔒 No active session');
-            preferencesService.stopPeriodicMatching();
-          }
-        },
-        builder: (context, state) {
-          final isAuthenticated = state is LoginSuccess;
-          return MaterialApp(
-            title: 'TheBoost - Land Investment via Tokenization',
-            theme: ThemeData(
-              primaryColor: AppColors.primary,
-              colorScheme: const ColorScheme.light(
-                primary: AppColors.primary,
-                secondary: AppColors.primaryLight,
-                surface: Colors.white,
-                background: Colors.white,
-              ),
-              textTheme: GoogleFonts.poppinsTextTheme(),
-              elevatedButtonTheme: ElevatedButtonThemeData(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<LoginBloc>.value(value: getIt<LoginBloc>()),
+          BlocProvider<SignUpBloc>(create: (_) => getIt<SignUpBloc>()),
+          BlocProvider<PropertyBloc>(create: (_) => getIt<PropertyBloc>()),
+          BlocProvider<PreferencesBloc>(create: (_) => getIt<PreferencesBloc>()),
+          BlocProvider<LandBloc>(create: (_) => getIt<LandBloc>()),
+        ],
+        child: BlocConsumer<LoginBloc, LoginState>(
+          listener: (context, state) {
+            final preferencesService = getIt<PreferencesService>();
+            if (state is LoginSuccess) {
+              print('[2025-05-05 00:05:53] TheBoostApp: 👤 User authenticated'
+                  '\n└─ User: ${state.user.username}'
+                  '\n└─ Email: ${state.user.email}'
+                  '\n└─ User ID: ${state.user.id}');
+              preferencesService.startPeriodicMatching(state.user.id);
+              
+              // Check if wallet is connected and associate it with user if needed
+              try {
+                final metamaskProvider = getIt<MetamaskProvider>();
+                if (metamaskProvider.currentAddress.isNotEmpty) {
+                  developer.log('[2025-05-05 00:05:53] TheBoostApp: ⚡ User ${state.user.id} has active wallet connection: ${metamaskProvider.currentAddress}');
+                  
+                  // If the provider has a public key, we don't need to request it again
+                  if (metamaskProvider.publicKey.isEmpty) {
+                    developer.log('[2025-05-05 00:05:53] TheBoostApp: 🔑 No public key found, will prompt user to approve');
+                    
+                    // We could prompt the user to get the public key here if needed
+                    // or wait until they interact with wallet features
+                  }
+                }
+              } catch (e) {
+                developer.log('[2025-05-05 00:05:53] TheBoostApp: ❌ Error checking wallet status: $e');
+              }
+            } else if (state is LoginInitial) {
+              print('[2025-05-05 00:05:53] TheBoostApp: 🔒 No active session');
+              preferencesService.stopPeriodicMatching();
+            }
+          },
+          builder: (context, state) {
+            final isAuthenticated = state is LoginSuccess;
+            return MaterialApp(
+              title: 'TheBoost - Land Investment via Tokenization',
+              theme: ThemeData(
+                primaryColor: AppColors.primary,
+                colorScheme: const ColorScheme.light(
+                  primary: AppColors.primary,
+                  secondary: AppColors.primaryLight,
+                  surface: Colors.white,
+                  background: Colors.white,
+                ),
+                textTheme: GoogleFonts.poppinsTextTheme(),
+                elevatedButtonTheme: ElevatedButtonThemeData(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
-            ),
-            debugShowCheckedModeBanner: false,
-            initialRoute: isAuthenticated ? AppRoutes.dashboard : AppRoutes.home,
-            onGenerateRoute: AppRoutes.generateRoute,
-            builder: (context, child) {
-              final currentState = context.watch<LoginBloc>().state;
-              final isCurrentlyAuthenticated = currentState is LoginSuccess;
-              if (child?.key == const ValueKey('AuthPage') && isCurrentlyAuthenticated) {
-                print('[2025-04-16 10:15:23] TheBoostApp: 🔄 Redirecting from auth to dashboard');
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
-                });
-              }
-              if ((child?.key == const ValueKey('DashboardPage') ||
-                      child?.key == const ValueKey('InvestPage') ||
-                      child?.key == const ValueKey('PropertyDetailsPage')) &&
-                  !isCurrentlyAuthenticated) {
-                print('[2025-04-16 10:15:23] TheBoostApp: 🔄 Redirecting to auth');
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
-                });
-              }
-              return child!;
-            },
-          );
-        },
+              debugShowCheckedModeBanner: false,
+              initialRoute: isAuthenticated ? AppRoutes.dashboard : AppRoutes.home,
+              onGenerateRoute: AppRoutes.generateRoute,
+              builder: (context, child) {
+                final currentState = context.watch<LoginBloc>().state;
+                final isCurrentlyAuthenticated = currentState is LoginSuccess;
+                if (child?.key == const ValueKey('AuthPage') && isCurrentlyAuthenticated) {
+                  print('[2025-05-05 00:05:53] TheBoostApp: 🔄 Redirecting from auth to dashboard');
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+                  });
+                }
+                if ((child?.key == const ValueKey('DashboardPage') ||
+                        child?.key == const ValueKey('InvestPage') ||
+                        child?.key == const ValueKey('PropertyDetailsPage')) &&
+                    !isCurrentlyAuthenticated) {
+                  print('[2025-05-05 00:05:53] TheBoostApp: 🔄 Redirecting to auth');
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
+                  });
+                }
+                return child!;
+              },
+            );
+          },
+        ),
       ),
     );
   }

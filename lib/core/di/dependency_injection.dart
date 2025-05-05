@@ -104,7 +104,7 @@ Future<void> _initInvestmentFeature() async {
       () => InvestmentRemoteDataSourceImpl(
         client: getIt<http.Client>(),
         secureStorage: getIt<SecureStorageService>(),
-        baseUrl: 'http://localhost:5000/marketplace',
+        baseUrl: 'http://localhost:2000/marketplace',
       ),
     );
 

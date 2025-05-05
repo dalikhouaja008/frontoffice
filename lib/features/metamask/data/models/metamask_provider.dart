@@ -242,153 +242,171 @@ class MetamaskProvider extends ChangeNotifier {
     return;
   }
   
-  // Get encryption public key
-  Future<bool> getEncryptionPublicKey() async {
-    developer.log('MetamaskProvider: Getting encryption public key');
-    
-    if (!_isMetaMaskAvailable || _currentAddress.isEmpty) {
-      _error = 'MetaMask not available or not connected';
-      developer.log('MetamaskProvider: $_error');
-      notifyListeners();
-      return false;
-    }
+  // Get encryption public key with user ID support
+Future<bool> getEncryptionPublicKey({String? userId}) async {
+  developer.log('[2025-05-05 01:02:57] MetamaskProvider: Getting encryption public key');
+  
+  if (!_isMetaMaskAvailable || _currentAddress.isEmpty) {
+    _error = 'MetaMask not available or not connected';
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: $_error');
+    notifyListeners();
+    return false;
+  }
 
-    try {
-      _isLoading = true;
-      _error = '';
-      notifyListeners();
-      
-      developer.log('MetamaskProvider: Requesting encryption public key for $_currentAddress');
-      final ethereum = js.context['ethereum'];
-      
-      // Try direct JavaScript approach first
-      js.context.callMethod('eval', ['''
-        console.log("Direct JS: Requesting encryption public key");
-        window.ethereum.request({
-          method: 'eth_getEncryptionPublicKey',
-          params: ["${_currentAddress}"]
+  try {
+    _isLoading = true;
+    _error = '';
+    notifyListeners();
+    
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Requesting encryption public key for $_currentAddress');
+    final ethereum = js.context['ethereum'];
+    
+    // Try direct JavaScript approach first
+    js.context.callMethod('eval', ['''
+      console.log("[2025-05-05 01:02:57] Direct JS: Requesting encryption public key");
+      window.ethereum.request({
+        method: 'eth_getEncryptionPublicKey',
+        params: ["${_currentAddress}"]
+      })
+        .then(result => {
+          console.log("[2025-05-05 01:02:57] Direct JS: Public key received:", result);
         })
-          .then(result => {
-            console.log("Direct JS: Public key received:", result);
-          })
-          .catch(error => {
-            console.error("Direct JS: Error requesting public key:", error);
-          });
-      ''']);
-      
-      // Get encryption public key
-      final result = await js_util.promiseToFuture<String>(
-        ethereum.callMethod('request', [
-          js_util.jsify({
-            'method': 'eth_getEncryptionPublicKey',
-            'params': [_currentAddress],
-          })
-        ]),
-      );
-      
-      developer.log('MetamaskProvider: Public key received: ${result.substring(0, 20)}...');
-      _publicKey = result;
-      
-      // In getEncryptionPublicKey method after receiving the result
-      developer.log('Received public key from MetaMask: $result');
-      // Save to backend
-      developer.log('MetamaskProvider: Saving public key to backend');
-      final saved = await savePublicKeyToBackend();
-      _isLoading = false;
-      notifyListeners();
-      
-      developer.log('MetamaskProvider: Save result: $saved');
-      return saved;
-    } catch (e) {
-      developer.log('MetamaskProvider: Error getting public key: $e');
-      _isLoading = false;
-      _error = 'Failed to get encryption public key: ${e.toString()}';
-      notifyListeners();
-      return false;
-    }
+        .catch(error => {
+          console.error("[2025-05-05 01:02:57] Direct JS: Error requesting public key:", error);
+        });
+    ''']);
+    
+    // Get encryption public key
+    final result = await js_util.promiseToFuture<String>(
+      ethereum.callMethod('request', [
+        js_util.jsify({
+          'method': 'eth_getEncryptionPublicKey',
+          'params': [_currentAddress],
+        })
+      ]),
+    );
+    
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Public key received: ${result.substring(0, 20)}...');
+    _publicKey = result;
+    
+    // In getEncryptionPublicKey method after receiving the result
+    developer.log('[2025-05-05 01:02:57] Received public key from MetaMask for user: ${userId ?? "unknown"}');
+    // Save to backend
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Saving public key to backend');
+    final saved = await savePublicKeyToBackend(userId: userId);
+    _isLoading = false;
+    notifyListeners();
+    
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Save result: $saved');
+    return saved;
+  } catch (e) {
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Error getting public key: $e');
+    _isLoading = false;
+    _error = 'Failed to get encryption public key: ${e.toString()}';
+    notifyListeners();
+    return false;
+  }
+}
+  
+// Save public key to backend with explicit user ID support
+Future<bool> savePublicKeyToBackend({String? userId}) async {
+  developer.log('[2025-05-05 01:02:57] MetamaskProvider: Saving public key to backend');
+  
+  if (_currentAddress.isEmpty || _publicKey.isEmpty) {
+    _error = 'Address or public key not available';
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: $_error');
+    notifyListeners();
+    return false;
   }
   
-  // Save public key to backend
-  Future<bool> savePublicKeyToBackend() async {
-    developer.log('MetamaskProvider: Saving public key to backend');
-    
-    if (_currentAddress.isEmpty || _publicKey.isEmpty) {
-      _error = 'Address or public key not available';
-      developer.log('MetamaskProvider: $_error');
-      notifyListeners();
-      return false;
-    }
-    
-    try {
-      // Define GraphQL mutation - Updated to include both ethereumAddress and publicKey
-      const String mutation = r'''
-      mutation SaveMetamaskPublicKey($input: SaveMetamaskKeyInput!) {
-        saveMetamaskPublicKey(input: $input) {
-          _id
-          username
-          email
-          publicKey
-        }
+  try {
+    // Define GraphQL mutation - Updated to include ethereumAddress, publicKey, and userId
+    const String mutation = r'''
+    mutation SaveMetamaskPublicKey($input: SaveMetamaskKeyInput!) {
+      saveMetamaskPublicKey(input: $input) {
+        _id
+        username
+        email
+        publicKey
       }
-      ''';
+    }
+    ''';
 
-      developer.log('MetamaskProvider: Getting GraphQL client');
-      // Use the GraphQLService to get a client
-      final client = GraphQLService.client;
-      
-      // Log what we're sending to help with debugging
-      developer.log('MetamaskProvider: Ethereum Address: $_currentAddress');
-      developer.log('MetamaskProvider: Public Key (first 30 chars): ${_publicKey.substring(0, _publicKey.length > 30 ? 30 : _publicKey.length)}...');
-      
-      // Use direct JavaScript for debugging
-      js.context.callMethod('eval', ['''
-        console.log("Direct JS: Saving public key");
-        console.log("Ethereum Address:", "${_currentAddress}");
-        console.log("Public Key:", "${_publicKey.substring(0, 30)}...");
-      ''']);
-      
-      developer.log('MetamaskProvider: Sending GraphQL mutation');
-      final result = await client.mutate(
-        MutationOptions(
-          document: gql(mutation),
-          variables: {
-            'input': {
-              'ethereumAddress': _currentAddress,
-              'publicKey': _publicKey,
-            },
-          },
-        ),
-      );
-      
-      if (result.hasException) {
-        developer.log('MetamaskProvider: GraphQL error: ${result.exception}');
-        _error = 'Failed to save public key: ${result.exception.toString()}';
-        notifyListeners();
-        return false;
-      }
-      
-      // Log the successful result
-      developer.log('MetamaskProvider: Public key saved successfully');
-      developer.log('MetamaskProvider: GraphQL response: ${result.data}');
-      
-      // Check if the publicKey in the returned user is set
-      final returnedUser = result.data?['saveMetamaskPublicKey'];
-      if (returnedUser != null) {
-        developer.log('MetamaskProvider: Returned user data: $returnedUser');
-        final returnedPublicKey = returnedUser['publicKey'];
-        developer.log('MetamaskProvider: Returned publicKey: $returnedPublicKey');
-      }
-      
-      _success = true;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      developer.log('MetamaskProvider: Network error: $e');
-      _error = 'Network error: ${e.toString()}';
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Getting GraphQL client');
+    // Use the GraphQLService to get a client
+    final client = GraphQLService.client;
+    
+    // Create input variables with all necessary fields
+    final inputVariables = {
+      'ethereumAddress': _currentAddress,
+      'publicKey': _publicKey,
+    };
+    
+    // Add userId if provided, which helps explicitly associate the wallet with the user
+    if (userId != null && userId.isNotEmpty) {
+      inputVariables['userId'] = userId;
+      developer.log('[2025-05-05 01:02:57] MetamaskProvider: Including userId: $userId in request');
+    } else {
+      developer.log('[2025-05-05 01:02:57] MetamaskProvider: No userId provided, relying on session authentication');
+    }
+    
+    // Log what we're sending to help with debugging
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Ethereum Address: $_currentAddress');
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Public Key (first 30 chars): ${_publicKey.substring(0, _publicKey.length > 30 ? 30 : _publicKey.length)}...');
+    
+    // Use direct JavaScript for debugging
+    js.context.callMethod('eval', ['''
+      console.log("[2025-05-05 01:02:57] Direct JS: Saving public key");
+      console.log("Ethereum Address:", "${_currentAddress}");
+      console.log("Public Key:", "${_publicKey.substring(0, 30)}...");
+      console.log("User:", "${userId ?? 'Not specified - using session'}");
+    ''']);
+    
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Sending GraphQL mutation');
+    final result = await client.mutate(
+      MutationOptions(
+        document: gql(mutation),
+        variables: {
+          'input': inputVariables,
+        },
+      ),
+    );
+    
+    if (result.hasException) {
+      developer.log('[2025-05-05 01:02:57] MetamaskProvider: GraphQL error: ${result.exception}');
+      _error = 'Failed to save public key: ${result.exception.toString()}';
       notifyListeners();
       return false;
     }
+    
+    // Log the successful result
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Public key saved successfully');
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: GraphQL response: ${result.data}');
+    
+    // Check if the publicKey in the returned user is set
+    final returnedUser = result.data?['saveMetamaskPublicKey'];
+    if (returnedUser != null) {
+      developer.log('[2025-05-05 01:02:57] MetamaskProvider: Returned user data: $returnedUser');
+      final returnedPublicKey = returnedUser['publicKey'];
+      final returnedUserId = returnedUser['_id'];
+      //developer.log('[2025-05-05 01:02:57] MetamaskProvider: Returned publicKey for user $_id: $returnedPublicKey');
+      
+      // Check if the returned user matches the requested user
+      if (userId != null && returnedUserId != userId) {
+        developer.log('[2025-05-05 01:02:57] MetamaskProvider: ⚠️ Warning: Returned user ID ($returnedUserId) doesn\'t match requested ID ($userId)');
+      }
+    }
+    
+    _success = true;
+    notifyListeners();
+    return true;
+  } catch (e) {
+    developer.log('[2025-05-05 01:02:57] MetamaskProvider: Network error: $e');
+    _error = 'Network error: ${e.toString()}';
+    notifyListeners();
+    return false;
   }
+}
 
   // Sign a message with MetaMask
   Future<String?> signMessage(String message) async {
