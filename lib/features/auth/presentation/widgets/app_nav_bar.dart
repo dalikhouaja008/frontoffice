@@ -20,6 +20,8 @@ import '../../../../core/di/dependency_injection.dart';
 import '../../../../core/services/prop_service.dart';
 import '../pages/valuation/land_valuation_home_screen.dart';
 import '../pages/valuation/land_valuation_screen_with_nav.dart';
+// Import the marketplace page
+import '../../../../features/marketplace/presentation/pages/marketplace_page.dart';
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -37,12 +39,12 @@ class AppNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
     print(
-        '[2025-04-16 10:05:23] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
+        '[2025-05-05 02:04:26] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
 
     return BlocBuilder<LoginBloc, LoginState>(
       builder: (context, state) {
         print(
-            '[2025-04-16 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
+            '[2025-05-05 02:04:26] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
         final isAuthenticated = state is LoginSuccess;
         final user = isAuthenticated ? state.user : null;
 
@@ -106,6 +108,23 @@ class AppNavBar extends StatelessWidget {
                         );
                       },
                     ),
+                    // Add Marketplace link only when authenticated
+                    if (isAuthenticated)
+                      _NavLink(
+                        'Marketplace',
+                        route: '/marketplace',
+                        currentRoute: currentRoute,
+                        onNavigate: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => MarketplacePage(
+                                walletAddress: _getUserWalletAddress(user),
+                              ),
+                            ),
+                          );
+                        },
+                        isNew: true, // Highlight as a new feature
+                      ),
                     _NavLink('Invest',
                         route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More',
@@ -198,78 +217,142 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
+  // Helper method to get or generate wallet address
+  String _getUserWalletAddress(User? user) {
+    // If your User model doesn't have a wallet address,
+    // you could use another identifier like email or userId
+    // This is just a placeholder - replace with actual wallet address retrieval logic
+    if (user == null) return '';
+    final String baseString = user.id.isNotEmpty
+        ? user.id
+        : (user.username.isNotEmpty ? user.username : 'user');
+
+    // Pad the string if needed to ensure it's long enough
+    final String paddedString = baseString.padRight(40, '0');
+
+    // Create a fixed-length wallet address without substring
+    return '0x${paddedString.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase().substring(0, 40)}';
+  }
+
   // Add method to handle mobile drawer with land valuation navigation
   Widget buildMobileDrawer(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.landscape, color: Colors.white, size: 32),
-                const SizedBox(width: 8),
-                Text(
-                  'TheBoost',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+    return BlocBuilder<LoginBloc, LoginState>(
+      builder: (context, state) {
+        final isAuthenticated = state is LoginSuccess;
+        final user = isAuthenticated ? state.user : null;
+
+        return Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.landscape, color: Colors.white, size: 32),
+                    const SizedBox(width: 8),
+                    Text(
+                      'TheBoost',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.home),
+                title: const Text('Home'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.featured_play_list),
+                title: const Text('Features'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/features');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.map),
+                title: const Text('Land Valuation'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LandValuationHomeScreen(),
+                    ),
+                  );
+                },
+              ),
+              // Add Marketplace option only when user is authenticated
+              if (isAuthenticated)
+                ListTile(
+                  leading: const Icon(Icons.shopping_cart),
+                  title: Row(
+                    children: [
+                      const Text('Marketplace'),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          //color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'NEW',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MarketplacePage(
+                          walletAddress: _getUserWalletAddress(user),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ListTile(
+                leading: const Icon(Icons.token),
+                title: const Text('Invest'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/invest');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.book),
+                title: const Text('Learn More'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/learn-more');
+                },
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.featured_play_list),
-            title: const Text('Features'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/features');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.map),
-            title: const Text('Land Valuation'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LandValuationHomeScreen(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.token),
-            title: const Text('Invest'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/invest');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.book),
-            title: const Text('Learn More'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/learn-more');
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -364,6 +447,33 @@ class AppNavBar extends StatelessWidget {
               SizedBox(width: AppDimensions.paddingM),
               Text('My Profile')
             ])),
+        // Add new Marketplace menu item
+        PopupMenuItem(
+            value: 'marketplace',
+            child: Row(children: [
+              const Icon(Icons.shopping_cart, color: Colors.black54),
+              const SizedBox(width: AppDimensions.paddingM),
+              const Text('Marketplace'),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  //color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                /*child: const Text(
+                  'NEW',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),*/
+              ),
+            ])),
         const PopupMenuItem(
             value: 'invest',
             child: Row(children: [
@@ -401,6 +511,16 @@ class AppNavBar extends StatelessWidget {
             break;
           case 'profile':
             Navigator.pushNamed(context, '/profile');
+            break;
+          case 'marketplace':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MarketplacePage(
+                  walletAddress: _getUserWalletAddress(user),
+                ),
+              ),
+            );
             break;
           case 'invest':
             Navigator.pushNamed(context, AppRoutes.invest);
@@ -493,6 +613,45 @@ class AppNavBar extends StatelessWidget {
                       Navigator.pop(context);
                       Navigator.pushNamed(context, '/profile');
                     }),
+                // Add Marketplace menu item
+                ListTile(
+                    leading: const Icon(Icons.shopping_cart,
+                        color: AppColors.primary),
+                    title: Row(
+                      children: [
+                        const Text('Marketplace'),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            //color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          /*child: const Text(
+                            'NEW',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),*/
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MarketplacePage(
+                            walletAddress: _getUserWalletAddress(user),
+                          ),
+                        ),
+                      );
+                    }),
                 ListTile(
                     leading: const Icon(Icons.token, color: AppColors.primary),
                     title: const Text('My Investments'),
@@ -550,12 +709,14 @@ class _NavLink extends StatelessWidget {
   final String route;
   final String? currentRoute;
   final VoidCallback? onNavigate;
+  final bool isNew;
 
   const _NavLink(
     this.title, {
     required this.route,
     this.currentRoute,
     this.onNavigate,
+    this.isNew = false,
   });
 
   @override
@@ -573,12 +734,38 @@ class _NavLink extends StatelessWidget {
           Navigator.pushNamed(context, route);
         }
       },
-      child: Text(
-        title,
-        style: TextStyle(
-          color: isActive ? AppColors.primary : AppColors.textPrimary,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isActive ? AppColors.primary : AppColors.textPrimary,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+          if (isNew) ...[
+            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              /*child: const Text(
+                'NEW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),*/
+            ),
+          ],
+        ],
       ),
     );
   }
