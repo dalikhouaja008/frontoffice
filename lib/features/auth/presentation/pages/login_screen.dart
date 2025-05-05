@@ -14,7 +14,6 @@ import '../bloc/login/login_bloc.dart';
 import '../widgets/buttons/custom_button.dart';
 import '../widgets/textfields/custom_text_field.dart';
 import '../widgets/dialogs/error_popup.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function? updateView;
@@ -150,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 print(
                     '[2025-05-04 23:18:06] LoginScreen: 🔄 Navigating to dashboard after 2FA'
-                    '\n└─ User: nesssim'
+
                     '\n└─ Email: ${twoFactorState.user.email}');
               });
             } else if (twoFactorState is TwoFactorAuthError) {

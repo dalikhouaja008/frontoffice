@@ -85,7 +85,7 @@ class _LoginFormState extends State<LoginForm> {
 
               // Use the route constant for navigation and add a small delay to ensure the
               // login state is properly updated before navigation
-              Future.delayed(Duration(milliseconds: 100), () {
+              Future.delayed(const Duration(milliseconds: 100), () {
                 Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
 
                 print(
