@@ -7,17 +7,17 @@ import 'package:the_boost/features/auth/data/repositories/two_factor_auth_reposi
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_state.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_state.dart';
+import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/pages/sign_up_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/otp_dialog.dart';
 import '../bloc/login/login_bloc.dart';
 import '../widgets/buttons/custom_button.dart';
 import '../widgets/textfields/custom_text_field.dart';
 import '../widgets/dialogs/error_popup.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function? updateView;
-  
+
   const LoginScreen({super.key, this.updateView});
 
   @override
@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showErrorDialog(BuildContext context, String error) {
     final formattedError = _formatErrorMessage(error);
     print('LoginScreen❌ Showing error dialog'
-          '\n└─ Error: $formattedError');
+        '\n└─ Error: $formattedError');
 
     showDialog(
       context: context,
@@ -44,23 +44,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLoginStateChanges(BuildContext context, LoginState state) {
     if (state is LoginSuccess) {
-      print('LoginScreen ✅ Login successful'
-            '\n└─ Email: ${state.user.email}'
-            '\n└─ Role: ${state.user.role}');
+      print('[2025-05-04 22:54:01] LoginScreen: ✅ Login successful'
+          '\n└─ Email: ${state.user.email}'
+          '\n└─ Role: ${state.user.role}');
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => HomeScreen(user: state.user),
-        ),
-      );
+      Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
     } else if (state is LoginRequires2FA) {
       print('LoginScreen 🔐 2FA required'
-            '\n└─ Email: ${state.user.email}');
+          '\n└─ Email: ${state.user.email}');
 
       _show2FADialog(context, state);
     } else if (state is LoginFailure) {
       print('LoginScreen ❌ Login failed'
-            '\n└─ Error: ${state.error}');
+          '\n└─ Error: ${state.error}');
 
       _showErrorDialog(context, state.error);
     } else if (state is LoginLoading) {
@@ -113,38 +109,54 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _show2FADialog(BuildContext context, LoginRequires2FA state) {
-    print('[2025-02-17 09:44:06] LoginScreen: 🔐 Showing 2FA dialog'
-          '\n└─ User: raednas'
-          '\n└─ Email: ${state.user.email}');
+    print('[2025-05-04 23:18:06] LoginScreen: 🔐 Showing 2FA dialog'
+        '\n└─ User: nesssim'
+        '\n└─ Email: ${state.user.email}');
 
-    // Utilisez getIt pour obtenir le repository
+    // Get the repository from getIt
     final twoFactorAuthRepository = getIt<TwoFactorAuthRepository>();
+
+    // Obtenir le LoginBloc existant
+    final loginBloc = BlocProvider.of<LoginBloc>(context);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BlocProvider<TwoFactorAuthBloc>(
-        // Utilisez getIt ou créez une nouvelle instance avec le repository obtenu
         create: (context) => TwoFactorAuthBloc(
           repository: twoFactorAuthRepository,
         ),
         child: BlocListener<TwoFactorAuthBloc, TwoFactorAuthState>(
           listener: (context, twoFactorState) {
             if (twoFactorState is TwoFactorAuthLoginSuccess) {
-              print('[2025-02-17 09:44:06] LoginScreen: ✅ 2FA verification successful'
-                    '\n└─ User: raednas'
-                    '\n└─ Email: ${twoFactorState.user.email}');
+              print(
+                  '[2025-05-04 23:18:06] LoginScreen: ✅ 2FA verification successful'
+                  '\n└─ User: nesssim'
+                  '\n└─ Email: ${twoFactorState.user.email}');
 
               Navigator.of(dialogContext).pop();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => HomeScreen(user: twoFactorState.user),
-                ),
-              );
+
+              // IMPORTANT : Mettre à jour l'état du LoginBloc avec les informations d'authentification
+              loginBloc.add(Set2FASuccessEvent(
+                user: twoFactorState.user,
+                accessToken: twoFactorState.accessToken,
+                refreshToken: twoFactorState.refreshToken,
+              ));
+
+              // Utiliser un délai pour s'assurer que l'état est correctement propagé
+              Future.delayed(const Duration(milliseconds: 100), () {
+                Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+
+                print(
+                    '[2025-05-04 23:18:06] LoginScreen: 🔄 Navigating to dashboard after 2FA'
+
+                    '\n└─ Email: ${twoFactorState.user.email}');
+              });
             } else if (twoFactorState is TwoFactorAuthError) {
-              print('[2025-02-17 09:44:06] LoginScreen: ❌ 2FA verification failed'
-                    '\n└─ User: raednas'
-                    '\n└─ Error: ${twoFactorState.message}');
+              print(
+                  '[2025-05-04 23:18:06] LoginScreen: ❌ 2FA verification failed'
+                  '\n└─ User: nesssim'
+                  '\n└─ Error: ${twoFactorState.message}');
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -252,7 +264,8 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 20),
           Text(
             "Login to TheBoost",
-            style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+            style:
+                GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           Form(
@@ -325,8 +338,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       print('[$timestamp] LoginScreen: 🚀 Login button pressed'
-                            '\n└─ User: $user'
-                            '\n└─ Email: ${_emailController.text.trim()}');
+                          '\n└─ User: $user'
+                          '\n└─ Email: ${_emailController.text.trim()}');
 
                       context.read<LoginBloc>().add(
                             LoginRequested(
@@ -349,8 +362,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextButton(
                       onPressed: () {
                         print('[$timestamp] LoginScreen: 📝 Navigate to signup'
-                              '\n└─ User: $user');
-                              
+                            '\n└─ User: $user');
+
                         // Si widget.updateView est fourni, utilisez-le
                         if (widget.updateView != null) {
                           widget.updateView!();

@@ -21,3 +21,17 @@ class LogoutRequested extends LoginEvent {}
 
 class CheckSession extends LoginEvent {}
 
+class Set2FASuccessEvent extends LoginEvent {
+  final User user;
+  final String accessToken;
+  final String refreshToken;
+
+  Set2FASuccessEvent({
+    required this.user,
+    required this.accessToken,
+    required this.refreshToken,
+  });
+
+  @override
+  List<Object> get props => [user, accessToken, refreshToken];
+}

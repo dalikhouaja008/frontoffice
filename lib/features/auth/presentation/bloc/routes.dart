@@ -47,9 +47,9 @@ class AppRoutes {
       case home:
         return MaterialPageRoute(builder: (_) => HomePage());
       case auth:
-        return MaterialPageRoute(builder: (_) => AuthPage());
+        return MaterialPageRoute(builder: (_) => const AuthPage());
       case dashboard:
-        return MaterialPageRoute(builder: (_) => DashboardPage());
+        return MaterialPageRoute(builder: (_) => const DashboardPage());
       case features:
         return MaterialPageRoute(builder: (_) => FeaturesPage());
       case howItWorks:

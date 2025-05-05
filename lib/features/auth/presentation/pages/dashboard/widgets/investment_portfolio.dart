@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/domain/entities/token.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_event.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_state.dart';
 
 class InvestmentPortfolio extends StatefulWidget {
   const InvestmentPortfolio({Key? key}) : super(key: key);
@@ -15,28 +19,117 @@ class InvestmentPortfolio extends StatefulWidget {
 
 class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
   // Current date and user info
-  final String currentDate = DateTime.now().toString();
+  final String currentDate = '2025-05-04 23:34:11';
+  final String userName = 'nesssim';
+  
+  // Marketplace bloc pour gérer l'annulation des listings
+  late final MarketplaceBloc _marketplaceBloc;
+  bool _processingCancelation = false;
+  int? _cancelingTokenId;
+
+  @override
+  void initState() {
+    super.initState();
+    _marketplaceBloc = getIt<MarketplaceBloc>();
+    
+    print('[$currentDate] InvestmentPortfolio: ✨ Initializing'
+        '\n└─ User: $userName');
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<InvestmentBloc, InvestmentState>(
-      builder: (context, state) {
-        if (state is InvestmentLoading) {
-          return _buildLoadingPortfolio();
-        } else if (state is InvestmentError) {
-          return _buildErrorPortfolio(state.message);
-        } else if (state is InvestmentLoaded) {
-          return _buildPortfolio(state.tokens);
-        } else if (state is InvestmentRefreshing) {
-          return _buildPortfolio(state.tokens, isRefreshing: true);
-        } else {
-          return _buildEmptyPortfolio();
-        }
-      },
+    return BlocProvider.value(
+      value: _marketplaceBloc,
+      child: BlocListener<MarketplaceBloc, MarketplaceState>(
+        listener: (context, state) {
+          _handleMarketplaceState(context, state);
+        },
+        child: BlocBuilder<InvestmentBloc, InvestmentState>(
+          builder: (context, state) {
+            if (state is InvestmentLoading) {
+              return _buildLoadingPortfolio();
+            } else if (state is InvestmentError) {
+              return _buildErrorPortfolio(state.message);
+            } else if (state is InvestmentLoaded) {
+              return _buildPortfolio(context, state.tokens);
+            } else if (state is InvestmentRefreshing) {
+              return _buildPortfolio(context, state.tokens, isRefreshing: true);
+            } else {
+              return _buildEmptyPortfolio();
+            }
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildPortfolio(List<Token> tokens, {bool isRefreshing = false}) {
+  void _handleMarketplaceState(BuildContext context, MarketplaceState state) {
+    setState(() {
+      _processingCancelation = state is MarketplaceLoading;
+    });
+
+    if (state is CancelListingSuccess) {
+      setState(() {
+        _cancelingTokenId = null;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Token listing has been successfully cancelled',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Rafraîchir les données des tokens
+      context.read<InvestmentBloc>().add(LoadEnhancedTokens());
+      
+      print('[$currentDate] InvestmentPortfolio: ✅ Listing cancelled successfully'
+          '\n└─ User: $userName'
+          '\n└─ Token ID: $_cancelingTokenId');
+    } else if (state is MarketplaceError) {
+      setState(() {
+        _cancelingTokenId = null;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Error cancelling listing: ${state.message}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      
+      print('[$currentDate] InvestmentPortfolio: ❌ Error cancelling listing'
+          '\n└─ User: $userName'
+          '\n└─ Token ID: $_cancelingTokenId'
+          '\n└─ Error: ${state.message}');
+    }
+  }
+
+  Widget _buildPortfolio(BuildContext context, List<Token> tokens, {bool isRefreshing = false}) {
     if (tokens.isEmpty) {
       return _buildEmptyPortfolio();
     }
@@ -103,7 +196,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    // Afficher la date actuelle au lieu du bouton
+                    // Afficher la date actuelle
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -141,11 +234,12 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
               for (int i = 0; i < displayLands.length; i++)
                 Column(
                   children: [
-                    _buildLandItem(displayLands[i].key, displayLands[i].value),
+                    _buildLandItem(context, displayLands[i].key, displayLands[i].value),
                     if (i < displayLands.length - 1)
                       const Divider(height: 1, indent: 16, endIndent: 16),
                   ],
                 ),
+              
               Padding(
                 padding: const EdgeInsets.all(AppDimensions.paddingM),
                 child: TextButton(
@@ -164,7 +258,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
             ],
           ),
         ),
-        if (isRefreshing)
+        if (isRefreshing || _processingCancelation)
           Positioned.fill(
             child: Container(
               color: Colors.white.withOpacity(0.7),
@@ -177,12 +271,12 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
     );
   }
 
-  Widget _buildLandItem(int landId, List<Token> tokens) {
-    // Take first token as reference for land info
+  Widget _buildLandItem(BuildContext context, int landId, List<Token> tokens) {
+    // Prendre le premier token comme référence pour les infos du terrain
     final Token referenceToken = tokens.first;
     final land = referenceToken.land;
 
-    // Calculate total tokens and combined value
+    // Calculer le nombre total de tokens et la valeur combinée
     final int tokenCount = tokens.length;
     final double totalValue = tokens.fold(
         0.0,
@@ -193,20 +287,23 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
         (sum, token) =>
             sum + (double.tryParse(token.purchaseInfo.price) ?? 0.0));
 
-    // Calculate overall profit/loss
+    // Calculer le profit/perte global
     final double profitLoss = totalValue - totalOriginalValue;
     final double profitLossPercentage =
         totalOriginalValue > 0 ? (profitLoss / totalOriginalValue) * 100 : 0.0;
 
-    // Format values
+    // Formater les valeurs
     final formattedTotalValue = "${totalValue.toStringAsFixed(4)} ETH";
     final formattedProfitLoss =
         "${profitLoss >= 0 ? '+' : ''}${profitLoss.toStringAsFixed(4)} ETH";
     final formattedPercentage =
         "${profitLossPercentage >= 0 ? '+' : ''}${profitLossPercentage.toStringAsFixed(2)}%";
 
-    // Is any token from this land listed?
+    // Est-ce qu'un token de ce terrain est mis en vente?
     final bool anyListed = tokens.any((token) => token.isListed);
+    
+    // Récupérer les tokens mis en vente
+    final listedTokens = tokens.where((token) => token.isListed).toList();
 
     return Column(
       children: [
@@ -276,13 +373,13 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
+                                color: Colors.orange.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text(
-                                "Some Listed",
-                                style: TextStyle(
-                                  color: Colors.green,
+                              child: Text(
+                                "${listedTokens.length} Listed",
+                                style: const TextStyle(
+                                  color: Colors.orange,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -327,74 +424,174 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
             ),
           ),
         ),
-        // Ajout du bouton de vente pour ce terrain spécifique
+        
+        // Boutons d'action
         Padding(
           padding: const EdgeInsets.only(
             left: AppDimensions.paddingL,
             right: AppDimensions.paddingL,
             bottom: AppDimensions.paddingM,
           ),
-          child: SizedBox(
-            width: double.infinity,
-            child: ResponsiveHelper.isMobile(context)
-                ? ElevatedButton.icon(
-                    onPressed: () {
-                      // Naviguer vers la page de vente
-                      final formattedTokens =
-                          _convertTokensToSellingFormat(tokens);
-                      Navigator.pushNamed(
-                        context,
-                        '/token-selling',
-                        arguments: {
-                          'tokens': formattedTokens,
-                          'selectedTokenIndex': 0,
-                          'landName': land.title,
-                        },
-                      );
-                    },
-                    icon: const Icon(Icons.sell, size: 16),
-                    label: const Text(
-                        "Sell Tokens"), // Version plus courte pour mobile
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  )
-                : ElevatedButton.icon(
-                    onPressed: () {
-                      // Naviguer vers la page de vente
-                      final formattedTokens =
-                          _convertTokensToSellingFormat(tokens);
-                      Navigator.pushNamed(
-                        context,
-                        '/token-selling',
-                        arguments: {
-                          'tokens': formattedTokens,
-                          'selectedTokenIndex': 0,
-                          'landName': land.title,
-                        },
-                      );
-                    },
-                    icon: const Icon(Icons.sell, size: 16),
-                    label:
-                        Text("Sell ${land.title} Tokens"), // Version complète
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+          child: Row(
+            children: [
+              // Bouton de vente
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    // Naviguer vers la page de vente
+                    final formattedTokens = _convertTokensToSellingFormat(tokens);
+                    Navigator.pushNamed(
+                      context,
+                      '/token-selling',
+                      arguments: {
+                        'tokens': formattedTokens,
+                        'selectedTokenIndex': 0,
+                        'landName': land.title,
+                      },
+                    );
+                    
+                    print('[$currentDate] InvestmentPortfolio: 🔄 Navigating to token selling page'
+                        '\n└─ User: $userName'
+                        '\n└─ Land: ${land.title}'
+                        '\n└─ Total Tokens: $tokenCount');
+                  },
+                  icon: const Icon(Icons.sell, size: 16),
+                  label: Text(ResponsiveHelper.isMobile(context) 
+                      ? "Sell" 
+                      : "Sell Tokens"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                ),
+              ),
+              
+              // N'afficher le bouton d'annulation que si des tokens sont mis en vente
+              if (anyListed) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 3,
+                  child: ElevatedButton.icon(
+                    onPressed: _processingCancelation 
+                        ? null 
+                        : () {
+                            _showCancelListingDialog(context, listedTokens);
+                          },
+                    icon: const Icon(Icons.cancel, size: 16),
+                    label: Text(ResponsiveHelper.isMobile(context) 
+                        ? "Cancel Listing" 
+                        : "Cancel ${listedTokens.length} Listing${listedTokens.length > 1 ? 's' : ''}"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      disabledBackgroundColor: Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ],
     );
+  }
+
+  void _showCancelListingDialog(BuildContext context, List<Token> listedTokens) {
+    print('[$currentDate] InvestmentPortfolio: 📋 Showing cancel listing dialog'
+        '\n└─ User: $userName'
+        '\n└─ Listed Tokens: ${listedTokens.length}');
+        
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Token Listing'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: listedTokens.length == 1
+              ? Text('Are you sure you want to cancel the listing for token #${listedTokens[0].tokenNumber}?\n\nListed price: ${listedTokens[0].listingInfo?.formattedPrice ?? "0 ETH"}')
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Select token listing${listedTokens.length > 1 ? 's' : ''} to cancel:'),
+                    const SizedBox(height: 12),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: listedTokens.length,
+                        itemBuilder: (context, index) {
+                          final token = listedTokens[index];
+                          return ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.token, color: AppColors.primary),
+                            title: Text('#${token.tokenNumber}'),
+                            subtitle: Text('Listed for: ${token.listingInfo?.formattedPrice ?? "0 ETH"}'),
+                            trailing: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _cancelTokenListing(token.tokenId);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                textStyle: const TextStyle(fontSize: 12),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        actions: [
+          if (listedTokens.length == 1) ...[
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _cancelTokenListing(listedTokens[0].tokenId);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Yes, Cancel Listing'),
+            ),
+          ] else
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _cancelTokenListing(int tokenId) {
+    print('[$currentDate] InvestmentPortfolio: 🚫 Cancelling listing for token #$tokenId'
+        '\n└─ User: $userName');
+    
+    setState(() {
+      _cancelingTokenId = tokenId;
+      _processingCancelation = true;
+    });
+    
+    _marketplaceBloc.add(CancelListingEvent(tokenId: tokenId));
   }
 
   List<Map<String, dynamic>> _convertTokensToSellingFormat(List<Token> tokens) {
@@ -689,6 +886,9 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
           TextButton.icon(
             onPressed: () {
               context.read<InvestmentBloc>().add(LoadEnhancedTokens());
+              
+              print('[$currentDate] InvestmentPortfolio: 🔄 Retrying to load tokens'
+                  '\n└─ User: $userName');
             },
             icon: const Icon(Icons.refresh),
             label: const Text("Try Again"),
@@ -787,6 +987,9 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
           ElevatedButton(
             onPressed: () {
               Navigator.pushNamed(context, '/invest');
+              
+              print('[$currentDate] InvestmentPortfolio: 🔄 Navigating to invest page'
+                  '\n└─ User: $userName');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
