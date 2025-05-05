@@ -1,16 +1,36 @@
-// lib/core/services/session_service.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 
 /// Service responsible for managing user sessions
-class SessionService {
+class SessionService extends ChangeNotifier {
   static const String _userKey = 'current_user';
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   
+  // In-memory cache of the current session
+  SessionData? _currentSession;
+  
+  // Getter for authentication status
+  bool get isAuthenticated => _currentSession != null;
+  
+  // Getter for current user
+  User? get currentUser => _currentSession?.user;
   
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  // Constructor that attempts to load the session on initialization
+  SessionService() {
+    // Load the session when the service is created
+    getSession().then((session) {
+      if (session != null) {
+        _currentSession = session;
+        notifyListeners();
+        print('[${DateTime.now()}] 🔄 SessionService: Session loaded on startup');
+      }
+    });
+  }
 
   /// Save the user session data
   Future<void> saveSession({
@@ -41,15 +61,29 @@ class SessionService {
       _storage.write(key: _refreshTokenKey, value: refreshToken),
     ]);
     
+    // Update in-memory session and notify listeners
+    _currentSession = SessionData(
+      user: user,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+    
+    // Notify all listeners (like the navbar) that auth state has changed
+    notifyListeners();
+    
     print('[${DateTime.now()}] ✅ SessionService: Session saved successfully');
+    print('[${DateTime.now()}] 📢 SessionService: Notified listeners of authentication change');
   }
 
-
-/*
   /// Get the stored user session
   Future<SessionData?> getSession() async {
     try {
-      print('[${DateTime.now()}] 🔍 SessionService: Retrieving session');
+      // If we already have a session in memory, return it
+      if (_currentSession != null) {
+        return _currentSession;
+      }
+      
+      print('[${DateTime.now()}] 🔍 SessionService: Retrieving session from storage');
       
       // Get all session data
       final userJson = await _storage.read(key: _userKey);
@@ -58,7 +92,7 @@ class SessionService {
       
       // Check if we have all required session data
       if (userJson == null || accessToken == null || refreshToken == null) {
-        print('[${DateTime.now()}] ℹ️ SessionService: No session found');
+        print('[${DateTime.now()}] ℹ️ SessionService: No session found in storage');
         return null;
       }
       
@@ -75,22 +109,24 @@ class SessionService {
         updatedAt: DateTime.parse(userData['updatedAt']),
       );
       
-      print('[${DateTime.now()}] ✅ SessionService: Session retrieved successfully'
-            '\n└─ User: ${user.username}'
-            '\n└─ Email: ${user.email}');
-      
-      return SessionData(
+      // Cache the session
+      _currentSession = SessionData(
         user: user,
         accessToken: accessToken,
         refreshToken: refreshToken,
       );
+      
+      print('[${DateTime.now()}] ✅ SessionService: Session retrieved successfully'
+            '\n└─ User: ${user.username}'
+            '\n└─ Email: ${user.email}');
+      
+      return _currentSession;
     } catch (e) {
       print('[${DateTime.now()}] ❌ SessionService: Error retrieving session'
             '\n└─ Error: $e');
       return null;
     }
   }
-*/
 
   /// Clear the user session (logout)
   Future<void> clearSession() async {
@@ -102,51 +138,14 @@ class SessionService {
       _storage.delete(key: _refreshTokenKey),
     ]);
     
+    // Clear in-memory session
+    _currentSession = null;
+    
+    // Notify all listeners that auth state has changed
+    notifyListeners();
+    
     print('[${DateTime.now()}] ✅ SessionService: Session cleared successfully');
-  }
-
-  Future<SessionData?> getSession() async {
-    try {
-      print('[${DateTime.now()}] 🔍 SessionService: Retrieving session');
-      
-      // Get all session data
-      final userJson = await _storage.read(key: _userKey);
-      final accessToken = await _storage.read(key: _accessTokenKey);
-      final refreshToken = await _storage.read(key: _refreshTokenKey);
-      
-      // Check if we have all required session data
-      if (userJson == null || accessToken == null || refreshToken == null) {
-        print('[${DateTime.now()}] ℹ️ SessionService: No session found');
-        return null;
-      }
-      
-      // Parse user object
-      final userData = jsonDecode(userJson);
-      final user = User(
-        id: userData['_id'],
-        username: userData['username'],
-        email: userData['email'],
-        role: userData['role'],
-        twoFactorSecret: userData['twoFactorSecret'],
-        isTwoFactorEnabled: userData['isTwoFactorEnabled'] ?? false,
-        createdAt: DateTime.parse(userData['createdAt']),
-        updatedAt: DateTime.parse(userData['updatedAt']),
-      );
-      
-      print('[${DateTime.now()}] ✅ SessionService: Session retrieved successfully'
-            '\n└─ User: ${user.username}'
-            '\n└─ Email: ${user.email}');
-      
-      return SessionData(
-        user: user,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      );
-    } catch (e) {
-      print('[${DateTime.now()}] ❌ SessionService: Error retrieving session'
-            '\n└─ Error: $e');
-      return null;
-    }
+    print('[${DateTime.now()}] 📢 SessionService: Notified listeners of logout');
   }
 }
 
@@ -162,5 +161,3 @@ class SessionData {
     required this.refreshToken,
   });
 }
-
-

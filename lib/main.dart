@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/preferences_service.dart';
@@ -13,6 +14,8 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
+import 'dart:developer' as developer;
 // Add marketplace bloc import
 import 'package:the_boost/features/marketplace/presentation/bloc/marketplace_bloc.dart';
 import 'package:the_boost/features/marketplace/presentation/bloc/marketplace_event.dart';
@@ -48,27 +51,32 @@ void main() async {
 
   await initDependencies();
   await registerChatbotDependencies();
+  
+  // Register MetamaskProvider in the dependency injection
+  getIt.registerSingleton<MetamaskProvider>(MetamaskProvider());
+  developer.log('[2025-05-05 00:05:53] Main: 🔄 Registered MetamaskProvider in dependency injection');
+
   await _checkExistingSession();
 
   runApp(const TheBoostApp());
 }
 
 Future<void> _checkExistingSession() async {
-  print('[2025-05-05 03:35:15] Main: 🔄 Checking for existing session');
+  print('[2025-05-05 00:05:53] Main: 🔄 Checking for existing session');
   try {
     final sessionService = getIt<SessionService>();
     final sessionData = await sessionService.getSession();
     if (sessionData != null) {
-      print('[2025-05-05 03:35:15] Main: ✅ Found existing session'
-          '\n└─ User: ${sessionData.user.username}'
+      print('[2025-05-05 00:05:53] Main: ✅ Found existing session'
+          '\n└─ User: ${sessionData.user.username} (${sessionData.user.id})'
           '\n└─ Email: ${sessionData.user.email}');
       getIt<LoginBloc>().add(CheckSession());
       await Future.delayed(const Duration(milliseconds: 100));
     } else {
-      print('[2025-05-05 03:35:15] Main: ℹ️ No existing session found');
+      print('[2025-05-05 00:05:53] Main: ℹ️ No existing session found');
     }
   } catch (e) {
-    print('[2025-05-05 03:35:15] Main: ❌ Error checking session'
+    print('[2025-05-05 00:05:53] Main: ❌ Error checking session'
           '\n└─ Error: $e');
   }
 }
@@ -78,8 +86,11 @@ class TheBoostApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    developer.log('[2025-05-05 00:05:53] TheBoostApp: 🔄 Building app with user: raednas');
+    
+    return MultiProvider(
       providers: [
+          ChangeNotifierProvider<MetamaskProvider>.value(value: getIt<MetamaskProvider>()),
         BlocProvider<LoginBloc>.value(value: getIt<LoginBloc>()),
         BlocProvider<SignUpBloc>(create: (_) => getIt<SignUpBloc>()),
         BlocProvider<PropertyBloc>(create: (_) => getIt<PropertyBloc>()),

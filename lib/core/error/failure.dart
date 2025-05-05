@@ -1,26 +1,24 @@
-import 'package:equatable/equatable.dart';
-
 abstract class Failure {
   final String message;
   
-  const Failure(this.message);
+  const Failure({required this.message});  // Change to named parameter
   
   @override
   String toString() => message;
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure(String message) : super(message);
+  const ServerFailure({required super.message});  // Change to named parameter
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure(String message) : super(message);
+  const CacheFailure({required super.message});  // Change to named parameter
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure([String message = 'Network connection failed']) : super(message);
+  const NetworkFailure({super.message = 'Network connection failed'});  // Change to named parameter
 }
 
 class AuthFailure extends Failure {
-  const AuthFailure(String message) : super(message);
+  const AuthFailure({required super.message});  // Change to named parameter
 }

@@ -136,24 +136,42 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _onSet2FASuccess(
-      Set2FASuccessEvent event, Emitter<LoginState> emit) async {
-    print(' LoginBloc: ✅ Setting 2FA success state'
-        '\n└─ Email: ${event.user.email}');
-
-    // Sauvegarder les tokens
-    await _secureStorage.saveTokens(
-      accessToken: event.accessToken,
-      refreshToken: event.refreshToken,
-    );
-
-    // Sauvegarder la session
-    await _sessionService.saveSession(
-      user: event.user,
-      accessToken: event.accessToken,
-      refreshToken: event.refreshToken,
-    );
-
-    // Émettre l'état de succès
-    emit(LoginSuccess(user: event.user));
+    Set2FASuccessEvent event,
+    Emitter<LoginState> emit,
+  ) async {
+    print('[2025-05-05 00:17:01] LoginBloc: 🔄 Processing 2FA success event'
+          '\n└─ User: nesssim'
+          '\n└─ Email: ${event.user.email}');
+    
+    emit(LoginLoading());
+    
+    try {
+      // Sauvegarder les tokens dans le stockage sécurisé
+      await _secureStorage.saveTokens(
+        accessToken: event.accessToken,
+        refreshToken: event.refreshToken,
+      );
+      
+      // Sauvegarder la session
+      await _sessionService.saveSession(
+        user: event.user,
+        accessToken: event.accessToken,
+        refreshToken: event.refreshToken,
+      );
+      
+      // Émettre l'état connecté
+      emit(LoginSuccess(user: event.user));
+      
+      print('[2025-05-05 00:17:01] LoginBloc: ✅ 2FA state synchronization completed'
+            '\n└─ User: nesssim'
+            '\n└─ Email: ${event.user.email}');
+    } catch (e) {
+      print('[2025-05-05 00:17:01] LoginBloc: ❌ Error processing 2FA success'
+            '\n└─ User: nesssim'
+            '\n└─ Error: $e');
+      
+      // En cas d'erreur, on reste dans l'état courant
+      emit(LoginFailure('Erreur lors de la synchronisation après 2FA: $e'));
+    }
   }
 }

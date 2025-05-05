@@ -1,7 +1,7 @@
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 class GraphQLService {
-  static const String _graphqlEndpoint = 'http://localhost:3000/graphql';
+  static const String _graphqlEndpoint = 'http://localhost:4000/graphql';
 
   // Initialize a client with authentication token
   static GraphQLClient initializeClient(String token) {

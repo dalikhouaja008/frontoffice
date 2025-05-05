@@ -10,9 +10,8 @@ import '../../features/auth/data/models/property/valuation_result.dart';
 class ApiService {
   final String baseUrl;
   
+  // Constructor with default value from .env or hardcoded fallback
   ApiService() : baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000/api';
-  ApiService() : baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:6000/api';
-
   
   // Get current ETH price
   Future<Map<String, dynamic>> getEthPrice() async {

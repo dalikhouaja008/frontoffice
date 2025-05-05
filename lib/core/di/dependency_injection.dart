@@ -13,28 +13,21 @@ import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/core/services/token_minting_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/datasources/investment_remote_data_source.dart';
-import 'package:the_boost/features/auth/data/datasources/marketplace_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/Investment_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:the_boost/features/auth/data/repositories/marketplace_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/property_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/investment_repository.dart';
-import 'package:the_boost/features/auth/domain/repositories/marketplace_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/property_repository.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_enhanced_tokens_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
-import 'package:the_boost/features/auth/domain/use_cases/marketplace/cancel_listing_usecase.dart';
-import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_multiple_tokens_usecase.dart';
-import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_token_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
-import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import '../services/gemini_service.dart';
@@ -50,16 +43,25 @@ import 'package:http/http.dart' as http;
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Marketplace imports
-import '../../features/marketplace/data/datasources/marketplace_remote_datasource.dart';
+// Import with alias for the first MarketplaceRemoteDataSource
+import 'package:the_boost/features/auth/data/datasources/marketplace_remote_data_source.dart' as auth;
+import 'package:the_boost/features/auth/data/repositories/marketplace_repository_impl.dart' as auth;
+import 'package:the_boost/features/auth/domain/repositories/marketplace_repository.dart' as auth;
+import 'package:the_boost/features/auth/domain/use_cases/marketplace/cancel_listing_usecase.dart';
+import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_multiple_tokens_usecase.dart';
+import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_token_usecase.dart';
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_bloc.dart' as auth_bloc;
+
+// Import with alias for the second MarketplaceRemoteDataSource
+import '../../features/marketplace/data/datasources/marketplace_remote_datasource.dart' as feature;
 import '../../features/marketplace/data/datasources/marketplace_local_datasource.dart';
-import '../../features/marketplace/data/repositories/marketplace_repository_impl.dart';
-import '../../features/marketplace/domain/repositories/marketplace_repository.dart';
+import '../../features/marketplace/data/repositories/marketplace_repository_impl.dart' as feature;
+import '../../features/marketplace/domain/repositories/marketplace_repository.dart' as feature;
 import '../../features/marketplace/domain/usecases/get_all_listings.dart';
 import '../../features/marketplace/domain/usecases/get_filtered_listings.dart';
 import '../../features/marketplace/domain/usecases/get_listing_details.dart';
 import '../../features/marketplace/domain/usecases/purchase_token.dart';
-import '../../features/marketplace/presentation/bloc/marketplace_bloc.dart';
+import '../../features/marketplace/presentation/bloc/marketplace_bloc.dart' as feature_bloc;
 
 final GetIt getIt = GetIt.instance;
 
@@ -123,8 +125,8 @@ Future<void> _initMarketplaceFeature() async {
       getIt.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
     }
     // Data Sources
-    getIt.registerLazySingleton<MarketplaceRemoteDataSource>(
-      () => MarketplaceRemoteDataSourceImpl(
+    getIt.registerLazySingleton<feature.MarketplaceRemoteDataSource>(
+      () => feature.MarketplaceRemoteDataSourceImpl(
         client: getIt<http.Client>(),
         baseUrl: 'http://localhost:5000', // Use your actual API URL
         secureStorage: getIt<SecureStorageService>(), // Added this
@@ -145,9 +147,9 @@ Future<void> _initMarketplaceFeature() async {
     );
 
     // Repository
-    getIt.registerLazySingleton<MarketplaceRepository>(
-      () => MarketplaceRepositoryImpl(
-        remoteDataSource: getIt<MarketplaceRemoteDataSource>(),
+    getIt.registerLazySingleton<feature.MarketplaceRepository>(
+      () => feature.MarketplaceRepositoryImpl(
+        remoteDataSource: getIt<feature.MarketplaceRemoteDataSource>(),
         localDataSource: getIt<MarketplaceLocalDataSource>(),
         networkInfo: getIt<NetworkInfo>(),
       ),
@@ -155,24 +157,24 @@ Future<void> _initMarketplaceFeature() async {
 
     // Use Cases
     getIt.registerLazySingleton<GetAllListings>(
-      () => GetAllListings(getIt<MarketplaceRepository>()),
+      () => GetAllListings(getIt<feature.MarketplaceRepository>()),
     );
 
     getIt.registerLazySingleton<GetFilteredListings>(
-      () => GetFilteredListings(getIt<MarketplaceRepository>()),
+      () => GetFilteredListings(getIt<feature.MarketplaceRepository>()),
     );
 
     getIt.registerLazySingleton<GetListingDetails>(
-      () => GetListingDetails(getIt<MarketplaceRepository>()),
+      () => GetListingDetails(getIt<feature.MarketplaceRepository>()),
     );
 
     getIt.registerLazySingleton<PurchaseToken>(
-      () => PurchaseToken(getIt<MarketplaceRepository>()),
+      () => PurchaseToken(getIt<feature.MarketplaceRepository>()),
     );
 
     // Bloc
-    getIt.registerFactory<MarketplaceBloc>(
-      () => MarketplaceBloc(
+    getIt.registerFactory<feature_bloc.MarketplaceBloc>(
+      () => feature_bloc.MarketplaceBloc(
         getAllListings: getIt<GetAllListings>(),
         getFilteredListings: getIt<GetFilteredListings>(),
         getListingDetails: getIt<GetListingDetails>(),
@@ -238,8 +240,8 @@ Future<void> _initListingFeature() async {
 
   try {
     // Data Sources
-    getIt.registerLazySingleton<MarketplaceRemoteDataSource>(
-      () => MarketplaceRemoteDataSourceImpl(
+    getIt.registerLazySingleton<auth.MarketplaceRemoteDataSource>(
+      () => auth.MarketplaceRemoteDataSourceImpl(
         client: getIt<http.Client>(),
         secureStorage: getIt<SecureStorageService>(),
         baseUrl: 'http://localhost:5000',
@@ -247,29 +249,29 @@ Future<void> _initListingFeature() async {
     );
 
     // Repositories
-    getIt.registerLazySingleton<MarketplaceRepository>(
-      () => MarketplaceRepositoryImpl(
-        remoteDataSource: getIt<MarketplaceRemoteDataSource>(),
+    getIt.registerLazySingleton<auth.MarketplaceRepository>(
+      () => auth.MarketplaceRepositoryImpl(
+        remoteDataSource: getIt<auth.MarketplaceRemoteDataSource>(),
         networkInfo: getIt<NetworkInfo>(),
       ),
     );
 
     // Use Cases
     getIt.registerLazySingleton<ListTokenUseCase>(
-      () => ListTokenUseCase(getIt<MarketplaceRepository>()),
+      () => ListTokenUseCase(getIt<auth.MarketplaceRepository>()),
     );
 
     getIt.registerLazySingleton<ListMultipleTokensUseCase>(
-      () => ListMultipleTokensUseCase(getIt<MarketplaceRepository>()),
+      () => ListMultipleTokensUseCase(getIt<auth.MarketplaceRepository>()),
     );
 
     getIt.registerLazySingleton<CancelListingUseCase>(
-      () => CancelListingUseCase(getIt<MarketplaceRepository>()),
+      () => CancelListingUseCase(getIt<auth.MarketplaceRepository>()),
     );
 
     // BLoCs
-    getIt.registerFactory<MarketplaceBloc>(
-      () => MarketplaceBloc(
+    getIt.registerFactory<auth_bloc.MarketplaceBloc>(
+      () => auth_bloc.MarketplaceBloc(
         listTokenUseCase: getIt<ListTokenUseCase>(),
         listMultipleTokensUseCase: getIt<ListMultipleTokensUseCase>(),
         cancelListingUseCase: getIt<CancelListingUseCase>(),
