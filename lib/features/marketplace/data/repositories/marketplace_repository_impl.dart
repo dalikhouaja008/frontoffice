@@ -26,16 +26,16 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         localDataSource.cacheListings(remoteListings);
         return Right(remoteListings);
       } on ServerException catch (e) {
-        return Left(ServerFailure(e.message));
+        return Left(ServerFailure(message:e.message));
       } on AuthException catch (e) {
-        return Left(AuthFailure(e.message));
+        return Left(AuthFailure(message:e.message));
       } catch (e) {
         // Try to get cached data if remote fails
         try {
           final localListings = await localDataSource.getLastListings();
           return Right(localListings);
         } catch (_) {
-          return Left(ServerFailure(e.toString()));
+          return Left(ServerFailure(message:e.toString()));
         }
       }
     } else {
@@ -43,7 +43,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         final localListings = await localDataSource.getLastListings();
         return Right(localListings);
       } catch (e) {
-        return Left(CacheFailure('No cached data available'));
+        return const Left(CacheFailure(message:'No cached data available'));
       }
     }
   }
@@ -67,14 +67,14 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         );
         return Right(filteredListings);
       } on ServerException catch (e) {
-        return Left(ServerFailure(e.message));
+        return Left(ServerFailure(message:e.message));
       } on AuthException catch (e) {
-        return Left(AuthFailure(e.message));
+        return Left(AuthFailure(message:e.message));
       } catch (e) {
-        return Left(ServerFailure(e.toString()));
+        return Left(ServerFailure(message:e.toString()));
       }
     } else {
-      return Left(NetworkFailure('No internet connection'));
+      return const Left(NetworkFailure());
     }
   }
 
@@ -85,14 +85,14 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         final token = await remoteDataSource.getListingDetails(tokenId);
         return Right(token);
       } on ServerException catch (e) {
-        return Left(ServerFailure(e.message));
+        return Left(ServerFailure(message:e.message));
       } on AuthException catch (e) {
-        return Left(AuthFailure(e.message));
+        return Left(AuthFailure(message:e.message));
       } catch (e) {
-        return Left(ServerFailure(e.toString()));
+        return Left(ServerFailure(message: e.toString()));
       }
     } else {
-      return Left(NetworkFailure('No internet connection'));
+      return Left(NetworkFailure());
     }
   }
 
@@ -104,14 +104,14 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         final result = await remoteDataSource.purchaseToken(tokenId, buyerAddress);
         return Right(result);
       } on ServerException catch (e) {
-        return Left(ServerFailure(e.message));
+        return Left(ServerFailure(message:e.message));
       } on AuthException catch (e) {
-        return Left(AuthFailure(e.message));
+        return Left(AuthFailure(message:e.message));
       } catch (e) {
-        return Left(ServerFailure(e.toString()));
+        return Left(ServerFailure(message: e.toString()));
       }
     } else {
-      return Left(NetworkFailure('No internet connection'));
+      return const Left(NetworkFailure());
     }
   }
 }

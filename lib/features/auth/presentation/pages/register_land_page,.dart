@@ -28,7 +28,7 @@ class LandRegistrationService {
 
   // Constructor with configurable base URL
   LandRegistrationService({String? customBaseUrl}) 
-      : registrationBaseUrl = customBaseUrl ?? 'http://localhost:2000';
+      : registrationBaseUrl = customBaseUrl ?? 'http://localhost:5000';
 
   // API call to register land with files
  Future<Map<String, dynamic>> registerLand({

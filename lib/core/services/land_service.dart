@@ -108,7 +108,7 @@ Future<List<String>> getLandTypes() async {
 
     final token = sessionData.accessToken;
     final response = await http.get(
-      Uri.parse('http://localhost:2000/lands/types'), // 📌 Assuming you have an endpoint /lands/types
+      Uri.parse('http://localhost:5000/lands/types'), // 📌 Assuming you have an endpoint /lands/types
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
     );
 

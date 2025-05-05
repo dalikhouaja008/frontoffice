@@ -51,14 +51,18 @@ class HomePage extends StatelessWidget {
   return HeroSection(
  title: 'Invest in Land\nThe Smart Way',
 subtitle: 'Buy, sell, and exchange tokenized land assets with full transparency and security through blockchain technology.',
-primaryButtonText: 'Learn more',
-secondaryButtonText: 'How it works', // Changed text to describe land registration
+primaryButtonText: 'Start Investing',
+secondaryButtonText: 'Register Your Land', // Changed text to describe land registration
 onPrimaryButtonPressed: () {
-  Navigator.of(context).pushNamed('/learn-more');
+  Navigator.of(context).pushNamed('/invest');
 },
 onSecondaryButtonPressed: () {
   // Navigate to the RegisterLandPage we created
-Navigator.of(context).pushNamed('/how-it-works');
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => RegisterLandPage(),
+    ),
+  );
 },
     image: Container(
       height: 400,

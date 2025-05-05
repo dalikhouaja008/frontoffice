@@ -90,6 +90,7 @@ class TheBoostApp extends StatelessWidget {
     
     return MultiProvider(
       providers: [
+          ChangeNotifierProvider<MetamaskProvider>.value(value: getIt<MetamaskProvider>()),
         BlocProvider<LoginBloc>.value(value: getIt<LoginBloc>()),
         BlocProvider<SignUpBloc>(create: (_) => getIt<SignUpBloc>()),
         BlocProvider<PropertyBloc>(create: (_) => getIt<PropertyBloc>()),
