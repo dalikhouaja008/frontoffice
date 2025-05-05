@@ -1,22 +1,22 @@
-// lib/features/auth/presentation/pages/dashboard/dashboard_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/constants/text_styles.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/preferences_service.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
+import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/dashboard_stats.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/investment_portfolio.dart';
 import 'package:the_boost/features/auth/presentation/pages/dashboard/widgets/recent_activity.dart';
 import 'package:the_boost/features/auth/presentation/pages/base_page.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 
-import '../../../../../core/di/dependency_injection.dart';
-
 class DashboardPage extends StatefulWidget {
   final User? user;
-  
+
   const DashboardPage({super.key, this.user});
 
   @override
@@ -26,36 +26,47 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final PreferencesService _preferencesService = PreferencesService();
-  
+  late final InvestmentBloc _investmentBloc;
+
   @override
   void initState() {
     super.initState();
-    
-    print('[2025-03-02 19:21:51] DashboardPage: ✨ Initializing'
-          '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
-    
+    _investmentBloc = getIt<InvestmentBloc>();
+
+    print('[2025-05-04 14:46:20] DashboardPage: ✨ Initializing'
+        '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
+
+    // Load investment data when dashboard loads
+    _investmentBloc.add(LoadEnhancedTokens());
+
     // Check for notifications and preferences when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPreferencesAndNotifications();
     });
   }
 
-  
+  @override
+  void dispose() {
+    // No need to close the bloc here since it's managed by GetIt
+    super.dispose();
+  }
 
-   Future<void> _checkPreferencesAndNotifications() async {
+  Future<void> _checkPreferencesAndNotifications() async {
     if (widget.user == null) return;
-    
-    print('[2025-03-02 19:21:51] DashboardPage: 🔍 Checking user preferences'
-          '\n└─ User: ${widget.user!.username}');
-    
+
+    print('[2025-05-04 14:46:20] DashboardPage: 🔍 Checking user preferences'
+        '\n└─ User: ${widget.user!.username}');
+
     // First check if user has set preferences
-    final hasPreferences = await _preferencesService.hasPreferences(widget.user!.id);
-    
+    final hasPreferences =
+        await _preferencesService.hasPreferences(widget.user!.id);
+
     // If not, show preferences setup dialog
     if (!hasPreferences && mounted) {
-      print('[2025-03-02 19:21:51] DashboardPage: ⚠️ No preferences found, showing dialog'
-            '\n└─ User: ${widget.user!.username}');
-            
+      print(
+          '[2025-05-04 14:46:20] DashboardPage: ⚠️ No preferences found, showing dialog'
+          '\n└─ User: ${widget.user!.username}');
+
       await Future.delayed(const Duration(seconds: 1));
       if (mounted) {
         showDialog(
@@ -64,70 +75,80 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       }
     } else {
-      print('[2025-03-02 19:21:51] DashboardPage: ✅ User has preferences'
-            '\n└─ User: ${widget.user!.username}');
+      print('[2025-05-04 14:46:20] DashboardPage: ✅ User has preferences'
+          '\n└─ User: ${widget.user!.username}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    
-    return BasePage(
-      title: 'Dashboard',
-      currentRoute: '/dashboard',
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildDashboardHeader(context, widget.user),
-            const SizedBox(height: AppDimensions.paddingL),
-            
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DashboardStats(),
-                  const SizedBox(height: AppDimensions.paddingXL),
-                  
-                  const SectionTitle(title: "Your Portfolio"),
-                  const SizedBox(height: AppDimensions.paddingL),
-                  InvestmentPortfolio(),
-                  const SizedBox(height: AppDimensions.paddingXL),
-                  
-                  const SectionTitle(title: "Recent Activity"),
-                  const SizedBox(height: AppDimensions.paddingL),
-                  RecentActivity(),
-                  const SizedBox(height: AppDimensions.paddingXL),
-                  
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+    return BlocProvider.value(
+      value: _investmentBloc,
+      child: BasePage(
+        title: 'Dashboard',
+        currentRoute: '/dashboard',
+        body: RefreshIndicator(
+          onRefresh: () async {
+            _investmentBloc.add(LoadEnhancedTokens());
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                _buildDashboardHeader(context, widget.user),
+                const SizedBox(height: AppDimensions.paddingL),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile
+                        ? AppDimensions.paddingL
+                        : AppDimensions.paddingXXL,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SectionTitle(title: "Featured Properties"),
-                      TextButton(
-                        onPressed: () {
-                          _navigateToInvest(context);
-                        },
-                        child: const Text(
-                          "See all",
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
+                      const DashboardStats(),
+                      const SizedBox(height: AppDimensions.paddingXL),
+
+                      const SectionTitle(title: "Your Portfolio"),
+                      const SizedBox(height: AppDimensions.paddingL),
+                      const InvestmentPortfolio(),
+                      const SizedBox(height: AppDimensions.paddingXL),
+
+                      const SectionTitle(title: "Recent Activity"),
+                      const SizedBox(height: AppDimensions.paddingL),
+                      const RecentActivity(),
+                      const SizedBox(height: AppDimensions.paddingXL),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const SectionTitle(title: "Featured Properties"),
+                          TextButton(
+                            onPressed: () {
+                              _navigateToInvest(context);
+                            },
+                            child: const Text(
+                              "See all",
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
+                      const SizedBox(height: AppDimensions.paddingL),
+                      // Remplacez FeaturedProperties par un widget statique
+                      _buildEmptyFeaturedProperties(),
+                      const SizedBox(height: AppDimensions.paddingXXL),
                     ],
                   ),
-                  const SizedBox(height: AppDimensions.paddingL),
-                  // Remplacez FeaturedProperties par un widget statique
-                  _buildEmptyFeaturedProperties(),
-                  const SizedBox(height: AppDimensions.paddingXXL),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -135,15 +156,15 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _navigateToInvest(BuildContext context) {
     try {
-      print(' DashboardPage: 🔄 Navigating to Invest page'
-            '\n└─ User: raednas');
-            
+      print('[2025-05-04 14:46:20] DashboardPage: 🔄 Navigating to Invest page'
+          '\n└─ User: nesssim');
+
       Navigator.pushNamed(context, '/invest');
     } catch (e) {
-      print(' DashboardPage: ❌ Navigation error'
-            '\n└─ User: raednas'
-            '\n└─ Error: $e');
-            
+      print('[2025-05-04 14:46:20] DashboardPage: ❌ Navigation error'
+          '\n└─ User: nesssim'
+          '\n└─ Error: $e');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Navigation error: $e'),
@@ -156,11 +177,12 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildDashboardHeader(BuildContext context, User? user) {
     final isMobile = ResponsiveHelper.isMobile(context);
     final userName = user?.username.split(' ')[0] ?? 'Investor';
-    
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
+        horizontal:
+            isMobile ? AppDimensions.paddingL : AppDimensions.paddingXXL,
         vertical: AppDimensions.paddingXL,
       ),
       decoration: const BoxDecoration(
@@ -203,7 +225,7 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
-  
+
   Widget _buildEmptyFeaturedProperties() {
     return Container(
       height: 200,
@@ -254,9 +276,9 @@ class _DashboardPageState extends State<DashboardPage> {
 // Widget utilitaire pour les titres de section
 class SectionTitle extends StatelessWidget {
   final String title;
-  
+
   const SectionTitle({super.key, required this.title});
-  
+
   @override
   Widget build(BuildContext context) {
     return Text(

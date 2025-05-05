@@ -6,15 +6,14 @@ import 'package:the_boost/features/auth/data/models/land_model.dart';
 
 class LandService {
   // Mise à jour de l'URL pour pointer vers l'endpoint catalogue
-  static const String _baseUrl = 'http://localhost:3000/lands';
-  static const String _catalogueUrl = 'http://localhost:3000/lands/catalogue';
+  static const String _baseUrl = 'http://localhost:5000/lands';
+  static const String _catalogueUrl = 'http://localhost:5000/lands/catalogue';
   final SessionService _sessionService = getIt<SessionService>();
 
 Future<List<Land>> fetchLands() async {
   try {
 
     print('LandService: 🚀 Fetching lands from $_catalogueUrl');
-    print('LandService: 👤 User: nesssim');
     
     final sessionData = await _sessionService.getSession();
     if (sessionData == null || sessionData.accessToken.isEmpty) {
@@ -109,7 +108,7 @@ Future<List<String>> getLandTypes() async {
 
     final token = sessionData.accessToken;
     final response = await http.get(
-      Uri.parse('http://localhost:3000/lands/types'), // 📌 Assuming you have an endpoint /lands/types
+      Uri.parse('http://localhost:5000/lands/types'), // 📌 Assuming you have an endpoint /lands/types
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
     );
 

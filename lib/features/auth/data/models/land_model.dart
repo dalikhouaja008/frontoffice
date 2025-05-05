@@ -21,7 +21,11 @@ extension LandTypeExtension on LandType {
 enum LandValidationStatus {
   PENDING_VALIDATION,
   VALIDATED,
-  REJECTED
+  REJECTED,
+  PARTIALLY_VALIDATED,
+  EN_ATTENTE,
+  VALIDE,
+  REJETE
 }
 
 @JsonSerializable()
@@ -37,7 +41,7 @@ class Land {
   final String status; 
   final List<String>? ipfsCIDs;
   final List<String>? imageCIDs;
-  final String? blockchainTxHash; // Champ ajouté
+  final String? blockchainTxHash;
   final DateTime createdAt;
   final DateTime updatedAt;
   final double? surface;
@@ -47,9 +51,9 @@ class Land {
   final String? ownerAddress;
   final String? blockchainLandId;
   final LandType? landtype;
-  final List<String>? documentUrls; // Added property from backend
-  final List<String>? imageUrls; // Added property from backend
-  final String? coverImageUrl; // Added property from backend
+  final List<String>? documentUrls;
+  final List<String>? imageUrls; 
+  final String? coverImageUrl;
   
   // Custom converter for MongoDB Map to Dart Map
   @JsonKey(fromJson: _amenitiesFromJson, toJson: _amenitiesToJson)
@@ -61,6 +65,21 @@ class Land {
   
   // Add validations field if you need to access it from the frontend
   final List<ValidationEntry>? validations;
+  
+  // New fields for tokenization
+  @JsonKey(defaultValue: false)
+  final bool isTokenized;
+  
+  final String? tokenizationTxHash;
+  
+  final DateTime? tokenizationTimestamp;
+  
+  final String? tokenizationError;
+  
+  @JsonKey(defaultValue: 0)
+  final int availableTokens;
+  
+  final List<int>? tokenIds;
 
   Land({
     required this.id,
@@ -89,6 +108,12 @@ class Land {
     this.amenities,
     required this.availability,
     this.validations,
+    this.isTokenized = false,
+    this.tokenizationTxHash,
+    this.tokenizationTimestamp,
+    this.tokenizationError,
+    this.availableTokens = 0,
+    this.tokenIds,
   });
 
   factory Land.fromJson(Map<String, dynamic> json) => _$LandFromJson(json);

@@ -1,4 +1,4 @@
-// lib/services/api_service.dart - UPDATED WITH ETH SUPPORT
+
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -10,8 +10,9 @@ import '../../features/auth/data/models/property/valuation_result.dart';
 class ApiService {
   final String baseUrl;
   
-  // Constructor with default value from .env or hardcoded fallback
   ApiService() : baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000/api';
+  ApiService() : baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:6000/api';
+
   
   // Get current ETH price
   Future<Map<String, dynamic>> getEthPrice() async {
