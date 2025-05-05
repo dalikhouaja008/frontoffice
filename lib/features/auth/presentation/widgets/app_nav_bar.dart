@@ -20,8 +20,11 @@ import '../../../../core/di/dependency_injection.dart';
 import '../../../../core/services/prop_service.dart';
 import '../pages/valuation/land_valuation_home_screen.dart';
 import '../pages/valuation/land_valuation_screen_with_nav.dart';
-// Import the marketplace page
+
 import '../../../../features/marketplace/presentation/pages/marketplace_page.dart';
+
+import 'howitworks_page.dart';
+
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -38,13 +41,16 @@ class AppNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
+
     print(
         '[2025-05-05 02:04:26] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
 
     return BlocBuilder<LoginBloc, LoginState>(
       builder: (context, state) {
         print(
+
             '[2025-05-05 02:04:26] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
+
         final isAuthenticated = state is LoginSuccess;
         final user = isAuthenticated ? state.user : null;
 
@@ -88,26 +94,22 @@ class AppNavBar extends StatelessWidget {
                   spacing: AppDimensions.paddingM,
                   children: [
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
-                    _NavLink('Features',
-                        route: '/features', currentRoute: currentRoute),
-                    // Modified to open land valuation screen instead of '/how-it-works'
+
+                    _NavLink('Features', route: '/features', currentRoute: currentRoute),
+                    // Modified to use HowItWorksPage instead of LandValuationHomeScreen
                     _NavLink(
-                      'How It Works',
-                      route: '/how-it-works',
+                      'How It Works', 
+                      route: '/how-it-works', 
                       currentRoute: currentRoute,
                       onNavigate: () {
-                        // Create a properly initialized ApiService instance
-                        final apiService = getIt<
-                            ApiService>(); // ✅ Get a properly initialized ApiService
-
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
-                                LandValuationHomeScreen(apiService: apiService),
+                            builder: (context) => HowItWorksPage(), // Now using HowItWorksPage
                           ),
                         );
                       },
                     ),
+
                     // Add Marketplace link only when authenticated
                     if (isAuthenticated)
                       _NavLink(
@@ -129,6 +131,7 @@ class AppNavBar extends StatelessWidget {
                         route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More',
                         route: '/learn-more', currentRoute: currentRoute),
+
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
@@ -216,6 +219,7 @@ class AppNavBar extends StatelessWidget {
       ],
     );
   }
+
 
   // Helper method to get or generate wallet address
   String _getUserWalletAddress(User? user) {
@@ -350,6 +354,7 @@ class AppNavBar extends StatelessWidget {
                 },
               ),
             ],
+  
           ),
         );
       },
@@ -599,6 +604,7 @@ class AppNavBar extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
+
                     leading:
                         const Icon(Icons.dashboard, color: AppColors.primary),
                     title: const Text('Dashboard'),

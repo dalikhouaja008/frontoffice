@@ -45,7 +45,6 @@ class _LoginFormState extends State<LoginForm> {
   void _showErrorDialog(BuildContext context, String error) {
     final formattedError = _formatErrorMessage(error);
     print('[2025-03-02 15:58:06] LoginForm: ❌ Showing error dialog'
-        '\n└─ User: raednas'
         '\n└─ Error: $formattedError');
 
     showDialog(
@@ -63,7 +62,6 @@ class _LoginFormState extends State<LoginForm> {
 
   void _show2FADialog(BuildContext context, LoginRequires2FA state) {
     print('[2025-03-02 16:20:01] LoginForm: 🔐 Showing 2FA dialog'
-        '\n└─ User: raednas'
         '\n└─ Email: ${state.user.email}');
 
     // Get the repository from getIt
@@ -87,17 +85,15 @@ class _LoginFormState extends State<LoginForm> {
 
               // Use the route constant for navigation and add a small delay to ensure the
               // login state is properly updated before navigation
-              Future.delayed(Duration(milliseconds: 100), () {
+              Future.delayed(const Duration(milliseconds: 100), () {
                 Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
 
                 print(
                     '[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
-                    '\n└─ User: raednas'
                     '\n└─ Email: ${twoFactorState.user.email}');
               });
             } else if (twoFactorState is TwoFactorAuthError) {
               print('[2025-03-02 16:20:01] LoginForm: ❌ 2FA verification failed'
-                  '\n└─ User: raednas'
                   '\n└─ Error: ${twoFactorState.message}');
 
               ScaffoldMessenger.of(context).showSnackBar(
@@ -129,7 +125,6 @@ class _LoginFormState extends State<LoginForm> {
         
         if (state is LoginSuccess) {
           print('[2025-03-02 16:20:01] LoginForm: ✅ Login successful'
-              '\n└─ User: raednas'
               '\n└─ Email: ${state.user.email}');
 
           // Use a small delay to ensure state is properly propagated
@@ -137,18 +132,15 @@ class _LoginFormState extends State<LoginForm> {
             Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
             
             print('[2025-03-02 16:20:01] LoginForm: 🔄 Navigating to dashboard'
-                '\n└─ User: raednas'
                 '\n└─ Email: ${state.user.email}');
           });
         } else if (state is LoginRequires2FA) {
           print('[2025-03-02 16:20:01] LoginForm: 🔐 2FA required'
-              '\n└─ User: raednas'
               '\n└─ Email: ${state.user.email}');
 
           _show2FADialog(context, state);
         } else if (state is LoginFailure) {
           print('[2025-03-02 16:20:01] LoginForm: ❌ Login failed'
-              '\n└─ User: raednas'
               '\n└─ Error: ${state.error}');
 
           _showErrorDialog(context, state.error);
@@ -308,23 +300,23 @@ class _LoginFormState extends State<LoginForm> {
                     ],
                   ),
                 ),
-                SizedBox(height: AppDimensions.paddingXL),
+                const SizedBox(height: AppDimensions.paddingXL),
 
                 // Social login
-                Center(
+                const Center(
                   child: Text(
                     "Or log in with",
                     style: TextStyle(color: Colors.black54),
                   ),
                 ),
-                SizedBox(height: AppDimensions.paddingL),
+                const SizedBox(height: AppDimensions.paddingL),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _SocialButton(icon: Icons.g_mobiledata, onTap: () {}),
-                    SizedBox(width: AppDimensions.paddingL),
+                    const SizedBox(width: AppDimensions.paddingL),
                     _SocialButton(icon: Icons.facebook, onTap: () {}),
-                    SizedBox(width: AppDimensions.paddingL),
+                    const SizedBox(width: AppDimensions.paddingL),
                     _SocialButton(icon: Icons.apple, onTap: () {}),
                   ],
                 ),
