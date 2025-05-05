@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
@@ -13,13 +14,13 @@ import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 import 'package:the_boost/features/auth/presentation/widgets/notification_bell.dart';
-import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import '../../../../core/di/dependency_injection.dart';
 import '../../../../core/services/prop_service.dart';
+import '../../../metamask/data/models/metamask_provider.dart';
 import '../pages/valuation/land_valuation_home_screen.dart';
-import '../pages/valuation/land_valuation_screen_with_nav.dart';
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -37,12 +38,12 @@ class AppNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
     print(
-        '[2025-04-16 10:05:23] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
+        '[2025-05-04 23:54:55] AppNavBar: 🔄 Building navbar\n└─ Current route: $currentRoute');
 
     return BlocBuilder<LoginBloc, LoginState>(
       builder: (context, state) {
         print(
-            '[2025-04-16 10:05:23] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
+            '[2025-05-04 23:54:55] AppNavBar: 🔎 Current auth state: ${state.runtimeType}\n└─ Is authenticated: ${state is LoginSuccess}');
         final isAuthenticated = state is LoginSuccess;
         final user = isAuthenticated ? state.user : null;
 
@@ -70,6 +71,277 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
+  // Handle public key update with user integration
+Future<void> _handlePublicKeyUpdate(BuildContext context, String address, User? user) async {
+  developer.log('[2025-05-05 00:05:53] AppNavBar: 🔑 Public key updated for address: $address');
+  
+  // Show success message
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Connected to wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}'),
+      backgroundColor: Colors.green,
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 4),
+      action: SnackBarAction(
+        label: 'OK',
+        textColor: Colors.white,
+        onPressed: () {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        },
+      ),
+    ),
+  );
+  
+  // If the user is authenticated, associate the wallet address with the user account
+  if (user != null) {
+    developer.log('[2025-05-05 00:05:53] AppNavBar: 👤 User authenticated: ${user.id}. Associating wallet address: $address');
+    
+    final provider = Provider.of<MetamaskProvider>(context, listen: false);
+    if (provider.publicKey.isEmpty) {
+      developer.log('[2025-05-05 00:05:53] AppNavBar: 🔑 Requesting public key for user ${user.id}');
+      
+      // We need to get the public key from MetaMask and save it to the backend
+      final success = await provider.getEncryptionPublicKey();
+      if (success) {
+        developer.log('[2025-05-05 00:05:53] AppNavBar: ✅ Public key saved for user ${user.id}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wallet connected and public key saved successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        developer.log('[2025-05-05 00:05:53] AppNavBar: ❌ Failed to get public key: ${provider.error}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to get public key: ${provider.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      developer.log('[2025-05-05 00:05:53] AppNavBar: ℹ️ Public key already exists for user ${user.id}');
+    }
+  } else {
+    developer.log('[2025-05-05 00:05:53] AppNavBar: ⚠️ User not authenticated. Wallet connected but not associated with user account');
+    
+    // Prompt user to log in to associate the wallet
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Log in to associate this wallet with your account'),
+        backgroundColor: Colors.orange,
+        action: SnackBarAction(
+          label: 'Login',
+          onPressed: () {
+            Navigator.pushNamed(context, AppRoutes.auth);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// Add this widget to your AppNavBar class
+Widget _buildWalletButton(BuildContext context, User? user) {
+  return Consumer<MetamaskProvider>(
+    builder: (context, provider, _) {
+      developer.log('[2025-05-05 00:05:53] AppNavBar: 🔄 Building wallet button. Connected: ${provider.currentAddress.isNotEmpty}. Loading: ${provider.isLoading}');
+      
+      // Loading state
+      if (provider.isLoading) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+        );
+      }
+
+      // Connected state
+      if (provider.currentAddress.isNotEmpty) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.primary),
+          ),
+          child: InkWell(
+            onTap: () => _showWalletOptions(context, provider, user),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Not connected state
+      return ElevatedButton.icon(
+        icon: const Icon(Icons.account_balance_wallet, size: 16),
+        label: const Text('Connect Wallet', style: TextStyle(fontSize: 12)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: Colors.grey.shade300),
+          ),
+          elevation: 1,
+        ),
+        onPressed: () {
+          developer.log('[2025-05-05 00:05:53] AppNavBar: 🔘 MetaMask connect button clicked');
+          
+          try {
+            provider.connect().then((success) {
+              developer.log('[2025-05-05 00:05:53] AppNavBar: 🔄 MetaMask connect result: $success');
+              
+              if (success && provider.currentAddress.isNotEmpty) {
+                _handlePublicKeyUpdate(context, provider.currentAddress, user);
+              } else if (!success && provider.error.isNotEmpty) {
+                developer.log('[2025-05-05 00:05:53] AppNavBar: ❌ MetaMask error: ${provider.error}');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('MetaMask error: ${provider.error}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }).catchError((error) {
+              developer.log('[2025-05-05 00:05:53] AppNavBar: ❌ MetaMask connect error: $error');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to connect to MetaMask: $error'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            });
+          } catch (e) {
+            developer.log('[2025-05-05 00:05:53] AppNavBar: ❌ Exception during MetaMask connection: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to connect to MetaMask: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      );
+    },
+  );
+}
+
+// Show wallet options dialog with user integration
+void _showWalletOptions(BuildContext context, MetamaskProvider provider, User? user) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Wallet Connected'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Your Ethereum Address:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            SelectableText(provider.currentAddress),
+            const SizedBox(height: 16),
+            if (provider.publicKey.isNotEmpty) ...[
+              const Text('Public Key Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  const SizedBox(width: 4),
+                  const Text('Public Key Saved'),
+                ],
+              ),
+            ],
+            if (user != null) ...[
+              const SizedBox(height: 16),
+              const Text('Account Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.link, color: Colors.blue, size: 16),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text('Connected to ${user.username}\'s account (ID: ${user.id})'),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
+            const Text('Network:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('ChainID: ${provider.chainId.isEmpty ? "Unknown" : provider.chainId}'),
+          ],
+        ),
+      ),
+      actions: [
+        if (!provider.success && provider.publicKey.isEmpty)
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              provider.getEncryptionPublicKey().then((success) {
+                if (success) {
+                  _handlePublicKeyUpdate(context, provider.currentAddress, user);
+                } else if (provider.error.isNotEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to get public key: ${provider.error}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              });
+            },
+            child: const Text('Get Public Key'),
+          ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            provider.disconnect();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Wallet disconnected'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          },
+          child: const Text('Disconnect'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
+}
+
   Widget _buildDesktopNavBar(
       BuildContext context, bool isAuthenticated, User? user) {
     return Row(
@@ -88,16 +360,12 @@ class AppNavBar extends StatelessWidget {
                     _NavLink('Home', route: '/', currentRoute: currentRoute),
                     _NavLink('Features',
                         route: '/features', currentRoute: currentRoute),
-                    // Modified to open land valuation screen instead of '/how-it-works'
                     _NavLink(
                       'How It Works',
                       route: '/how-it-works',
                       currentRoute: currentRoute,
                       onNavigate: () {
-                        // Create a properly initialized ApiService instance
-                        final apiService = getIt<
-                            ApiService>(); // ✅ Get a properly initialized ApiService
-
+                        final apiService = getIt<ApiService>();
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) =>
@@ -112,6 +380,9 @@ class AppNavBar extends StatelessWidget {
                         route: '/learn-more', currentRoute: currentRoute),
                   ],
                 ),
+                const SizedBox(width: AppDimensions.paddingM),
+                // Add wallet connect button - with error handling
+                _buildWalletButton(context, user),
                 const SizedBox(width: AppDimensions.paddingM),
                 if (isAuthenticated)
                   Row(
@@ -167,6 +438,9 @@ class AppNavBar extends StatelessWidget {
         _buildLogo(context),
         Row(
           children: [
+            // Add wallet connect button with error handling
+            _buildWalletButton(context, user),
+            const SizedBox(width: 8),
             if (isAuthenticated) ...[
               NotificationBell(
                 onOpenPreferences: () =>
@@ -198,75 +472,102 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
-  // Add method to handle mobile drawer with land valuation navigation
-  Widget buildMobileDrawer(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.landscape, color: Colors.white, size: 32),
-                const SizedBox(width: 8),
-                Text(
-                  'TheBoost',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+
+
+  // This widget will only be rendered if Provider is available
+  Widget _buildWalletButtonWithFallback(BuildContext context, User? user) {
+    return Builder(
+      builder: (context) {
+        try {
+          // Try to use the Consumer, but wrap in try-catch to handle errors
+          return Consumer<dynamic>(
+            builder: (context, provider, _) {
+              // Basic connect button as fallback
+              return ElevatedButton.icon(
+                icon: const Icon(Icons.account_balance_wallet, size: 16),
+                label: const Text('Connect', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: Colors.grey.shade300),
                   ),
+                  elevation: 1,
                 ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.featured_play_list),
-            title: const Text('Features'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/features');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.map),
-            title: const Text('Land Valuation'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LandValuationHomeScreen(),
-                ),
+                onPressed: () {
+                  _showWalletConnectDialog(context, user);
+                },
               );
             },
-          ),
-          ListTile(
-            leading: const Icon(Icons.token),
-            title: const Text('Invest'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/invest');
+          );
+        } catch (e) {
+          // Final fallback if Consumer fails
+          developer.log('Error rendering wallet button: $e');
+          return ElevatedButton.icon(
+            icon: const Icon(Icons.account_balance_wallet, size: 16),
+            label: const Text('Wallet', style: TextStyle(fontSize: 12)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              elevation: 1,
+            ),
+            onPressed: () {
+              _showWalletConnectDialog(context, user);
             },
-          ),
-          ListTile(
-            leading: const Icon(Icons.book),
-            title: const Text('Learn More'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/learn-more');
-            },
+          );
+        }
+      },
+    );
+  }
+
+  // Simple dialog to explain the wallet connection status
+  void _showWalletConnectDialog(BuildContext context, User? user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Wallet Connection'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'MetaMask provider is not properly configured in your app.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'To fix this issue, make sure to add the MetamaskProvider to your widget tree:',
+              style: TextStyle(fontSize: 14),
+            ),
+            SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'MultiProvider(\n  providers: [\n    ChangeNotifierProvider(create: (_) => MetamaskProvider()),\n    // Other providers...\n  ],\n  child: MyApp(),\n)',
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
           ),
         ],
       ),
@@ -378,6 +679,16 @@ class AppNavBar extends StatelessWidget {
               SizedBox(width: AppDimensions.paddingM),
               Text('Investment Preferences')
             ])),
+        // Add wallet management option
+        PopupMenuItem(
+            value: 'wallet',
+            child: Row(
+              children: [
+                Icon(Icons.account_balance_wallet, color: Colors.black54),
+                SizedBox(width: AppDimensions.paddingM),
+                Text('Manage Wallet'),
+              ],
+            )),
         const PopupMenuItem(
             value: 'settings',
             child: Row(children: [
@@ -407,6 +718,9 @@ class AppNavBar extends StatelessWidget {
             break;
           case 'preferences':
             if (user != null) _checkAndShowPreferences(context, user);
+            break;
+          case 'wallet':
+            _showWalletConnectDialog(context, user);
             break;
           case 'settings':
             break; // Add settings page route
@@ -439,104 +753,114 @@ class AppNavBar extends StatelessWidget {
           context: context,
           shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-          builder: (context) => Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: AppDimensions.paddingL),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(AppDimensions.paddingL),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: AppColors.primary,
-                        radius: 24,
-                        child: Text(
-                          firstLetter,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20),
+          builder: (context) => SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingL),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(AppDimensions.paddingL),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppColors.primary,
+                          radius: 24,
+                          child: Text(
+                            firstLetter,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppDimensions.paddingL),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(user?.username ?? 'User',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(user?.email ?? '',
-                                style: const TextStyle(
-                                    color: Colors.black54, fontSize: 14)),
-                          ],
+                        const SizedBox(width: AppDimensions.paddingL),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(user?.username ?? 'User',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold, fontSize: 16)),
+                              Text(user?.email ?? '',
+                                  style: const TextStyle(
+                                      color: Colors.black54, fontSize: 14)),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const Divider(),
-                ListTile(
-                    leading:
-                        const Icon(Icons.dashboard, color: AppColors.primary),
-                    title: const Text('Dashboard'),
+                  const Divider(),
+                  ListTile(
+                      leading:
+                          const Icon(Icons.dashboard, color: AppColors.primary),
+                      title: const Text('Dashboard'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, AppRoutes.dashboard);
+                      }),
+                  ListTile(
+                      leading: const Icon(Icons.person, color: AppColors.primary),
+                      title: const Text('My Profile'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/profile');
+                      }),
+                  ListTile(
+                      leading: const Icon(Icons.token, color: AppColors.primary),
+                      title: const Text('My Investments'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, AppRoutes.invest);
+                      }),
+                  ListTile(
+                      leading: const Icon(Icons.map, color: AppColors.primary),
+                      title: const Text('Land Valuation'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LandValuationHomeScreen(),
+                          ),
+                        );
+                      }),
+                  // Add wallet management option
+                  ListTile(
+                    leading: const Icon(Icons.account_balance_wallet, color: AppColors.primary),
+                    title: const Text('Manage Wallet'),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.dashboard);
-                    }),
-                ListTile(
-                    leading: const Icon(Icons.person, color: AppColors.primary),
-                    title: const Text('My Profile'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/profile');
-                    }),
-                ListTile(
-                    leading: const Icon(Icons.token, color: AppColors.primary),
-                    title: const Text('My Investments'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.invest);
-                    }),
-                ListTile(
-                    leading: const Icon(Icons.map, color: AppColors.primary),
-                    title: const Text('Land Valuation'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LandValuationHomeScreen(),
-                        ),
-                      );
-                    }),
-                ListTile(
-                    leading: const Icon(Icons.tune, color: AppColors.primary),
-                    title: const Text('Investment Preferences'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (user != null) _checkAndShowPreferences(context, user);
-                    }),
-                ListTile(
-                    leading:
-                        const Icon(Icons.settings, color: AppColors.primary),
-                    title: const Text('Settings'),
-                    onTap: () {
-                      Navigator.pop(context);
-                    }),
-                const Divider(),
-                ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Logout',
-                        style: TextStyle(color: Colors.red)),
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.read<LoginBloc>().add(LogoutRequested());
-                      Navigator.pushReplacementNamed(context, AppRoutes.home);
-                    }),
-              ],
+                      _showWalletConnectDialog(context, user);
+                    },
+                  ),
+                  ListTile(
+                      leading: const Icon(Icons.tune, color: AppColors.primary),
+                      title: const Text('Investment Preferences'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        if (user != null) _checkAndShowPreferences(context, user);
+                      }),
+                  ListTile(
+                      leading:
+                          const Icon(Icons.settings, color: AppColors.primary),
+                      title: const Text('Settings'),
+                      onTap: () {
+                        Navigator.pop(context);
+                      }),
+                  const Divider(),
+                  ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text('Logout',
+                          style: TextStyle(color: Colors.red)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.read<LoginBloc>().add(LogoutRequested());
+                        Navigator.pushReplacementNamed(context, AppRoutes.home);
+                      }),
+                ],
+              ),
             ),
           ),
         );
