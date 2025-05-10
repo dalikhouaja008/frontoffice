@@ -45,9 +45,6 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
   final formatter = NumberFormat("#,##0.00");
   bool _isProcessing = false;
 
-  // Current date and username from requirements
-  final String currentDate = "2025-05-04 20:14:53";
-
   // Liste des tokens disponibles
   late List<Map<String, dynamic>> _ownedTokens;
   late MarketplaceBloc _marketplaceBloc;
@@ -88,67 +85,109 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
     }
   }
 
-  void _processTokensFromBloc(List<Token> tokens) {
-    if (tokens.isEmpty) {
-      setState(() {
-        _ownedTokens = [];
-      });
-      return;
-    }
+void _processTokensFromBloc(List<Token> tokens) {
+  if (tokens.isEmpty) {
+    setState(() {
+      _ownedTokens = [];
+    });
+    return;
+  }
 
-    // Filter tokens that are not already listed
-    final nonListedTokens = tokens.where((token) => !token.isListed).toList();
+  // Filtrer les tokens non nuls et non listés
+  final nonListedTokens = tokens
+      .where((token) => token != null && !token.isListed)
+      .toList();
 
-    // Group by landId
-    final Map<int, List<Token>> groupedTokens = {};
-    for (final token in nonListedTokens) {
+  // Si aucun token valide, retourner une liste vide
+  if (nonListedTokens.isEmpty) {
+    setState(() {
+      _ownedTokens = [];
+    });
+    return;
+  }
+
+  // Group by landId
+  final Map<int, List<Token>> groupedTokens = {};
+  for (final token in nonListedTokens) {
+    if (token.landId != null) {
       if (!groupedTokens.containsKey(token.landId)) {
         groupedTokens[token.landId] = [];
       }
       groupedTokens[token.landId]!.add(token);
     }
+  }
 
-    // Process tokens into the required format
-    final processedTokens = groupedTokens.entries.map((entry) {
+  // Process tokens into the required format
+  final processedTokens = groupedTokens.entries.map((entry) {
+    try {
       final landId = entry.key;
       final tokensForLand = entry.value;
+      
+      // S'assurer que tokensForLand n'est pas vide
+      if (tokensForLand.isEmpty) return null;
+      
       final referenceToken = tokensForLand.first;
       final land = referenceToken.land;
+      
+      // Vérifier que land n'est pas null
+      if (land == null) return null;
 
-      // Calculate average market price
-      final totalValue = tokensForLand.fold(
-          0.0,
-          (sum, token) =>
-              sum + (double.tryParse(token.currentMarketInfo.price) ?? 0.0));
-      final avgPrice =
-          tokensForLand.isNotEmpty ? totalValue / tokensForLand.length : 0.0;
+      // Calculate average market price with null safety
+      double avgPrice = 0.0;
+      int validTokenCount = 0;
+      
+      for (var token in tokensForLand) {
+        if (token.currentMarketInfo != null && token.currentMarketInfo.price != null) {
+          final price = double.tryParse(token.currentMarketInfo.price) ?? 0.0;
+          if (price > 0) {
+            avgPrice += price;
+            validTokenCount++;
+          }
+        }
+      }
+      
+      // Diviser par le nombre de tokens valides ou retourner 0
+      avgPrice = validTokenCount > 0 ? avgPrice / validTokenCount : 0.0;
 
       // Extract actual tokenIds for API call
-      final tokenIds = tokensForLand.map((t) => t.tokenId).toList();
+      final tokenIds = tokensForLand
+          .map((t) => t.tokenId)
+          .where((id) => id != null)
+          .toList();
 
+      // Créer la structure finalisée avec des valeurs par défaut
       return {
         'id': 'TOK-$landId-2025',
-        'name': land!.title,
-        'location': land.location,
+        'name': land.title ?? 'Unknown Land',
+        'location': land.location ?? 'Unknown Location',
         'totalTokens': 1000, // Default value if not available
         'ownedTokens': tokensForLand.length,
         'marketPrice': avgPrice,
         'imageUrl': land.imageUrl ?? 'assets/1.jpg',
-        'lastTraded': '2025-05-01', 
-        'priceChange': '+2.4%', 
+        'lastTraded': '2025-05-10', // Date actuelle
+        'priceChange': '+0.0%', // Valeur par défaut
         'actualTokens': tokensForLand,
-        'tokenIds': tokenIds, 
+        'tokenIds': tokenIds,
       };
-    }).toList();
-
-    setState(() {
-      _ownedTokens = processedTokens;
-    });
-
-    if (_ownedTokens.isNotEmpty) {
-      _updateSelectedToken();
+    } catch (e) {
+      print(' Error processing token group: $e');
+      return null;
     }
+  })
+  .where((token) => token != null)
+  .cast<Map<String, dynamic>>()
+  .toList();
+
+  print(' Processed ${processedTokens.length} token groups');
+
+  setState(() {
+    _ownedTokens = processedTokens;
+  });
+
+  if (_ownedTokens.isNotEmpty) {
+    _updateSelectedToken();
   }
+}
 
   void _updateSelectedToken() {
     if (_ownedTokens.isEmpty) return;
@@ -228,8 +267,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
   }
 
   void _handleTokenSale() {
-    final currentDateTime = '2025-05-04 21:20:30';
-    final username = 'nesssim';
+
 
     if (_ownedTokens.isEmpty) return;
 
@@ -256,7 +294,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
     }
 
     print(
-        '[$currentDateTime] $username - Tentative de mise en vente de $tokenCount tokens au prix de $price ETH');
+        'Tentative de mise en vente de $tokenCount tokens au prix de $price ETH');
 
     // Si tout est bon, procéder avec la vente
     setState(() {
@@ -268,7 +306,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
       // Si un seul token, utiliser la fonction simple listToken
       final tokenId = token['actualTokens'][0].tokenId;
       print(
-          '[$currentDateTime] $username - Utilisation de listToken pour token #$tokenId');
+          ' Utilisation de listToken pour token #$tokenId');
 
       _marketplaceBloc.add(ListTokenEvent(tokenId: tokenId, price: price));
     } else {
@@ -293,7 +331,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
       }
 
       print(
-          '[$currentDateTime] $username - Utilisation de listMultipleTokens pour ${tokenIds.length} tokens');
+          'Utilisation de listMultipleTokens pour ${tokenIds.length} tokens');
 
       _marketplaceBloc
           .add(ListMultipleTokensEvent(tokenIds: tokenIds, prices: prices));
@@ -422,7 +460,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
                                       durations: _durations,
                                       selectedDuration: _selectedDuration,
                                       isMarketPrice: _isMarketPrice,
-                                      currentDate: currentDate,
+                                      currentDate: '',
                                       username: '',
                                       formatter: formatter,
                                       totalAmount: _totalAmount,
@@ -505,7 +543,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
                                 durations: _durations,
                                 selectedDuration: _selectedDuration,
                                 isMarketPrice: _isMarketPrice,
-                                currentDate: currentDate,
+                                currentDate: '' ,
                                 username: '',
                                 formatter: formatter,
                                 totalAmount: _totalAmount,
@@ -851,4 +889,7 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
     _descriptionController.dispose();
     super.dispose();
   }
+
+
+
 }
