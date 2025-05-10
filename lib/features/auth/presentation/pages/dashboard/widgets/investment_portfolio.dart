@@ -319,7 +319,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
             padding: const EdgeInsets.all(AppDimensions.paddingM),
             child: Row(
               children: [
-                _buildLandImage(land.imageUrl),
+                _buildLandImage(land!.imageUrl),
                 const SizedBox(width: AppDimensions.paddingM),
                 Expanded(
                   child: Column(
@@ -344,7 +344,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                           const SizedBox(width: 2),
                           Expanded(
                             child: Text(
-                              land.location,
+                              land!.location,
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 14,
@@ -447,7 +447,7 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
                       arguments: {
                         'tokens': formattedTokens,
                         'selectedTokenIndex': 0,
-                        'landName': land.title,
+                        'landName': land!.title,
                       },
                     );
                     
@@ -607,27 +607,24 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
     });
 
     // Calculer le prix moyen par token
-    final double avgPrice = _calculateAveragePrice(tokens);
+    _calculateAveragePrice(tokens);
 
     // Calculer le changement de prix (simulé pour l'exemple)
-    final String priceChange = _calculatePriceChange(tokens);
+    _calculatePriceChange(tokens);
 
     // Format map attendu par la page de vente
-    return [
+      return [
       {
-        'id': 'TOK-${land.id}-${DateTime.now().year}',
-        'name': land.title,
-        'location': land.location,
-        'totalTokens': 1000, // Si disponible
+        'id': 'TOK-UNKNOWN-${DateTime.now().year}',
+        'name': 'Unknown Land',
+        'location': 'Unknown location',
+        'totalTokens': 0,
         'ownedTokens': tokens.length,
-        'marketPrice': avgPrice,
-        'imageUrl': land.imageUrl,
-        'lastTraded': DateTime.now()
-            .subtract(const Duration(days: 3))
-            .toString()
-            .substring(0, 10),
-        'priceChange': priceChange,
-        'actualTokens': tokens, // Les tokens réels pour traitement
+        'marketPrice': 0.0,
+        'imageUrl': null,
+        'lastTraded': DateTime.now().toString().substring(0, 10),
+        'priceChange': '+0.0%',
+        'actualTokens': tokens,
       }
     ];
   }
@@ -656,23 +653,23 @@ class _InvestmentPortfolioState extends State<InvestmentPortfolio> {
     return "$direction${percentChange.toStringAsFixed(1)}%";
   }
 
-  Widget _buildLandImage(String? imageUrl) {
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          imageUrl,
-          width: 50,
-          height: 50,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildPlaceholderImage();
-          },
-        ),
-      );
-    }
-    return _buildPlaceholderImage();
+Widget _buildLandImage(String? imageUrl) {
+  if (imageUrl != null && imageUrl.isNotEmpty) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        imageUrl,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildPlaceholderImage();
+        },
+      ),
+    );
   }
+  return _buildPlaceholderImage();
+}
 
   Widget _buildPlaceholderImage() {
     return Container(

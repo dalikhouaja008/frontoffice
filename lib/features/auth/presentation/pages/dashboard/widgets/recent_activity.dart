@@ -46,8 +46,8 @@ class ActivityItem {
           date: token.purchaseInfo.date,
           title: "Token Purchase",
           description: "You purchased token #${token.tokenNumber}",
-          tokenInfo: token.land.title,
-          imageUrl: token.land.imageUrl,
+          tokenInfo: token.land!.title,
+          imageUrl: token.land!.imageUrl,
           valueChange: token.purchaseInfo.formattedPrice,
           isPositiveChange: false,
         ),
@@ -61,8 +61,8 @@ class ActivityItem {
             date: DateTime.now(), // Replace with actual listing date when available
             title: "Listed for Sale",
             description: "You listed token #${token.tokenNumber} for sale",
-            tokenInfo: token.land.title,
-            imageUrl: token.land.imageUrl,
+            tokenInfo: token.land!.title,
+            imageUrl: token.land!.imageUrl,
             valueChange: token.listingInfo!.formattedPrice,
             isPositiveChange: true,
           ),
@@ -74,11 +74,11 @@ class ActivityItem {
         activities.add(
           ActivityItem(
             type: ActivityType.priceUpdate,
-            date: DateTime.now().subtract(const Duration(days: 1)), // Estimate, replace with actual date
+            date: DateTime.now().subtract(const Duration(days: 1)), 
             title: "Price Change",
             description: "Token #${token.tokenNumber} price has changed",
-            tokenInfo: token.land.title,
-            imageUrl: token.land.imageUrl,
+            tokenInfo: token.land!.title,
+            imageUrl: token.land!.imageUrl,
             valueChange: token.currentMarketInfo.changeFormatted,
             isPositiveChange: token.currentMarketInfo.change > 0,
           ),

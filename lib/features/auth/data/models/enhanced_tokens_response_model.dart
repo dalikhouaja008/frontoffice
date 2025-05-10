@@ -4,18 +4,33 @@ import 'package:the_boost/features/auth/domain/entities/enhanced_tokens_response
 
 class EnhancedTokensResponseModel extends EnhancedTokensResponse {
   EnhancedTokensResponseModel({
-    required EnhancedTokensDataModel data,
-    required DateTime timestamp,
+    required super.success,
+    required EnhancedTokensDataModel super.data,
+    required super.count,
+    required super.message,
+    String? timestamp,
   }) : super(
-          data: data,
-          timestamp: timestamp,
+          timestamp: timestamp ?? DateTime.now().toIso8601String(),
         );
 
   factory EnhancedTokensResponseModel.fromJson(Map<String, dynamic> json) {
     return EnhancedTokensResponseModel(
-      data: EnhancedTokensDataModel.fromJson(json['data']),
-      timestamp: DateTime.parse(json['timestamp']),
+      success: json['success'] ?? false,
+      data: EnhancedTokensDataModel.fromJson(json['data'] ?? {}),
+      count: json['count'] ?? 0,
+      message: json['message'] ?? '',
+      timestamp: json['timestamp'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'data': (data as EnhancedTokensDataModel).toJson(),
+      'count': count,
+      'message': message,
+      'timestamp': timestamp,
+    };
   }
 }
 
@@ -30,10 +45,19 @@ class EnhancedTokensDataModel extends EnhancedTokensData {
 
   factory EnhancedTokensDataModel.fromJson(Map<String, dynamic> json) {
     return EnhancedTokensDataModel(
-      tokens: (json['tokens'] as List)
+      tokens: ((json['tokens'] ?? []) as List)
           .map((tokenJson) => TokenModel.fromJson(tokenJson))
           .toList(),
-      stats: InvestmentStatsModel.fromJson(json['stats']),
+      stats: InvestmentStatsModel.fromJson(json['stats'] ?? {}),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'tokens': (tokens as List<TokenModel>)
+          .map((token) => (token).toJson())
+          .toList(),
+      'stats': (stats as InvestmentStatsModel).toJson(),
+    };
   }
 }
