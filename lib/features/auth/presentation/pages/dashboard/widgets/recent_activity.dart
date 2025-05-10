@@ -37,9 +37,16 @@ class ActivityItem {
   // Factory method to create activity items from tokens data
   static List<ActivityItem> createFromTokens(List<Token> tokens) {
     List<ActivityItem> activities = [];
-    
+
+    // Date actuelle pour les événements récents
+    final now = DateTime.now();
+
     for (var token in tokens) {
-      // Add purchase activity
+      if (token.land == null) {
+        continue;
+      }
+
+      // Ajouter activité d'achat
       activities.add(
         ActivityItem(
           type: ActivityType.purchase,
@@ -52,13 +59,28 @@ class ActivityItem {
           isPositiveChange: false,
         ),
       );
-      
-      // If the token is listed, add listing activity
+
+      // Si le token est listé, ajouter activité de listing
       if (token.isListed && token.listingInfo != null) {
+        // Utiliser la date de listing réelle si disponible
+        DateTime listingDate;
+
+        if (token.listingInfo?.listingDate != null) {
+          try {
+            listingDate = DateTime.parse(token.listingInfo!.listingDate!);
+          } catch (e) {
+            print(
+                '[${now.toIso8601String()}] nesssim - Error parsing listing date: ${e.toString()}');
+            listingDate = now.subtract(const Duration(hours: 1));
+          }
+        } else {
+          listingDate = now.subtract(const Duration(hours: 1));
+        }
+
         activities.add(
           ActivityItem(
             type: ActivityType.listing,
-            date: DateTime.now(), // Replace with actual listing date when available
+            date: listingDate,
             title: "Listed for Sale",
             description: "You listed token #${token.tokenNumber} for sale",
             tokenInfo: token.land!.title,
@@ -68,13 +90,13 @@ class ActivityItem {
           ),
         );
       }
-      
-      // If there's a price change, add price update activity
+
+      // Ajouter activité de variation de prix si elle existe
       if (token.currentMarketInfo.change != 0) {
         activities.add(
           ActivityItem(
             type: ActivityType.priceUpdate,
-            date: DateTime.now().subtract(const Duration(days: 1)), 
+            date: now.subtract(const Duration(days: 1)),
             title: "Price Change",
             description: "Token #${token.tokenNumber} price has changed",
             tokenInfo: token.land!.title,
@@ -85,10 +107,10 @@ class ActivityItem {
         );
       }
     }
-    
-    // Sort activities by date (most recent first)
+
+    // Trier par date (plus récent en premier)
     activities.sort((a, b) => b.date.compareTo(a.date));
-    
+
     return activities;
   }
 }
@@ -110,7 +132,7 @@ class RecentActivity extends StatelessWidget {
         } else if (state is InvestmentLoaded) {
           return _buildActivity(context, state.tokens);
         } else if (state is InvestmentRefreshing) {
-          return _buildActivity(context, state.tokens);  
+          return _buildActivity(context, state.tokens);
         } else if (state is InvestmentError) {
           return _buildErrorActivity(context, state.message);
         } else {
@@ -119,19 +141,19 @@ class RecentActivity extends StatelessWidget {
       },
     );
   }
-  
+
   Widget _buildActivity(BuildContext context, List<Token> tokens) {
     final activities = ActivityItem.createFromTokens(tokens);
-    
+
     if (activities.isEmpty) {
       return _buildEmptyActivity();
     }
-    
+
     // Limit the number of activities shown
     final displayedActivities = activities.length > maxItems
         ? activities.sublist(0, maxItems)
         : activities;
-    
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -147,7 +169,7 @@ class RecentActivity extends StatelessWidget {
       ),
       child: Column(
         children: [
-          for (int i = 0; i < displayedActivities.length; i++) 
+          for (int i = 0; i < displayedActivities.length; i++)
             Column(
               children: [
                 _buildActivityItem(context, displayedActivities[i]),
@@ -180,7 +202,7 @@ class RecentActivity extends StatelessWidget {
     // Determine the icon based on activity type
     IconData activityIcon;
     Color iconColor;
-    
+
     switch (activity.type) {
       case ActivityType.purchase:
         activityIcon = Icons.shopping_cart;
@@ -199,10 +221,10 @@ class RecentActivity extends StatelessWidget {
         iconColor = activity.isPositiveChange ? Colors.green : Colors.red;
         break;
     }
-    
+
     // Format relative time (e.g., "3 hours ago")
     final timeAgo = timeago.format(activity.date, locale: 'en');
-    
+
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.paddingM),
       child: Row(
@@ -259,7 +281,9 @@ class RecentActivity extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: activity.type == ActivityType.priceUpdate
-                        ? (activity.isPositiveChange ? Colors.green : Colors.red)
+                        ? (activity.isPositiveChange
+                            ? Colors.green
+                            : Colors.red)
                         : Colors.black,
                   ),
                 ),
@@ -268,7 +292,8 @@ class RecentActivity extends StatelessWidget {
                     activity.isPositiveChange
                         ? Icons.arrow_upward
                         : Icons.arrow_downward,
-                    color: activity.isPositiveChange ? Colors.green : Colors.red,
+                    color:
+                        activity.isPositiveChange ? Colors.green : Colors.red,
                     size: 14,
                   ),
               ],

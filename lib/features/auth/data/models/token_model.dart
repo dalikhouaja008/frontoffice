@@ -98,8 +98,9 @@ class MarketInfoModel extends MarketInfo {
     required double change,
     required String changeFormatted,
     required String formattedPrice,
-    required bool isPositive, // Ajouté pour correspondre au JSON
+    required bool isPositive,
     String? seller,
+    String? listingDate, // Ajout du paramètre
   }) : super(
           price: price,
           change: change,
@@ -107,6 +108,7 @@ class MarketInfoModel extends MarketInfo {
           formattedPrice: formattedPrice,
           isPositive: isPositive,
           seller: seller,
+          listingDate: listingDate, // Transmission au constructeur parent
         );
 
   factory MarketInfoModel.fromJson(Map<String, dynamic> json) {
@@ -117,6 +119,7 @@ class MarketInfoModel extends MarketInfo {
       formattedPrice: json['formattedPrice'] ?? '0 ETH',
       isPositive: json['isPositive'] ?? false,
       seller: json['seller'],
+      listingDate: json['listingDate'], // Récupération depuis le JSON
     );
   }
 
@@ -128,6 +131,7 @@ class MarketInfoModel extends MarketInfo {
       'formattedPrice': formattedPrice,
       'isPositive': isPositive,
       'seller': seller,
+      'listingDate': listingDate, // Ajout dans la sérialisation
     };
   }
 }

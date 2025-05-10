@@ -85,109 +85,161 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
     }
   }
 
-void _processTokensFromBloc(List<Token> tokens) {
-  if (tokens.isEmpty) {
-    setState(() {
-      _ownedTokens = [];
-    });
-    return;
-  }
-
-  // Filtrer les tokens non nuls et non listés
-  final nonListedTokens = tokens
-      .where((token) => token != null && !token.isListed)
-      .toList();
-
-  // Si aucun token valide, retourner une liste vide
-  if (nonListedTokens.isEmpty) {
-    setState(() {
-      _ownedTokens = [];
-    });
-    return;
-  }
-
-  // Group by landId
-  final Map<int, List<Token>> groupedTokens = {};
-  for (final token in nonListedTokens) {
-    if (token.landId != null) {
-      if (!groupedTokens.containsKey(token.landId)) {
-        groupedTokens[token.landId] = [];
-      }
-      groupedTokens[token.landId]!.add(token);
+  void _processTokensFromBloc(List<Token> tokens) {
+    if (tokens.isEmpty) {
+      setState(() {
+        _ownedTokens = [];
+      });
+      return;
     }
-  }
 
-  // Process tokens into the required format
-  final processedTokens = groupedTokens.entries.map((entry) {
-    try {
-      final landId = entry.key;
-      final tokensForLand = entry.value;
-      
-      // S'assurer que tokensForLand n'est pas vide
-      if (tokensForLand.isEmpty) return null;
-      
-      final referenceToken = tokensForLand.first;
-      final land = referenceToken.land;
-      
-      // Vérifier que land n'est pas null
-      if (land == null) return null;
+    print(
+        '[2025-05-10 16:48:04] nesssim - Processing ${tokens.length} tokens from bloc');
 
-      // Calculate average market price with null safety
-      double avgPrice = 0.0;
-      int validTokenCount = 0;
-      
-      for (var token in tokensForLand) {
-        if (token.currentMarketInfo != null && token.currentMarketInfo.price != null) {
-          final price = double.tryParse(token.currentMarketInfo.price) ?? 0.0;
-          if (price > 0) {
-            avgPrice += price;
-            validTokenCount++;
-          }
+    // 1. Filtrer les tokens non nuls et s'assurer qu'ils ne sont PAS listés
+    final availableTokens = tokens.where((token) {
+      // Vérifier si le token est non-null
+      if (token == null) return false;
+
+      // Vérifier explicitement si le token est listé (double vérification)
+      bool isAvailableForSale = !token.isListed;
+
+      // Vérifier aussi si listingInfo est null (token non listé)
+      if (token.listingInfo != null) {
+        isAvailableForSale = false;
+      }
+
+      // Vérifier si owner est "you" (tokens possédés, pas en vente sur marketplace)
+      if (token.owner != "you") {
+        isAvailableForSale = false;
+      }
+
+      print(
+          '[2025-05-10 16:48:04] nesssim - Token #${token.tokenId}: isListed=${token.isListed}, '
+          'has listingInfo=${token.listingInfo != null}, owner=${token.owner}, '
+          'available for sale=$isAvailableForSale');
+
+      return isAvailableForSale;
+    }).toList();
+
+    print(
+        '[2025-05-10 16:48:04] nesssim - Found ${availableTokens.length} available tokens for selling');
+
+    // Si aucun token valide, retourner une liste vide
+    if (availableTokens.isEmpty) {
+      setState(() {
+        _ownedTokens = [];
+      });
+      return;
+    }
+
+    // Group by landId
+    final Map<int, List<Token>> groupedTokens = {};
+    for (final token in availableTokens) {
+      if (token.landId != null) {
+        if (!groupedTokens.containsKey(token.landId)) {
+          groupedTokens[token.landId] = [];
         }
+        groupedTokens[token.landId]!.add(token);
       }
-      
-      // Diviser par le nombre de tokens valides ou retourner 0
-      avgPrice = validTokenCount > 0 ? avgPrice / validTokenCount : 0.0;
-
-      // Extract actual tokenIds for API call
-      final tokenIds = tokensForLand
-          .map((t) => t.tokenId)
-          .where((id) => id != null)
-          .toList();
-
-      // Créer la structure finalisée avec des valeurs par défaut
-      return {
-        'id': 'TOK-$landId-2025',
-        'name': land.title ?? 'Unknown Land',
-        'location': land.location ?? 'Unknown Location',
-        'totalTokens': 1000, // Default value if not available
-        'ownedTokens': tokensForLand.length,
-        'marketPrice': avgPrice,
-        'imageUrl': land.imageUrl ?? 'assets/1.jpg',
-        'lastTraded': '2025-05-10', // Date actuelle
-        'priceChange': '+0.0%', // Valeur par défaut
-        'actualTokens': tokensForLand,
-        'tokenIds': tokenIds,
-      };
-    } catch (e) {
-      print(' Error processing token group: $e');
-      return null;
     }
-  })
-  .where((token) => token != null)
-  .cast<Map<String, dynamic>>()
-  .toList();
 
-  print(' Processed ${processedTokens.length} token groups');
+    print(
+        '[2025-05-10 16:48:04] nesssim - Grouped tokens into ${groupedTokens.length} lands');
 
-  setState(() {
-    _ownedTokens = processedTokens;
-  });
+    // Process tokens into the required format
+    final processedTokens = groupedTokens.entries
+        .map((entry) {
+          try {
+            final landId = entry.key;
+            final tokensForLand = entry.value;
 
-  if (_ownedTokens.isNotEmpty) {
-    _updateSelectedToken();
+            // S'assurer que tokensForLand n'est pas vide
+            if (tokensForLand.isEmpty) return null;
+
+            final referenceToken = tokensForLand.first;
+
+            // Déclarer land en dehors pour pouvoir le rechercher parmi tous les tokens
+            var land = referenceToken.land;
+
+            // Si land est null, chercher parmi tous les tokens originaux qui ont ce landId
+            if (land == null) {
+              for (var token in tokens) {
+                if (token.landId == landId && token.land != null) {
+                  land = token.land;
+                  break;
+                }
+              }
+            }
+
+            // S'il n'y a toujours pas d'infos sur le terrain, utiliser des valeurs par défaut
+            final landTitle = land?.title ?? 'Land #$landId';
+            final landLocation = land?.location ?? 'Unknown Location';
+            final landImageUrl = land?.imageUrl ?? 'assets/1.jpg';
+
+            // Calculate average market price with null safety
+            double avgPrice = 0.0;
+            int validTokenCount = 0;
+
+            for (var token in tokensForLand) {
+              if (token.currentMarketInfo != null &&
+                  token.currentMarketInfo.price != null) {
+                final price =
+                    double.tryParse(token.currentMarketInfo.price) ?? 0.0;
+                if (price > 0) {
+                  avgPrice += price;
+                  validTokenCount++;
+                }
+              }
+            }
+
+            // Diviser par le nombre de tokens valides ou retourner 0
+            avgPrice = validTokenCount > 0 ? avgPrice / validTokenCount : 0.0;
+
+            // Extract actual tokenIds for API call
+            final tokenIds = tokensForLand
+                .map((t) => t.tokenId)
+                .where((id) => id != null)
+                .toList();
+
+            print('Processed land #$landId: '
+                '${tokensForLand.length} tokens, avgPrice=$avgPrice');
+
+            // Créer la structure finalisée avec des valeurs par défaut
+            return {
+              'id': 'TOK-$landId-2025',
+              'name': landTitle,
+              'location': landLocation,
+              'totalTokens':
+                  land?.totalTokens ?? 1000, // Default value if not available
+              'ownedTokens':
+                  tokensForLand.length, // Uniquement les tokens disponibles
+              'marketPrice': avgPrice,
+              'imageUrl': landImageUrl,
+              'actualTokens': tokensForLand,
+              'tokenIds': tokenIds,
+            };
+          } catch (e) {
+            print(
+                'Error processing token group: $e');
+            return null;
+          }
+        })
+        .where((token) => token != null)
+        .cast<Map<String, dynamic>>()
+        .toList();
+
+    print(
+        'Final result: ${processedTokens.length} token groups ready for selling');
+
+    setState(() {
+      _ownedTokens = processedTokens;
+    });
+
+    if (_ownedTokens.isNotEmpty) {
+      _updateSelectedToken();
+    }
   }
-}
 
   void _updateSelectedToken() {
     if (_ownedTokens.isEmpty) return;
@@ -267,8 +319,6 @@ void _processTokensFromBloc(List<Token> tokens) {
   }
 
   void _handleTokenSale() {
-
-
     if (_ownedTokens.isEmpty) return;
 
     final token = _ownedTokens[_selectedTokenIndex];
@@ -305,8 +355,7 @@ void _processTokensFromBloc(List<Token> tokens) {
     if (tokenCount == 1) {
       // Si un seul token, utiliser la fonction simple listToken
       final tokenId = token['actualTokens'][0].tokenId;
-      print(
-          ' Utilisation de listToken pour token #$tokenId');
+      print(' Utilisation de listToken pour token #$tokenId');
 
       _marketplaceBloc.add(ListTokenEvent(tokenId: tokenId, price: price));
     } else {
@@ -330,8 +379,7 @@ void _processTokensFromBloc(List<Token> tokens) {
         return;
       }
 
-      print(
-          'Utilisation de listMultipleTokens pour ${tokenIds.length} tokens');
+      print('Utilisation de listMultipleTokens pour ${tokenIds.length} tokens');
 
       _marketplaceBloc
           .add(ListMultipleTokensEvent(tokenIds: tokenIds, prices: prices));
@@ -543,7 +591,7 @@ void _processTokensFromBloc(List<Token> tokens) {
                                 durations: _durations,
                                 selectedDuration: _selectedDuration,
                                 isMarketPrice: _isMarketPrice,
-                                currentDate: '' ,
+                                currentDate: '',
                                 username: '',
                                 formatter: formatter,
                                 totalAmount: _totalAmount,
@@ -801,87 +849,179 @@ void _processTokensFromBloc(List<Token> tokens) {
       ),
     );
   }
-
-  Widget _buildRecentTransactions(String landName) {
-    // Idéalement, récupérer ces données à partir d'une API
-    final mockTransactions = [
-      {'date': '2025-05-02', 'price': '0.012 ETH', 'type': 'sale'},
-      {'date': '2025-04-30', 'price': '0.011 ETH', 'type': 'sale'},
-      {'date': '2025-04-28', 'price': '0.0105 ETH', 'type': 'sale'},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+Widget _buildRecentTransactions(String landName) {
+  // Écouteur pour obtenir les tokens depuis le bloc
+  return BlocBuilder<InvestmentBloc, InvestmentState>(
+    builder: (context, state) {
+      if (state is InvestmentLoaded || state is InvestmentRefreshing) {
+        // Extraire les tokens du state
+        final tokens = state is InvestmentLoaded 
+            ? state.tokens 
+            : (state as InvestmentRefreshing).tokens;
+        
+        // Filtrer pour le terrain spécifique
+        final landTokens = tokens.where((token) => 
+            token.land != null && token.land!.title == landName).toList();
+        
+        // Si pas de tokens pour ce terrain, afficher un message
+        if (landTokens.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.history, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Recent $landName Transactions',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      'No recent transactions found',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        // Trier par date d'achat (plus récent en premier)
+        landTokens.sort((a, b) => b.purchaseInfo.date.compareTo(a.purchaseInfo.date));
+        
+        // Limiter à 3 transactions les plus récentes
+        final recentTokens = landTokens.take(3).toList();
+        
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.history, size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Recent $landName Transactions',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              Row(
+                children: [
+                  const Icon(Icons.history, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recent $landName Transactions',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(2),
+                  1: FlexColumnWidth(2),
+                  2: FlexColumnWidth(1),
+                },
+                children: [
+                  const TableRow(
+                    children: [
+                      Text('Date',
+                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                      Text('Price',
+                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                      Text('Type',
+                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                    ],
+                  ),
+                  ...recentTokens.map((token) => TableRow(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text(token.purchaseInfo.date.toString().substring(0, 10),
+                            style: const TextStyle(fontSize: 12)),
+                      ),
+                      Text(token.purchaseInfo.formattedPrice,
+                          style: const TextStyle(fontSize: 12)),
+                      const Text(
+                        'PURCHASE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )).toList(),
+                ],
+              ),
+            ],
+          ),
+        );
+      } else {
+        // État de chargement ou d'erreur
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.history, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recent $landName Transactions',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    'Loading transaction data...',
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Table(
-            columnWidths: const {
-              0: FlexColumnWidth(2),
-              1: FlexColumnWidth(2),
-              2: FlexColumnWidth(1),
-            },
-            children: [
-              const TableRow(
-                children: [
-                  Text('Date',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                  Text('Price',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                  Text('Type',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                ],
-              ),
-              ...mockTransactions
-                  .map((tx) => TableRow(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Text(tx['date']!,
-                                style: const TextStyle(fontSize: 12)),
-                          ),
-                          Text(tx['price']!,
-                              style: const TextStyle(fontSize: 12)),
-                          Text(
-                            tx['type']!.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ))
-                  .toList(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
+        );
+      }
+    },
+  );
+}
   @override
   void dispose() {
     _tokensToSellController.dispose();
@@ -889,7 +1029,4 @@ void _processTokensFromBloc(List<Token> tokens) {
     _descriptionController.dispose();
     super.dispose();
   }
-
-
-
 }
