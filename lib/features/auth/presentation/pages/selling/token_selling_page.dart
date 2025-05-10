@@ -128,16 +128,16 @@ class _TokenSellingPageState extends State<TokenSellingPage> {
 
       return {
         'id': 'TOK-$landId-2025',
-        'name': land.title,
+        'name': land!.title,
         'location': land.location,
         'totalTokens': 1000, // Default value if not available
         'ownedTokens': tokensForLand.length,
         'marketPrice': avgPrice,
         'imageUrl': land.imageUrl ?? 'assets/1.jpg',
-        'lastTraded': '2025-05-01', // Replace with actual data if available
-        'priceChange': '+2.4%', // Calculate from history if available
-        'actualTokens': tokensForLand, // Keep for reference
-        'tokenIds': tokenIds, // Add tokenIds for API call
+        'lastTraded': '2025-05-01', 
+        'priceChange': '+2.4%', 
+        'actualTokens': tokensForLand,
+        'tokenIds': tokenIds, 
       };
     }).toList();
 

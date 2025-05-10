@@ -1,3 +1,5 @@
+// lib/features/auth/domain/entities/token.dart
+
 import 'package:equatable/equatable.dart';
 
 class Token extends Equatable {
@@ -9,7 +11,8 @@ class Token extends Equatable {
   final MarketInfo currentMarketInfo;
   final MarketInfo? listingInfo;
   final bool isListed;
-  final LandInfo land;
+  final LandInfo? land; // Changé pour être nullable
+  final InvestmentMetrics? investmentMetrics; // Ajouté
 
   const Token({
     required this.tokenId,
@@ -20,7 +23,8 @@ class Token extends Equatable {
     required this.currentMarketInfo,
     this.listingInfo,
     required this.isListed,
-    required this.land,
+    this.land,
+    this.investmentMetrics,
   });
 
   double get returnPercentage {
@@ -41,6 +45,7 @@ class Token extends Equatable {
         listingInfo,
         isListed,
         land,
+        investmentMetrics,
       ];
 }
 
@@ -64,6 +69,7 @@ class MarketInfo extends Equatable {
   final double change;
   final String changeFormatted;
   final String formattedPrice;
+  final bool isPositive; // Ajouté
   final String? seller;
 
   const MarketInfo({
@@ -71,11 +77,12 @@ class MarketInfo extends Equatable {
     required this.change,
     required this.changeFormatted,
     required this.formattedPrice,
+    required this.isPositive, // Ajouté
     this.seller,
   });
 
   @override
-  List<Object?> get props => [price, change, changeFormatted, formattedPrice, seller];
+  List<Object?> get props => [price, change, changeFormatted, formattedPrice, isPositive, seller];
 }
 
 class LandInfo extends Equatable {
@@ -83,6 +90,12 @@ class LandInfo extends Equatable {
   final String title;
   final String location;
   final int surface;
+  final String owner; // Ajouté
+  final bool isRegistered; // Ajouté
+  final String status; // Ajouté
+  final int totalTokens; // Ajouté
+  final int availableTokens; // Ajouté
+  final String pricePerToken; // Ajouté
   final String? imageUrl;
 
   const LandInfo({
@@ -90,9 +103,29 @@ class LandInfo extends Equatable {
     required this.title,
     required this.location,
     required this.surface,
+    required this.owner,
+    required this.isRegistered,
+    required this.status,
+    required this.totalTokens,
+    required this.availableTokens,
+    required this.pricePerToken,
     this.imageUrl,
   });
 
   @override
-  List<Object?> get props => [id, title, location, surface, imageUrl];
+  List<Object?> get props => [id, title, location, surface, owner, isRegistered, status, totalTokens, availableTokens, pricePerToken, imageUrl];
+}
+
+// Nouvelle classe pour les métriques d'investissement
+class InvestmentMetrics extends Equatable {
+  final int potential;
+  final String rating;
+
+  const InvestmentMetrics({
+    required this.potential,
+    required this.rating,
+  });
+
+  @override
+  List<Object> get props => [potential, rating];
 }
