@@ -69,22 +69,31 @@ class MarketInfo extends Equatable {
   final double change;
   final String changeFormatted;
   final String formattedPrice;
-  final bool isPositive; // Ajouté
+  final bool isPositive;
   final String? seller;
+  final String? listingDate; // Ajout de la propriété listingDate
 
   const MarketInfo({
     required this.price,
     required this.change,
     required this.changeFormatted,
     required this.formattedPrice,
-    required this.isPositive, // Ajouté
+    required this.isPositive,
     this.seller,
+    this.listingDate, // Paramètre optionnel
   });
 
   @override
-  List<Object?> get props => [price, change, changeFormatted, formattedPrice, isPositive, seller];
+  List<Object?> get props => [
+    price, 
+    change, 
+    changeFormatted, 
+    formattedPrice, 
+    isPositive, 
+    seller, 
+    listingDate
+  ];
 }
-
 class LandInfo extends Equatable {
   final String id;
   final String title;

@@ -7,7 +7,7 @@ import 'package:the_boost/features/auth/domain/entities/investment_stats.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 
 class DashboardStats extends StatelessWidget {
-  const DashboardStats({Key? key}) : super(key: key);
+  const DashboardStats({super.key});
 
   @override
   Widget build(BuildContext context) {

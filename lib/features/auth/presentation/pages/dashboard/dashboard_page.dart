@@ -33,7 +33,7 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     _investmentBloc = getIt<InvestmentBloc>();
 
-    print('[2025-05-04 14:46:20] DashboardPage: ✨ Initializing'
+    print(' DashboardPage: ✨ Initializing'
         '\n└─ User email: ${widget.user?.email ?? 'Not provided'}');
 
     // Load investment data when dashboard loads
@@ -47,14 +47,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
-    // No need to close the bloc here since it's managed by GetIt
     super.dispose();
   }
 
   Future<void> _checkPreferencesAndNotifications() async {
     if (widget.user == null) return;
 
-    print('[2025-05-04 14:46:20] DashboardPage: 🔍 Checking user preferences'
+    print(' DashboardPage: 🔍 Checking user preferences'
         '\n└─ User: ${widget.user!.username}');
 
     // First check if user has set preferences
@@ -64,7 +63,7 @@ class _DashboardPageState extends State<DashboardPage> {
     // If not, show preferences setup dialog
     if (!hasPreferences && mounted) {
       print(
-          '[2025-05-04 14:46:20] DashboardPage: ⚠️ No preferences found, showing dialog'
+          'DashboardPage: ⚠️ No preferences found, showing dialog'
           '\n└─ User: ${widget.user!.username}');
 
       await Future.delayed(const Duration(seconds: 1));
@@ -75,7 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       }
     } else {
-      print('[2025-05-04 14:46:20] DashboardPage: ✅ User has preferences'
+      print('DashboardPage: ✅ User has preferences'
           '\n└─ User: ${widget.user!.username}');
     }
   }
@@ -156,13 +155,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _navigateToInvest(BuildContext context) {
     try {
-      print('[2025-05-04 14:46:20] DashboardPage: 🔄 Navigating to Invest page'
-          '\n└─ User: nesssim');
+      print('DashboardPage: 🔄 Navigating to Invest page');
 
       Navigator.pushNamed(context, '/invest');
     } catch (e) {
-      print('[2025-05-04 14:46:20] DashboardPage: ❌ Navigation error'
-          '\n└─ User: nesssim'
+      print('DashboardPage: ❌ Navigation error'
           '\n└─ Error: $e');
 
       ScaffoldMessenger.of(context).showSnackBar(
