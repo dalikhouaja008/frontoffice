@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:the_boost/core/error/failure.dart';
 import 'package:equatable/equatable.dart';
+import 'package:the_boost/core/error/failures.dart';
 
 abstract class UseCase<Type, Params> {
   Future<Either<Failure, Type>> call(Params params);
@@ -8,5 +8,5 @@ abstract class UseCase<Type, Params> {
 
 class NoParams extends Equatable {
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }

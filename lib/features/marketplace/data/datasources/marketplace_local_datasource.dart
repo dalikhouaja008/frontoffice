@@ -32,11 +32,11 @@ class MarketplaceLocalDataSourceImpl implements MarketplaceLocalDataSource {
         return listings;
       } else {
         debugPrint('[2025-05-05 07:41:57] No cached listings found');
-        throw CacheException();
+        throw CacheException(message: 'No cached listings found');
       }
     } catch (e) {
       debugPrint('[2025-05-05 07:41:57] Error retrieving cached listings: $e');
-      throw CacheException();
+      throw CacheException(message: 'Failed to retrieve cached listings: $e');
     }
   }
 
@@ -56,11 +56,11 @@ class MarketplaceLocalDataSourceImpl implements MarketplaceLocalDataSource {
         return token;
       } else {
         debugPrint('[2025-05-05 07:41:57] No cached token found for ID $tokenId');
-        throw CacheException();
+        throw CacheException(message: 'No cached token found for ID $tokenId');
       }
     } catch (e) {
       debugPrint('[2025-05-05 07:41:57] Error retrieving cached token $tokenId: $e');
-      throw CacheException();
+      throw CacheException(message: 'Error retrieving cached token $tokenId: $e');
     }
   }
 

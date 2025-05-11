@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:get_it/get_it.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
@@ -30,6 +31,18 @@ import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
+import 'package:the_boost/features/land_registration/data/datasources/land_remote_data_source.dart';
+import 'package:the_boost/features/land_registration/data/repositories/land_repository_impl.dart';
+import 'package:the_boost/features/land_registration/domain/repositories/land_repository.dart';
+import '../../features/geolocator_service.dart';
+import '../../features/land_registration/data/datasources/valuation_remote_data_source.dart';
+import '../../features/land_registration/data/repositories/valuation_repository_impl.dart';
+import '../../features/land_registration/domain/repositories/valuation_repository.dart';
+import '../../features/land_registration/domain/usecases/evaluate_land.dart';
+import '../../features/land_registration/domain/usecases/get_eth_price.dart';
+import '../../features/land_registration/domain/usecases/register_land.dart';
+import '../../features/land_registration/presentation/bloc/register_land_bloc.dart';
+import '../../features/land_registration/presentation/utils/form_validators.dart';
 import '../services/gemini_service.dart';
 import '../../features/chatbot/presentation/controllers/chat_controller.dart';
 import '../../features/auth/data/datasources/preferences_remote_data_source.dart';
@@ -62,6 +75,7 @@ import '../../features/marketplace/domain/usecases/get_filtered_listings.dart';
 import '../../features/marketplace/domain/usecases/get_listing_details.dart';
 import '../../features/marketplace/domain/usecases/purchase_token.dart';
 import '../../features/marketplace/presentation/bloc/marketplace_bloc.dart' as feature_bloc;
+import '../utils/file_helpers.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -81,13 +95,70 @@ Future<void> initDependencies() async {
 
   // Network
   getIt.registerLazySingleton(() => InternetConnectionChecker.createInstance());
-  getIt.registerLazySingleton<NetworkInfo>(
-    () => NetworkInfoImpl(getIt<InternetConnectionChecker>()),
+ getIt.registerLazySingleton<NetworkInfo>(
+    () => NetworkInfoImpl(
+      getIt<Connectivity>(),
+      getIt<InternetConnectionChecker>(),
+    ),
   );
+  getIt.registerLazySingleton<EvaluateLand>(() => EvaluateLand(getIt()));
+  getIt.registerLazySingleton<GetEthPrice>(() => GetEthPrice(getIt()));
+  getIt.registerLazySingleton<RegisterLand>(() => RegisterLand(getIt()));
+
+  // Register Utility Classes
+  getIt.registerLazySingleton<GeolocatorService>(() => GeolocatorService());
+  getIt.registerLazySingleton<FileHelpers>(() => FileHelpers());
+  getIt.registerLazySingleton<FormValidators>(() => FormValidators());
+
+  // Register Bloc
+  getIt.registerFactory<RegisterLandBloc>(() => RegisterLandBloc(
+        evaluateLand: getIt<EvaluateLand>(),
+        getEthPrice: getIt<GetEthPrice>(),
+        registerLand: getIt<RegisterLand>(),
+        geolocatorService: getIt<GeolocatorService>(),
+        fileHelpers: getIt<FileHelpers>(),
+        formValidators: getIt<FormValidators>(),
+      ));
 
   // Register LandService as singleton
   getIt.registerLazySingleton<LandService>(() => LandService());
   getIt.registerLazySingleton<ApiService>(() => ApiService());
+    getIt.registerLazySingleton<Connectivity>(() => Connectivity());
+
+
+  // Register Remote Data Source
+  getIt.registerLazySingleton<ValuationRemoteDataSource>(
+    () => ValuationRemoteDataSourceImpl(
+      client: getIt<http.Client>(),
+      customBaseUrl: null, // Provide a custom base URL if needed
+      customEthPriceApiUrl: null, // Provide a custom ETH price API URL if needed
+    ),
+  );
+
+getIt.registerLazySingleton<ValuationRepository>(
+  () => ValuationRepositoryImpl(
+    remoteDataSource: getIt<ValuationRemoteDataSource>(),
+    networkInfo: getIt<NetworkInfo>(),
+  ),
+);
+
+
+ getIt.registerLazySingleton<LandRemoteDataSource>(
+  () => LandRemoteDataSourceImpl(
+    client: getIt<http.Client>(),
+    sessionService: getIt<SessionService>(),
+    customBaseUrl: 'http://localhost:5000', // Replace with your API base URL
+  ),
+);
+
+  // Register Land Repository
+ getIt.registerLazySingleton<LandRepository>(
+  () => LandRepositoryImpl(
+    remoteDataSource: getIt<LandRemoteDataSource>(),
+    networkInfo: getIt<NetworkInfo>(),
+  ),
+);
+
 
   // Register NotificationService (removed storageService parameter)
   getIt.registerLazySingleton<NotificationService>(
