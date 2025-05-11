@@ -32,13 +32,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }) : _secureStorage = secureStorage;
 
   Future<LoginResponse> login(String email, String password) async {
-    DateTime.now().toIso8601String();
-    print('AuthRemoteDataSourceImpl: 🌐 Sending login request'
-        '\n└─ Email: $email');
+  DateTime.now().toIso8601String();
+  print('AuthRemoteDataSourceImpl: 🌐 Sending login request'
+      '\n└─ Email: $email');
 
-    final GraphQLClient client = GraphQLService.client;
+  final GraphQLClient client = GraphQLService.client;
 
-    const String loginMutation = """
+  const String loginMutation = """
     mutation Login(\$credentials: LoginInput!) {
       login(credentials: \$credentials) {
         accessToken
@@ -49,108 +49,107 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           _id
           email
           username
-          
         }
       }
     }
   """;
 
-    try {
-      final QueryResult result = await client.mutate(
-        MutationOptions(
-          document: gql(loginMutation),
-          variables: {
-            "credentials": {
-              "email": email,
-              "password": password,
-            },
+  try {
+    final QueryResult result = await client.mutate(
+      MutationOptions(
+        document: gql(loginMutation),
+        variables: {
+          "credentials": {
+            "email": email,
+            "password": password,
           },
-        ),
-      );
+        },
+      ),
+    );
 
-      if (result.hasException) {
-        print('AuthRemoteDataSourceImpl: ❌ GraphQL error'
-            '\n└─ Error: ${result.exception.toString()}');
-        throw Exception(result.exception.toString());
-      }
+    if (result.hasException) {
+      print('AuthRemoteDataSourceImpl: ❌ GraphQL error'
+          '\n└─ Error: ${result.exception.toString()}');
+      throw Exception(result.exception.toString());
+    }
 
-      print('AuthRemoteDataSourceImpl: 📥 Raw GraphQL response:'
-          '\n${JsonEncoder.withIndent('  ').convert(result.data)}');
+    print('AuthRemoteDataSourceImpl: 📥 Raw GraphQL response:'
+        '\n${JsonEncoder.withIndent('  ').convert(result.data)}');
 
-      final loginData = result.data?['login'];
-      if (loginData == null) {
-        print('[2025-02-15 16:44:26] ❌ No login data received');
-        throw Exception('No login data received');
-      }
+    final loginData = result.data?['login'];
+    if (loginData == null) {
+      print('[2025-02-15 16:44:26] ❌ No login data received');
+      throw Exception('No login data received');
+    }
 
-      // Vérifier les données utilisateur
-      final userData = loginData['user'];
-      if (userData == null) {
-        print('AuthRemoteDataSourceImpl:❌ No user data in response');
-        throw Exception('No user data in response');
-      }
+    // Verify user data
+    final userData = loginData['user'];
+    if (userData == null) {
+      print('AuthRemoteDataSourceImpl:❌ No user data in response');
+      throw Exception('No user data in response');
+    }
 
-      // Créer l'objet User
-      final user = User.fromJson({
-        '_id': userData['_id'],
-        'email': userData['email'],
-        'username': userData['username'],
-        'role': userData['role'],
-      });
+    // Create the User object
+    final user = User.fromJson({
+      '_id': userData['_id'],
+      'email': userData['email'],
+      'username': userData['username'],
+      'role': userData['role'],
+    });
 
-      // Vérifier si 2FA est requis
-      final requiresTwoFactor = loginData['requiresTwoFactor'] ?? false;
-      if (requiresTwoFactor) {
-        final tempToken = loginData['tempToken'];
-        if (tempToken == null) {
-          print('AuthRemoteDataSourceImpl: ❌ No temp token for 2FA'
-              '\n└─ Email: ${user.email}');
-          throw Exception('No temporary token provided for 2FA');
-        }
-
-        print('AuthRemoteDataSourceImpl: 🔐 2FA required'
+    // Handle Two-Factor Authentication (2FA)
+    final requiresTwoFactor = loginData['requiresTwoFactor'] ?? false; // Default to false
+    if (requiresTwoFactor == true) {
+      final tempToken = loginData['tempToken'];
+      if (tempToken == null) {
+        print('AuthRemoteDataSourceImpl: ❌ No temp token for 2FA'
             '\n└─ Email: ${user.email}');
-
-        return LoginResponse(
-          user: user,
-          requiresTwoFactor: true,
-          tempToken: tempToken,
-          accessToken: null,
-          refreshToken: null,
-        );
+        throw Exception('No temporary token provided for 2FA');
       }
 
-      // Vérifier les tokens pour le login normal
-      final accessToken = loginData['accessToken'];
-      final refreshToken = loginData['refreshToken'];
-
-      if (accessToken == null || refreshToken == null) {
-        print('AuthRemoteDataSourceImpl: ❌ Missing tokens'
-            '\n└─ Email: ${user.email}'
-            '\n└─ Has access token: ${accessToken != null}'
-            '\n└─ Has refresh token: ${refreshToken != null}');
-        throw Exception('Missing required tokens');
-      }
-
-      print('AuthRemoteDataSourceImpl:✅ Login successful'
-          '\n└─ Email: ${user.email}'
-          '\n└─ Role: ${user.role}');
+      print('AuthRemoteDataSourceImpl: 🔐 2FA required'
+          '\n└─ Email: ${user.email}');
 
       return LoginResponse(
         user: user,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        requiresTwoFactor: false,
-        tempToken: null,
+        requiresTwoFactor: true,
+        tempToken: tempToken,
+        accessToken: null,
+        refreshToken: null,
       );
-    } catch (e) {
-      final errorMessage = 'Failed to login: $e';
-      print('AuthRemoteDataSourceImpl: ❌ Login error'
-          '\n└─ Error: $errorMessage'
-          '\n└─ Email: $email');
-      throw Exception(errorMessage);
     }
+
+    // Handle normal login tokens
+    final accessToken = loginData['accessToken'];
+    final refreshToken = loginData['refreshToken'];
+
+    if (accessToken == null || refreshToken == null) {
+      print('AuthRemoteDataSourceImpl: ❌ Missing tokens'
+          '\n└─ Email: ${user.email}'
+          '\n└─ Has access token: ${accessToken != null}'
+          '\n└─ Has refresh token: ${refreshToken != null}');
+      throw Exception('Missing required tokens');
+    }
+
+    print('AuthRemoteDataSourceImpl:✅ Login successful'
+        '\n└─ Email: ${user.email}'
+        '\n└─ Role: ${user.role}');
+
+    return LoginResponse(
+      user: user,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      requiresTwoFactor: false,
+      tempToken: null,
+    );
+  } catch (e) {
+    final errorMessage = 'Failed to login: $e';
+    print('AuthRemoteDataSourceImpl: ❌ Login error'
+        '\n└─ Error: $errorMessage'
+        '\n└─ Email: $email');
+    throw Exception(errorMessage);
   }
+}
 
 @override
 Future<UserModel> signUp(String username, String email, String password,

@@ -152,6 +152,11 @@ class AppNavBar extends StatelessWidget {
 
   // Add this widget to your AppNavBar class
   Widget _buildWalletButton(BuildContext context, User? user) {
+    // Only show wallet button when user is authenticated
+    if (user == null) {
+      return const SizedBox.shrink(); // Return empty widget if not authenticated
+    }
+    
     return Consumer<MetamaskProvider>(
       builder: (context, provider, _) {
         developer.log('[2025-05-05 01:36:09] AppNavBar: 🔄 Building wallet button. Connected: ${provider.currentAddress.isNotEmpty}. Loading: ${provider.isLoading}');
@@ -399,15 +404,17 @@ class AppNavBar extends StatelessWidget {
                         },
                         isNew: true, // Highlight as a new feature
                       ),
-                    _NavLink('Invest',
-                        route: '/invest', currentRoute: currentRoute),
+                    // Only show Invest link when authenticated
+                    if (isAuthenticated)
+                      _NavLink('Invest',
+                          route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More',
                         route: '/learn-more', currentRoute: currentRoute),
 
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
-                // Add wallet connect button
+                // Add wallet connect button (only for authenticated users)
                 _buildWalletButton(context, user),
                 const SizedBox(width: AppDimensions.paddingM),
                 if (isAuthenticated)
@@ -464,7 +471,7 @@ class AppNavBar extends StatelessWidget {
         _buildLogo(context),
         Row(
           children: [
-            // Add wallet connect button
+            // Add wallet connect button (only for authenticated users)
             _buildWalletButton(context, user),
             const SizedBox(width: 8),
             if (isAuthenticated) ...[
@@ -628,14 +635,16 @@ class AppNavBar extends StatelessWidget {
                     );
                   },
                 ),
-              ListTile(
-                leading: const Icon(Icons.token),
-                title: const Text('Invest'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/invest');
-                },
-              ),
+              // Only show Invest when authenticated  
+              if (isAuthenticated)
+                ListTile(
+                  leading: const Icon(Icons.token),
+                  title: const Text('Invest'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/invest');
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.book),
                 title: const Text('Learn More'),
@@ -644,53 +653,54 @@ class AppNavBar extends StatelessWidget {
                   Navigator.pushNamed(context, '/learn-more');
                 },
               ),
-              // Add wallet management option to drawer
-              Consumer<MetamaskProvider>(
-                builder: (context, provider, _) {
-                  return ListTile(
-                    leading: const Icon(Icons.account_balance_wallet),
-                    title: Row(
-                      children: [
-                        const Text('Wallet'),
-                        const SizedBox(width: 10),
-                        if (provider.isLoading) 
-                          SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+              // Add wallet management option to drawer - only when authenticated
+              if (isAuthenticated)
+                Consumer<MetamaskProvider>(
+                  builder: (context, provider, _) {
+                    return ListTile(
+                      leading: const Icon(Icons.account_balance_wallet),
+                      title: Row(
+                        children: [
+                          const Text('Wallet'),
+                          const SizedBox(width: 10),
+                          if (provider.isLoading) 
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else if (provider.currentAddress.isNotEmpty)
+                            Icon(Icons.check_circle, color: Colors.green, size: 14),
+                        ],
+                      ),
+                      subtitle: provider.currentAddress.isNotEmpty 
+                        ? Text(
+                            '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
+                            style: TextStyle(fontSize: 12),
                           )
-                        else if (provider.currentAddress.isNotEmpty)
-                          Icon(Icons.check_circle, color: Colors.green, size: 14),
-                      ],
-                    ),
-                    subtitle: provider.currentAddress.isNotEmpty 
-                      ? Text(
-                          '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
-                          style: TextStyle(fontSize: 12),
-                        )
-                      : null,
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (provider.currentAddress.isNotEmpty) {
-                        _showWalletOptions(context, provider, user);
-                      } else {
-                        provider.connect().then((success) {
-                          if (success) {
-                            _handlePublicKeyUpdate(context, provider.currentAddress, user);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Failed to connect wallet: ${provider.error}'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        });
-                      }
-                    },
-                  );
-                },
-              ),
+                        : null,
+                      onTap: () {
+                        Navigator.pop(context);
+                        if (provider.currentAddress.isNotEmpty) {
+                          _showWalletOptions(context, provider, user);
+                        } else {
+                          provider.connect().then((success) {
+                            if (success) {
+                              _handlePublicKeyUpdate(context, provider.currentAddress, user);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to connect wallet: ${provider.error}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          });
+                        }
+                      },
+                    );
+                  },
+                ),
             ],
           ),
         );
