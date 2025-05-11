@@ -1,61 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
+import 'app_nav_bar.dart';
 
 class LearnMorePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Color(0xFF2E7D32)),
-          onPressed: () => Navigator.pop(context),
+      // Use the existing AppNavBar component with the current route
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80),
+        child: AppNavBar(
+          // Pass the current route to highlight the correct nav item
+          currentRoute: '/learn-more',
         ),
-        title: Row(
-          children: [
-            Icon(Icons.landscape, color: Color(0xFF2E7D32), size: 24),
-            SizedBox(width: 8),
-            Text(
-              'TheBoost',
-              style: GoogleFonts.montserrat(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2E7D32),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {}, // Navigate to Login page
-            child: Text(
-              'Login',
-              style: TextStyle(
-                color: Color(0xFF2E7D32),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(width: 16),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: ElevatedButton(
-              onPressed: () {}, // Navigate to Sign Up page
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text('Get Started'),
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -70,10 +28,11 @@ class LearnMorePage extends StatelessWidget {
             TeamSection(),
             RoadmapSection(),
             PartnersSection(),
-          
           ],
         ),
       ),
+      // Add the mobile drawer from AppNavBar if needed
+      endDrawer: AppNavBar().buildMobileDrawer(context),
     );
   }
 }
@@ -270,6 +229,105 @@ class AboutSection extends StatelessWidget {
     ];
   }
 }
+
+  List<Widget> _buildAboutContent(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+
+    return [
+      Expanded(
+        flex: 5,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Democratizing Land Ownership",
+              style: GoogleFonts.montserrat(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              "TheBoost was founded in 2023 with a simple yet powerful mission: to make land investment accessible to everyone. Traditional real estate investment has long been restricted to those with significant capital, excluding millions of potential investors worldwide.",
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.6,
+                color: Colors.black54,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              "Through our innovative blockchain-based tokenization platform, we've eliminated the barriers to entry, allowing anyone to invest in premium land assets with as little as \$100. Our technology ensures transparent ownership records, secure transactions, and unprecedented liquidity for land investments.",
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.6,
+                color: Colors.black54,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              "With TheBoost, you're not just buying land – you're participating in the future of real estate investment.",
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.6,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+      if (!isMobile) SizedBox(width: 60),
+      if (!isMobile)
+        Expanded(
+          flex: 5,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              height: 320,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  "Company Image",
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      if (isMobile) SizedBox(height: 30),
+      if (isMobile)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Text(
+                "Company Image",
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+    ];
+  }
+
 
 class MissionSection extends StatelessWidget {
   final List<Map<String, dynamic>> missions = [

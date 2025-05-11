@@ -6,6 +6,7 @@ import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/services/land_service.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 
+
 part 'land_event.dart';
 part 'land_state.dart';
 
@@ -17,7 +18,22 @@ class LandBloc extends Bloc<LandEvent, LandState> {
     on<LoadLands>(_onLoadLands);
     on<NavigateToLandDetails>(_onNavigateToLandDetails);
     on<ApplyFilters>(_onApplyFilters);
+    on<LoadLandTypes>(_onLoadLandTypes);
   }
+
+  Future<void> _onLoadLandTypes(LoadLandTypes event, Emitter<LandState> emit) async {
+  print('[${DateTime.now()}] LandBloc: 🚀 Handling LoadLandTypes event');
+  emit(LandLoading());
+  try {
+    final landTypes = await _landService.getLandTypes(); // Replace this with your service method
+    print('[${DateTime.now()}] LandBloc: ✅ Loaded ${landTypes.length} land types');
+    emit(LandTypesLoaded(landTypes)); // You'll define LandTypesLoaded state
+  } catch (e) {
+    print('[${DateTime.now()}] LandBloc: ❌ Error loading land types: $e');
+    emit(LandError(message: 'Failed to load land types: $e'));
+  }
+}
+
 
   Future<void> _onLoadLands(LoadLands event, Emitter<LandState> emit) async {
     print('[${DateTime.now()}] LandBloc: 🚀 Handling LoadLands event');

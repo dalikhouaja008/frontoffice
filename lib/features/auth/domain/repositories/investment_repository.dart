@@ -1,7 +1,8 @@
-import '../entities/investment.dart';
+// lib/features/investment/domain/repositories/investment_repository.dart
+import 'package:dartz/dartz.dart';
+import 'package:the_boost/core/error/failure.dart';
+import '../entities/enhanced_tokens_response.dart';
 
 abstract class InvestmentRepository {
-  Future<List<Investment>> getUserInvestments(String userId);
-  Future<Investment> makeInvestment(String userId, String propertyId, int tokens);
-  Future<bool> sellInvestment(String investmentId, int tokens);
+  Future<Either<Failure, EnhancedTokensResponse>> getEnhancedTokens();
 }

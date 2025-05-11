@@ -64,9 +64,9 @@ class _ProfilePageState extends State<ProfilePage> {
         }
         final userId = loginState.user.id;
 
-        return Scaffold(
+        return const Scaffold(
           body: Column(
-            children: const [
+            children: [
               AppNavBar(currentRoute: '/profile'),
               Expanded(
                 child: _LandGrid(), // Extracted for better separation

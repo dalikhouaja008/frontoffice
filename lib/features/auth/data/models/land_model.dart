@@ -21,7 +21,11 @@ extension LandTypeExtension on LandType {
 enum LandValidationStatus {
   PENDING_VALIDATION,
   VALIDATED,
-  REJECTED
+  REJECTED,
+  PARTIALLY_VALIDATED,
+  EN_ATTENTE,
+  VALIDE,
+  REJETE
 }
 
 @JsonSerializable()
@@ -37,6 +41,7 @@ class Land {
   final String status; 
   final List<String>? ipfsCIDs;
   final List<String>? imageCIDs;
+  final String? blockchainTxHash;
   final DateTime createdAt;
   final DateTime updatedAt;
   final double? surface;
@@ -46,9 +51,9 @@ class Land {
   final String? ownerAddress;
   final String? blockchainLandId;
   final LandType? landtype;
-  final List<String>? documentUrls; // Added property from backend
-  final List<String>? imageUrls; // Added property from backend
-  final String? coverImageUrl; // Added property from backend
+  final List<String>? documentUrls;
+  final List<String>? imageUrls; 
+  final String? coverImageUrl;
   
   // Custom converter for MongoDB Map to Dart Map
   @JsonKey(fromJson: _amenitiesFromJson, toJson: _amenitiesToJson)
@@ -60,6 +65,21 @@ class Land {
   
   // Add validations field if you need to access it from the frontend
   final List<ValidationEntry>? validations;
+  
+  // New fields for tokenization
+  @JsonKey(defaultValue: false)
+  final bool isTokenized;
+  
+  final String? tokenizationTxHash;
+  
+  final DateTime? tokenizationTimestamp;
+  
+  final String? tokenizationError;
+  
+  @JsonKey(defaultValue: 0)
+  final int availableTokens;
+  
+  final List<int>? tokenIds;
 
   Land({
     required this.id,
@@ -72,6 +92,7 @@ class Land {
     required this.status,
     this.ipfsCIDs,
     this.imageCIDs,
+    this.blockchainTxHash, 
     required this.createdAt,
     required this.updatedAt,
     this.surface,
@@ -87,6 +108,12 @@ class Land {
     this.amenities,
     required this.availability,
     this.validations,
+    this.isTokenized = false,
+    this.tokenizationTxHash,
+    this.tokenizationTimestamp,
+    this.tokenizationError,
+    this.availableTokens = 0,
+    this.tokenIds,
   });
 
   factory Land.fromJson(Map<String, dynamic> json) => _$LandFromJson(json);
@@ -97,13 +124,32 @@ class Land {
   static Map<String, bool>? _amenitiesFromJson(dynamic json) {
     if (json == null) return null;
     
-    // Handle if backend sends as Map
+    // Pour le débogage
+    print('Amenities JSON type: ${json.runtimeType}');
+    print('Amenities JSON value: $json');
+    
+    // Cas 1: Si le backend envoie comme Map
     if (json is Map) {
       return Map<String, bool>.from(json.map((key, value) => 
         MapEntry(key.toString(), value is bool ? value : value == true || value == 'true')));
     }
     
-    // Return empty map as fallback
+    // Cas 2: Si le backend envoie comme liste de listes [[key, value], [key, value], ...]
+    if (json is List) {
+      final Map<String, bool> result = {};
+      for (var item in json) {
+        if (item is List && item.length >= 2) {
+          final key = item[0].toString();
+          final value = item[1] is bool ? item[1] : (item[1].toString().toLowerCase() == 'true');
+          result[key] = value;
+        }
+      }
+      print('Converted amenities from list to map: $result'); // Log pour vérification
+      return result;
+    }
+    
+    // Si format inconnu, retourner une map vide
+    print('Unknown amenities format, returning empty map');
     return {};
   }
   

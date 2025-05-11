@@ -1,11 +1,14 @@
 // lib/features/auth/presentation/bloc/routes.dart
 import 'package:flutter/material.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
+import 'package:the_boost/core/services/prop_service.dart';
+import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 import 'package:the_boost/features/auth/presentation/features_pages.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/lands_screen.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/profile_page.dart';
+import 'package:the_boost/features/auth/presentation/pages/selling/token_selling_page.dart';
 import '../../../chatbot/presentation/controllers/chat_controller.dart';
 
 import 'package:the_boost/features/auth/domain/entities/user.dart';
@@ -18,6 +21,7 @@ import '../pages/dashboard/dashboard_page.dart';
 import '../pages/home/home_page.dart';
 import '../pages/investments/invest_page.dart';
 import '../pages/property_details/property_details_page.dart';
+import '../pages/valuation/land_valuation_screen_with_nav.dart';
 import '../widgets/howitworks_page.dart';
 import '../widgets/learn_more_page.dart';
 import '../../../chatbot/presentation/pages/chat_screen.dart';
@@ -33,19 +37,19 @@ class AppRoutes {
   static const String propertyDetails = '/property-details';
   static const String forgotPassword = '/forgot-password';
   static const String investmentAssistant = '/investment-assistant';
-
+  static const String landValuation = '/land-valuation';
   static const String preferences = '/preferences';
   static const String profile = '/profile';
-
+  static const String tokenSelling = '/token-selling';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
         return MaterialPageRoute(builder: (_) => HomePage());
       case auth:
-        return MaterialPageRoute(builder: (_) => AuthPage());
+        return MaterialPageRoute(builder: (_) => const AuthPage());
       case dashboard:
-        return MaterialPageRoute(builder: (_) => DashboardPage());
+        return MaterialPageRoute(builder: (_) => const DashboardPage());
       case features:
         return MaterialPageRoute(builder: (_) => FeaturesPage());
       case howItWorks:
@@ -53,9 +57,15 @@ class AppRoutes {
       case invest:
         return MaterialPageRoute(builder: (_) => const InvestPage());
       case '/lands':
-      return MaterialPageRoute(builder: (_) => const LandsScreen());
+        return MaterialPageRoute(builder: (_) => const LandsScreen());
       case learnMore:
         return MaterialPageRoute(builder: (_) => LearnMorePage());
+      case landValuation:
+        return MaterialPageRoute(
+          builder: (_) => LandValuationScreenWithNav(
+            apiService: getIt<ApiService>(),
+          ),
+        );
       case profile:
         return MaterialPageRoute(builder: (_) => const ProfilePage());
       case propertyDetails:
@@ -63,19 +73,33 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => PropertyDetailsPage(propertyId: propertyId),
         );
-        case investmentAssistant:
+      case investmentAssistant:
         return MaterialPageRoute(
-    builder: (_) => ChangeNotifierProvider<ChatController>.value(
-      value: getIt<ChatController>(),
-      child: const InvestmentAssistantScreen(),
-    ),  
-  );
+          builder: (_) => ChangeNotifierProvider<ChatController>.value(
+            value: getIt<ChatController>(),
+            child: const InvestmentAssistantScreen(),
+          ),  
+        );
       case forgotPassword:
         return MaterialPageRoute(builder: (_) => ForgotPasswordPage());
       case preferences:
         final User user = settings.arguments as User;
         return MaterialPageRoute(
           builder: (_) => UserPreferencesScreen(user: user),
+        );
+      case tokenSelling:
+        // Récupérer les arguments si disponibles
+        final Map<String, dynamic> args = settings.arguments as Map<String, dynamic>? ?? {};
+        
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<InvestmentBloc>(),
+            child: TokenSellingPage(
+              preselectedTokens: args['tokens'],
+              initialSelectedIndex: args['selectedTokenIndex'] ?? 0,
+              landName: args['landName'] ?? '',
+            ),
+          ),
         );
       default:
         return MaterialPageRoute(
@@ -85,7 +109,6 @@ class AppRoutes {
             ),
           ),
         );
-      
     }
   }
 }

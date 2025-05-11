@@ -21,6 +21,7 @@ Land _$LandFromJson(Map<String, dynamic> json) => Land(
       imageCIDs: (json['imageCIDs'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      blockchainTxHash: json['blockchainTxHash'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       surface: (json['surface'] as num?)?.toDouble(),
@@ -55,6 +56,7 @@ Map<String, dynamic> _$LandToJson(Land instance) => <String, dynamic>{
       'status': instance.status,
       'ipfsCIDs': instance.ipfsCIDs,
       'imageCIDs': instance.imageCIDs,
+      'blockchainTxHash': instance.blockchainTxHash,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'surface': instance.surface,
