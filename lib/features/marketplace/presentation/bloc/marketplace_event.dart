@@ -47,3 +47,5 @@ class PurchaseTokenEvent extends MarketplaceEvent {
   @override
   List<Object?> get props => [tokenId, buyerAddress];
 }
+
+class ClearErrorEvent extends MarketplaceEvent {}

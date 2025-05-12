@@ -1,11 +1,16 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/error/exceptions.dart';
-import '../models/token_model.dart';
+import '../../../../core/network/auth_interceptor.dart';
 import '../../../../core/services/secure_storage_service.dart';
+import '../models/token_model.dart';
 
 abstract class MarketplaceRemoteDataSource {
+  /// Gets all token listings from the remote API
   Future<List<TokenModel>> getAllListings();
+  
+  /// Gets filtered token listings based on various criteria
   Future<List<TokenModel>> getFilteredListings({
     String? query,
     double? minPrice,
@@ -13,7 +18,11 @@ abstract class MarketplaceRemoteDataSource {
     String? category,
     String? sortBy,
   });
+  
+  /// Gets details for a specific token by ID
   Future<TokenModel> getListingDetails(int tokenId);
+  
+  /// Purchases a token with the specified ID
   Future<bool> purchaseToken(int tokenId, String buyerAddress);
 }
 
@@ -21,22 +30,22 @@ class MarketplaceRemoteDataSourceImpl implements MarketplaceRemoteDataSource {
   final http.Client client;
   final String baseUrl;
   final SecureStorageService secureStorage;
-
+  final AuthInterceptor? authInterceptor;
+  
   MarketplaceRemoteDataSourceImpl({
-    required this.client,
+    required this.client, 
     required this.baseUrl,
     required this.secureStorage,
+    this.authInterceptor,
   });
-
-  // Helper method to get auth token
-  Future<Map<String, String>> _getHeaders() async {
+  
+  /// Helper method to get auth headers
+  Future<Map<String, String>> _getAuthHeaders() async {
     try {
-      final token = await secureStorage.read(key: 'jwt_token');
-      print('[2025-05-05 04:48:27] Token from storage: ${token != null ? 'Found (${token.length} chars)' : 'Not found'}');
-      
-      if (token == null || token.isEmpty) {
-        print('[2025-05-05 04:48:27] No valid JWT token found in storage');
-        throw Exception('Authentication token not found');
+      // Récupérer directement le token à partir du SecureStorageService
+      final token = await secureStorage.getAccessToken();
+      if (token == null) {
+        throw ServerException(message: 'Non authentifié');
       }
       
       return {
@@ -44,53 +53,47 @@ class MarketplaceRemoteDataSourceImpl implements MarketplaceRemoteDataSource {
         'Authorization': 'Bearer $token',
       };
     } catch (e) {
-      print('[2025-05-05 04:48:27] Error getting auth headers: $e');
-      throw AuthException(message: 'Failed to get authentication token: $e');
+      debugPrint('[${DateTime.now()}] Error getting auth headers: $e');
+      // Relancer l'exception pour indiquer qu'une authentification est nécessaire
+      throw ServerException(message: 'Authentification requise: $e');
     }
   }
-
+  
   @override
   Future<List<TokenModel>> getAllListings() async {
     try {
-      print('[2025-05-05 04:48:27] Attempting to get all listings');
+      final headers = await _getAuthHeaders();
       
-      // Try to get headers with token - this might throw if token is missing
-      final headers = await _getHeaders();
-      print('[2025-05-05 04:48:27] Headers obtained: ${headers.keys}');
-      
+      debugPrint('[${DateTime.now()}] Fetching all marketplace listings');
       final response = await client.get(
         Uri.parse('$baseUrl/marketplace/listings'),
         headers: headers,
       );
       
-      print('[2025-05-05 04:48:27] getAllListings response: ${response.statusCode}');
-      print('[2025-05-05 04:48:27] Response body: ${response.body.substring(0, min(100, response.body.length))}...');
-
+      debugPrint('[${DateTime.now()}] Marketplace listings response: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        if (jsonResponse != null) {
-          print('[2025-05-05 04:48:27] Successfully parsed response JSON');
-          final List<dynamic> tokensJson = jsonResponse['data'] ?? [];
-          return tokensJson.map((json) => TokenModel.fromJson(json)).toList();
+        final jsonData = json.decode(response.body);
+        if (jsonData['success'] && jsonData['data'] != null) {
+          final tokenList = List<TokenModel>.from(
+            (jsonData['data'] as List).map((item) => TokenModel.fromJson(item))
+          );
+          debugPrint('[${DateTime.now()}] Successfully parsed ${tokenList.length} tokens');
+          return tokenList;
         } else {
-          print('[2025-05-05 04:48:27] Response JSON is null');
-          throw ServerException(message: 'Invalid response format');
+          debugPrint('[${DateTime.now()}] Received success: false or empty data');
+          return [];
         }
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        print('[2025-05-05 04:48:27] Authentication failed: ${response.statusCode}');
-        throw AuthException(message: 'Authentication failed: ${response.body}');
       } else {
-        print('[2025-05-05 04:48:27] Server error: ${response.statusCode}');
-        throw ServerException(message: 'Server error: ${response.statusCode}');
+        debugPrint('[${DateTime.now()}] Failed to load listings: ${response.statusCode} - ${response.reasonPhrase}');
+        throw ServerException(message: 'Failed to load listings: ${response.reasonPhrase}');
       }
     } catch (e) {
-      print('[2025-05-05 04:48:27] Error in getAllListings: $e');
-      
-      // Return mock data in case of errors
-      return _getMockTokens();
+      debugPrint('[${DateTime.now()}] Exception in getAllListings: $e');
+      throw ServerException(message: 'Error fetching listings: $e');
     }
   }
-
+  
   @override
   Future<List<TokenModel>> getFilteredListings({
     String? query,
@@ -100,242 +103,170 @@ class MarketplaceRemoteDataSourceImpl implements MarketplaceRemoteDataSource {
     String? sortBy,
   }) async {
     try {
-      final queryParams = <String, String>{};
+      final headers = await _getAuthHeaders();
+      
+      // Build query parameters based on filters
+      final queryParameters = <String, String>{};
       if (query != null && query.isNotEmpty) {
-        queryParams['search'] = query;
+        queryParameters['query'] = query;
       }
       if (minPrice != null) {
-        queryParams['minPrice'] = minPrice.toString();
+        queryParameters['minPrice'] = minPrice.toString();
       }
       if (maxPrice != null) {
-        queryParams['maxPrice'] = maxPrice.toString();
+        queryParameters['maxPrice'] = maxPrice.toString();
       }
-      if (category != null && category.isNotEmpty && category != 'All Categories') {
-        queryParams['landType'] = category;
+      
+      // Map category to API's expected parameter
+      if (category != null && category != 'All Categories' && category.isNotEmpty) {
+        switch (category.toLowerCase()) {
+          case 'residential':
+            queryParameters['landType'] = 'residential';
+            break;
+          case 'commercial':
+            queryParameters['landType'] = 'commercial';
+            break;
+          case 'agricultural':
+            queryParameters['landType'] = 'agricultural';
+            break;
+          case 'industrial':
+            queryParameters['landType'] = 'industrial';
+            break;
+          case 'mixed use':
+            queryParameters['landType'] = 'mixed';
+            break;
+        }
       }
+      
+      // Convert UI sort options to API parameters
       if (sortBy != null && sortBy.isNotEmpty) {
-        String sortField = 'price';
+        String apiSortBy = 'price';
         String sortOrder = 'asc';
         
-        if (sortBy.contains('High to Low')) {
+        if (sortBy.contains('Low to High')) {
+          apiSortBy = 'price';
+          sortOrder = 'asc';
+        } else if (sortBy.contains('High to Low')) {
+          apiSortBy = 'price';
           sortOrder = 'desc';
         } else if (sortBy.contains('Newest')) {
-          sortField = 'date';
+          apiSortBy = 'date';
           sortOrder = 'desc';
         } else if (sortBy.contains('ROI')) {
-          sortField = 'profit';
+          apiSortBy = 'profit';
           sortOrder = 'desc';
+        } else if (sortBy.contains('Surface')) {
+          apiSortBy = 'surface';
+          sortOrder = 'asc';
         }
         
-        queryParams['sortBy'] = sortField;
-        queryParams['sortOrder'] = sortOrder;
+        queryParameters['sortBy'] = apiSortBy;
+        queryParameters['sortOrder'] = sortOrder;
       }
-
-      try {
-        final headers = await _getHeaders();
-        final response = await client.get(
-          Uri.parse('$baseUrl/marketplace/listings/filtered').replace(queryParameters: queryParams),
-          headers: headers,
-        );
-        
-        if (response.statusCode == 200) {
-          final jsonResponse = json.decode(response.body);
-          final List<dynamic> tokensJson = jsonResponse['data'] ?? [];
-          return tokensJson.map((json) => TokenModel.fromJson(json)).toList();
-        } else if (response.statusCode == 401) {
-          throw AuthException(message: 'Authentication failed');
+      
+      debugPrint('[${DateTime.now()}] Fetching filtered listings with params: $queryParameters');
+      
+      final uri = Uri.parse('$baseUrl/marketplace/listings/filtered')
+          .replace(queryParameters: queryParameters);
+          
+      final response = await client.get(
+        uri,
+        headers: headers,
+      );
+      
+      debugPrint('[${DateTime.now()}] Filtered listings response: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        if (jsonData['success'] && jsonData['data'] != null) {
+          final tokenList = List<TokenModel>.from(
+            (jsonData['data'] as List).map((item) => TokenModel.fromJson(item))
+          );
+          debugPrint('[${DateTime.now()}] Successfully parsed ${tokenList.length} filtered tokens');
+          return tokenList;
         } else {
-          throw ServerException(message: 'Server error: ${response.statusCode}');
+          debugPrint('[${DateTime.now()}] Received success: false or empty data for filtered listings');
+          return [];
         }
-      } catch (e) {
-        print('[2025-05-05 04:48:27] API error in getFilteredListings: $e');
-        return _getMockTokens();
+      } else {
+        debugPrint('[${DateTime.now()}] Failed to load filtered listings: ${response.statusCode} - ${response.reasonPhrase}');
+        throw ServerException(message: 'Failed to load filtered listings: ${response.reasonPhrase}');
       }
     } catch (e) {
-      print('[2025-05-05 04:48:27] Error in getFilteredListings: $e');
-      return _getMockTokens();
+      debugPrint('[${DateTime.now()}] Exception in getFilteredListings: $e');
+      throw ServerException(message: 'Error fetching filtered listings: $e');
     }
   }
-
+  
   @override
   Future<TokenModel> getListingDetails(int tokenId) async {
     try {
-      final headers = await _getHeaders();
+      final headers = await _getAuthHeaders();
+      
+      debugPrint('[${DateTime.now()}] Fetching token details for ID: $tokenId');
+      
       final response = await client.get(
         Uri.parse('$baseUrl/marketplace/listings/$tokenId'),
         headers: headers,
       );
       
+      debugPrint('[${DateTime.now()}] Token details response: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        return TokenModel.fromJson(jsonResponse['data']);
+        final jsonData = json.decode(response.body);
+        if (jsonData['success'] && jsonData['data'] != null) {
+          final token = TokenModel.fromJson(jsonData['data']);
+          debugPrint('[${DateTime.now()}] Successfully parsed token details for ID: $tokenId');
+          return token;
+        } else {
+          debugPrint('[${DateTime.now()}] Received success: false or empty data for token details');
+          throw ServerException(message: 'Token not found');
+        }
       } else {
-        throw ServerException(message: 'Server error: ${response.statusCode}');
+        debugPrint('[${DateTime.now()}] Failed to load token details: ${response.statusCode} - ${response.reasonPhrase}');
+        throw ServerException(message: 'Failed to load token details: ${response.reasonPhrase}');
       }
     } catch (e) {
-      print('[2025-05-05 04:48:27] Error in getListingDetails: $e');
-      return _getMockTokens().firstWhere(
-        (token) => token.tokenId == tokenId,
-        orElse: () => _getMockTokens().first,
-      );
+      debugPrint('[${DateTime.now()}] Exception in getListingDetails: $e');
+      throw ServerException(message: 'Error fetching token details: $e');
     }
   }
-
+  
   @override
   Future<bool> purchaseToken(int tokenId, String buyerAddress) async {
     try {
-      final headers = await _getHeaders();
+      final headers = await _getAuthHeaders();
+      
+      // Get token details to extract price if needed
+      debugPrint('[${DateTime.now()}] Initiating purchase for token ID: $tokenId by $buyerAddress');
+      
       final response = await client.post(
         Uri.parse('$baseUrl/marketplace/buy'),
         headers: headers,
         body: json.encode({
           'tokenId': tokenId,
-          'value': '0.01',
+          'value': null,  
         }),
       );
       
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+      debugPrint('[${DateTime.now()}] Purchase response: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final success = jsonData['success'] == true;
+        if (success) {
+          debugPrint('[${DateTime.now()}] Successfully purchased token $tokenId');
+        } else {
+          debugPrint('[${DateTime.now()}] Purchase unsuccessful: ${jsonData['message']}');
+        }
+        return success;
       } else {
-        throw ServerException(message: 'Server error: ${response.statusCode}');
+        debugPrint('[${DateTime.now()}] Failed to purchase token: ${response.statusCode} - ${response.reasonPhrase}');
+        throw ServerException(message: 'Failed to purchase token: ${response.reasonPhrase}');
       }
     } catch (e) {
-      print('[2025-05-05 04:48:27] Error in purchaseToken: $e');
-      return false;
+      debugPrint('[${DateTime.now()}] Exception in purchaseToken: $e');
+      throw ServerException(message: 'Error purchasing token: $e');
     }
   }
-  
-  // Helper to get minimum value between two numbers
-  int min(int a, int b) {
-    return a < b ? a : b;
-  }
-
-  // Mock data
-  List<TokenModel> _getMockTokens() {
-    print('[2025-05-05 04:48:27] Generating mock token data');
-    
-    final now = DateTime.now();
-    final threeDaysAgo = now.subtract(const Duration(days: 3));
-    final oneWeekAgo = now.subtract(const Duration(days: 7));
-    final oneMonthAgo = now.subtract(const Duration(days: 30));
-    
-    return [
-      TokenModel(
-        tokenId: 1,
-        landId: 1,
-        tokenNumber: 42,
-        price: '0.025',
-        purchasePrice: '0.020',
-        mintDate: oneMonthAgo.toIso8601String(),
-        seller: '0x8c34a78954632A5Bf09E87D13f31c801B0559D33',
-        land: const LandModel(
-          location: 'Brooklyn, NY',
-          surface: 1200,
-          status: 'Available',
-          isRegistered: true,
-          totalTokens: 100,
-          availableTokens: 75,
-          pricePerToken: '0.025 ETH',
-          owner: '0x8c34a78954632A5Bf09E87D13f31c801B0559D33',
-        ),
-        listingDate: threeDaysAgo.toIso8601String(),
-        listingDateFormatted: '${threeDaysAgo.month.toString().padLeft(2, '0')}/${threeDaysAgo.day.toString().padLeft(2, '0')}/${threeDaysAgo.year}',
-        listingTimestamp: threeDaysAgo.millisecondsSinceEpoch ~/ 1000,
-        daysSinceListing: 3,
-        etherscanUrl: 'https://etherscan.io/token/0x123',
-        formattedPrice: '0.025 ETH',
-        formattedPurchasePrice: '0.020 ETH',
-        mintDateFormatted: '${oneMonthAgo.month.toString().padLeft(2, '0')}/${oneMonthAgo.day.toString().padLeft(2, '0')}/${oneMonthAgo.year}',
-        priceChangePercentage: const PriceChangePercentageModel(
-          percentage: 25.0,
-          formatted: '25.0%',
-          isPositive: true,
-        ),
-        isRecentlyListed: true,
-        isHighlyProfitable: true,
-        investmentPotential: 5,
-        investmentRating: 'Excellent',
-      ),
-      TokenModel(
-        tokenId: 2,
-        landId: 2,
-        tokenNumber: 56,
-        price: '0.018',
-        purchasePrice: '0.017',
-        mintDate: oneMonthAgo.toIso8601String(),
-        seller: '0x5aEd24e5c636A58b9c35728dE3a54dF3dE61ce43',
-        land: const LandModel(
-          location: 'Austin, TX',
-          surface: 2500,
-          status: 'Available',
-          isRegistered: true,
-          totalTokens: 150,
-          availableTokens: 120,
-          pricePerToken: '0.018 ETH',
-          owner: '0x5aEd24e5c636A58b9c35728dE3a54dF3dE61ce43',
-        ),
-        listingDate: oneWeekAgo.toIso8601String(),
-        listingDateFormatted: '${oneWeekAgo.month.toString().padLeft(2, '0')}/${oneWeekAgo.day.toString().padLeft(2, '0')}/${oneWeekAgo.year}',
-        listingTimestamp: oneWeekAgo.millisecondsSinceEpoch ~/ 1000,
-        daysSinceListing: 7,
-        etherscanUrl: 'https://etherscan.io/token/0x456',
-        formattedPrice: '0.018 ETH',
-        formattedPurchasePrice: '0.017 ETH',
-        mintDateFormatted: '${oneMonthAgo.month.toString().padLeft(2, '0')}/${oneMonthAgo.day.toString().padLeft(2, '0')}/${oneMonthAgo.year}',
-        priceChangePercentage: const PriceChangePercentageModel(
-          percentage: 5.9,
-          formatted: '5.9%',
-          isPositive: true,
-        ),
-        isRecentlyListed: false,
-        isHighlyProfitable: false,
-        investmentPotential: 3,
-        investmentRating: 'Average',
-      ),
-      TokenModel(
-        tokenId: 3,
-        landId: 3,
-        tokenNumber: 19,
-        price: '0.035',
-        purchasePrice: '0.028',
-        mintDate: oneMonthAgo.toIso8601String(),
-        seller: '0xD2c73A35D7Ad9347C9Ef528711D1F7ED03f1000C',
-        land: const LandModel(
-          location: 'Miami, FL',
-          surface: 850,
-          status: 'Limited',
-          isRegistered: true,
-          totalTokens: 80,
-          availableTokens: 15,
-          pricePerToken: '0.035 ETH',
-          owner: '0xD2c73A35D7Ad9347C9Ef528711D1F7ED03f1000C',
-        ),
-        listingDate: now.subtract(const Duration(days: 1)).toIso8601String(),
-        listingDateFormatted: '${now.subtract(const Duration(days: 1)).month.toString().padLeft(2, '0')}/${now.subtract(const Duration(days: 1)).day.toString().padLeft(2, '0')}/${now.subtract(const Duration(days: 1)).year}',
-        listingTimestamp: now.subtract(const Duration(days: 1)).millisecondsSinceEpoch ~/ 1000,
-        daysSinceListing: 1,
-        etherscanUrl: 'https://etherscan.io/token/0x789',
-        formattedPrice: '0.035 ETH',
-        formattedPurchasePrice: '0.028 ETH',
-        mintDateFormatted: '${oneMonthAgo.month.toString().padLeft(2, '0')}/${oneMonthAgo.day.toString().padLeft(2, '0')}/${oneMonthAgo.year}',
-        priceChangePercentage: const PriceChangePercentageModel(
-          percentage: 25.0,
-          formatted: '25.0%',
-          isPositive: true,
-        ),
-        isRecentlyListed: true,
-        isHighlyProfitable: true,
-        investmentPotential: 5,
-        investmentRating: 'Excellent',
-      ),
-    ];
-  }
-}
-
-class AuthException implements Exception {
-  final String message;
-  AuthException({required this.message});
-  
-  @override
-  String toString() => 'AuthException: $message';
 }

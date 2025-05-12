@@ -834,8 +834,8 @@ List<PlatformFile> _images = [];
                 child: Icon(Icons.check_circle,
                     color: Colors.green[700], size: 48),
               ),
-              SizedBox(height: 24),
-              Text(
+              const SizedBox(height: 24),
+              const Text(
                 'Registration Successful',
                 style: TextStyle(
                   fontSize: 24,
@@ -1169,7 +1169,7 @@ List<PlatformFile> _images = [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Basic Land Information',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),

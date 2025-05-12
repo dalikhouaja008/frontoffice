@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:the_boost/core/constants/url.dart';
 import 'package:the_boost/core/network/auth_interceptor.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/network/network_info.dart';
@@ -44,24 +45,32 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Import with alias for the first MarketplaceRemoteDataSource
-import 'package:the_boost/features/auth/data/datasources/marketplace_remote_data_source.dart' as auth;
-import 'package:the_boost/features/auth/data/repositories/marketplace_repository_impl.dart' as auth;
-import 'package:the_boost/features/auth/domain/repositories/marketplace_repository.dart' as auth;
+import 'package:the_boost/features/auth/data/datasources/marketplace_remote_data_source.dart'
+    as auth;
+import 'package:the_boost/features/auth/data/repositories/marketplace_repository_impl.dart'
+    as auth;
+import 'package:the_boost/features/auth/domain/repositories/marketplace_repository.dart'
+    as auth;
 import 'package:the_boost/features/auth/domain/use_cases/marketplace/cancel_listing_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_multiple_tokens_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/marketplace/list_token_usecase.dart';
-import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_bloc.dart' as auth_bloc;
+import 'package:the_boost/features/auth/presentation/bloc/marketplace/marketplace_bloc.dart'
+    as auth_bloc;
 
 // Import with alias for the second MarketplaceRemoteDataSource
-import '../../features/marketplace/data/datasources/marketplace_remote_datasource.dart' as feature;
+import '../../features/marketplace/data/datasources/marketplace_remote_datasource.dart'
+    as feature;
 import '../../features/marketplace/data/datasources/marketplace_local_datasource.dart';
-import '../../features/marketplace/data/repositories/marketplace_repository_impl.dart' as feature;
-import '../../features/marketplace/domain/repositories/marketplace_repository.dart' as feature;
+import '../../features/marketplace/data/repositories/marketplace_repository_impl.dart'
+    as feature;
+import '../../features/marketplace/domain/repositories/marketplace_repository.dart'
+    as feature;
 import '../../features/marketplace/domain/usecases/get_all_listings.dart';
 import '../../features/marketplace/domain/usecases/get_filtered_listings.dart';
 import '../../features/marketplace/domain/usecases/get_listing_details.dart';
 import '../../features/marketplace/domain/usecases/purchase_token.dart';
-import '../../features/marketplace/presentation/bloc/marketplace_bloc.dart' as feature_bloc;
+import '../../features/marketplace/presentation/bloc/marketplace_bloc.dart'
+    as feature_bloc;
 
 final GetIt getIt = GetIt.instance;
 
@@ -113,10 +122,9 @@ Future<void> initDependencies() async {
       '[2025-05-05 03:35:15] DependencyInjection: ✅ Dependencies initialized');
 }
 
-// New marketplace feature initialization
 Future<void> _initMarketplaceFeature() async {
   print(
-      '[2025-05-05 03:35:15] DependencyInjection: 🔄 Initializing marketplace feature');
+      '[${DateTime.now()}] DependencyInjection: 🔄 Initializing marketplace feature');
 
   try {
     // Register SharedPreferences instance
@@ -124,19 +132,28 @@ Future<void> _initMarketplaceFeature() async {
     if (!getIt.isRegistered<SharedPreferences>()) {
       getIt.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
     }
+
+    // Ensure URLs are available
+    const landServiceBaseUrl = Url.landServiceBaseUrl;
+    
+    // AJOUT: D'abord vérifier si AuthInterceptor est déjà enregistré, sinon l'enregistrer
+    if (!getIt.isRegistered<AuthInterceptor>()) {
+      getIt.registerLazySingleton<AuthInterceptor>(
+        () => AuthInterceptor(
+          secureStorage: getIt<SecureStorageService>(),
+          baseUrl: landServiceBaseUrl,
+        ),
+      );
+      print('[${DateTime.now()}] DependencyInjection: ✅ AuthInterceptor registered');
+    }
+
     // Data Sources
     getIt.registerLazySingleton<feature.MarketplaceRemoteDataSource>(
       () => feature.MarketplaceRemoteDataSourceImpl(
         client: getIt<http.Client>(),
-        baseUrl: 'http://localhost:5000', // Use your actual API URL
-        secureStorage: getIt<SecureStorageService>(), // Added this
-      ),
-    );
-    // Register auth interceptor
-    getIt.registerLazySingleton<AuthInterceptor>(
-      () => AuthInterceptor(
+        baseUrl: landServiceBaseUrl,
         secureStorage: getIt<SecureStorageService>(),
-        baseUrl: 'http://localhost:5000', // Use your actual API URL
+        authInterceptor: getIt<AuthInterceptor>(),  // Maintenant on peut l'utiliser
       ),
     );
 
@@ -183,10 +200,10 @@ Future<void> _initMarketplaceFeature() async {
     );
 
     print(
-        '[2025-05-05 03:35:15] DependencyInjection: ✅ Marketplace feature initialized');
+        '[${DateTime.now()}] DependencyInjection: ✅ Marketplace feature initialized');
   } catch (e) {
     print(
-        '[2025-05-05 03:35:15] DependencyInjection: ❌ Error initializing marketplace feature'
+        '[${DateTime.now()}] DependencyInjection: ❌ Error initializing marketplace feature'
         '\n└─ Error: $e');
   }
 }
