@@ -33,7 +33,8 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
           setState(() {
             _isProcessing = false;
           });
-          Navigator.of(context).pop(true);
+          Navigator.of(context)
+              .pop(true); // Retourne true pour indiquer le succès
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -44,16 +45,11 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
               duration: const Duration(seconds: 3),
             ),
           );
-          
-          // Open etherscan transaction URL if available
-          if (widget.token.etherscanUrl.isNotEmpty) {
-            launchUrl(Uri.parse(widget.token.etherscanUrl));
-          }
         } else if (state is MarketplaceError && _isProcessing) {
           setState(() {
             _isProcessing = false;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -64,7 +60,7 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
               duration: const Duration(seconds: 4),
             ),
           );
-          
+
           Navigator.of(context).pop(false);
         }
       },
@@ -94,7 +90,7 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
               const SizedBox(height: 16),
               const Divider(color: AppColors.divider),
               const SizedBox(height: 16),
-              
+
               // Token info
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +143,7 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Purchase summary
               Container(
                 padding: const EdgeInsets.all(16),
@@ -240,7 +236,7 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Action buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -261,9 +257,8 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: _isProcessing
-                        ? null
-                        : () => _processPurchase(context),
+                    onPressed:
+                        _isProcessing ? null : () => _processPurchase(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -273,7 +268,8 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                     ),
                     child: _isProcessing
                         ? Row(
@@ -315,7 +311,7 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
     final price = double.tryParse(priceString) ?? 0.0;
     final fee = 0.001;
     final total = price + fee;
-    
+
     return '${total.toStringAsFixed(3)} ETH';
   }
 
@@ -344,18 +340,20 @@ class _EnhancedPurchaseDialogState extends State<EnhancedPurchaseDialog> {
     setState(() {
       _isProcessing = true;
     });
-    
-    debugPrint('[${DateTime.now()}] Initiating purchase for token ${widget.token.tokenId}');
-    
-    // Trigger the purchase event in BLoC
+
+    final String price = widget.token.price; 
+
+    debugPrint(
+        '[${DateTime.now()}] Initiating purchase for token ${widget.token.tokenId} at price $price');
+
     context.read<MarketplaceBloc>().add(
-      PurchaseTokenEvent(
-        tokenId: widget.token.tokenId,
-        buyerAddress: widget.buyerAddress,
-      ),
-    );
+          PurchaseTokenEvent(
+            tokenId: widget.token.tokenId,
+            price: price, 
+          ),
+        );
   }
-  
+
   String _shortenAddress(String address) {
     if (address.length <= 12) return address;
     return '${address.substring(0, 6)}...${address.substring(address.length - 4)}';

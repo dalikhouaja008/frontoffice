@@ -11,12 +11,12 @@ import '../widgets/purchase_dialog.dart';
 import '../../domain/entities/token.dart';
 
 class TokenDetailPage extends StatefulWidget {
-  final int tokenId;
+  final Token token;
   final String buyerAddress;
 
   const TokenDetailPage({
     Key? key,
-    required this.tokenId,
+    required this.token,
     required this.buyerAddress,
   }) : super(key: key);
 
@@ -28,13 +28,6 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadListingDetails();
-  }
-
-  void _loadListingDetails() {
-    context.read<MarketplaceBloc>().add(
-          GetListingDetailsEvent(tokenId: widget.tokenId),
-        );
   }
 
   Future<void> _launchUrl(String url) async {
@@ -51,7 +44,7 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
     }
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -64,101 +57,42 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
         ),
         backgroundColor: AppColors.primary,
       ),
-      body: BlocBuilder<MarketplaceBloc, MarketplaceState>(
-        builder: (context, state) {
-          if (state is MarketplaceLoading) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primary,
-              ),
-            );
-          } else if (state is ListingDetailsLoaded) {
-            final token = state.token;
-            final isDesktop = ResponsiveHelper.isDesktop(context);
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  isDesktop
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 6,
-                              child: _buildTokenVisual(token),
-                            ),
-                            const SizedBox(width: 32),
-                            Expanded(
-                              flex: 6,
-                              child: _buildTokenDetails(token),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildTokenVisual(token),
-                            const SizedBox(height: 24),
-                            _buildTokenDetails(token),
-                          ],
-                        ),
-                  const SizedBox(height: 32),
-                  _buildLandDetails(token),
-                  const SizedBox(height: 32),
-                  _buildInvestmentAnalysis(token),
-                  const SizedBox(height: 32),
-                  _buildTransactionHistory(token),
-                ],
-              ),
-            );
-          } else if (state is MarketplaceError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: AppColors.error,
-                    size: 64,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ResponsiveHelper.isDesktop(context)
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: _buildTokenVisual(widget.token),
+                      ),
+                      const SizedBox(width: 32),
+                      Expanded(
+                        flex: 6,
+                        child: _buildTokenDetails(widget.token),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTokenVisual(widget.token),
+                      const SizedBox(height: 24),
+                      _buildTokenDetails(widget.token),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Failed to load token details',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    state.message,
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadListingDetails,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      textStyle: GoogleFonts.poppins(),
-                    ),
-                    child: const Text('Try Again'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return Center(
-            child: Text(
-              'No token data available',
-              style: GoogleFonts.poppins(),
-            ),
-          );
-        },
+            const SizedBox(height: 32),
+            _buildLandDetails(widget.token),
+            const SizedBox(height: 32),
+            _buildInvestmentAnalysis(widget.token),
+            const SizedBox(height: 32),
+            _buildTransactionHistory(widget.token),
+          ],
+        ),
       ),
     );
   }
@@ -169,7 +103,7 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [

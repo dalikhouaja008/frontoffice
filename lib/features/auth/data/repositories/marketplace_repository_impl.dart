@@ -23,7 +23,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         final response = await remoteDataSource.listToken(tokenId, price);
         return Right(ListingResponseModel.fromJson(response));
       } catch (e) {
-        return Left(ServerFailure(message: e.toString()));
+        return Left(ServerFailure(e.toString()));
       }
     } else {
       return const Left(NetworkFailure());
@@ -38,7 +38,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         final response = await remoteDataSource.listMultipleTokens(tokenIds, prices);
         return Right(MultipleListingResponseModel.fromJson(response));
       } catch (e) {
-        return Left(ServerFailure(message: e.toString()));
+        return Left(ServerFailure(e.toString()));
       }
     } else {
       return const Left(NetworkFailure());
@@ -52,7 +52,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         final response = await remoteDataSource.cancelListing(tokenId);
         return Right(MarketplaceResponseModel.fromJson(response));
       } catch (e) {
-        return Left(ServerFailure(message: e.toString()));
+        return Left(ServerFailure( e.toString()));
       }
     } else {
       return const Left(NetworkFailure());

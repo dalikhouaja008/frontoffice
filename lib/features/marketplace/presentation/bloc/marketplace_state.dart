@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:the_boost/features/marketplace/domain/entities/transaction.dart';
 import '../../domain/entities/token.dart';
 
 abstract class MarketplaceState extends Equatable {
@@ -30,7 +31,14 @@ class ListingDetailsLoaded extends MarketplaceState {
   List<Object?> get props => [token];
 }
 
-class PurchaseSuccess extends MarketplaceState {}
+class PurchaseSuccess extends MarketplaceState {
+  final Transaction transaction;
+
+  const PurchaseSuccess(this.transaction);
+  
+  @override
+  List<Object?> get props => [transaction];
+}
 
 class MarketplaceError extends MarketplaceState {
   final String message;

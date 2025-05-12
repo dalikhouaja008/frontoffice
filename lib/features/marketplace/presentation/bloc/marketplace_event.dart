@@ -37,15 +37,15 @@ class GetListingDetailsEvent extends MarketplaceEvent {
 
 class PurchaseTokenEvent extends MarketplaceEvent {
   final int tokenId;
-  final String buyerAddress;
+  final String price;
 
   PurchaseTokenEvent({
     required this.tokenId,
-    required this.buyerAddress,
+    required this.price, 
   });
 
   @override
-  List<Object?> get props => [tokenId, buyerAddress];
+  List<Object?> get props => [tokenId, price];
 }
 
 class ClearErrorEvent extends MarketplaceEvent {}

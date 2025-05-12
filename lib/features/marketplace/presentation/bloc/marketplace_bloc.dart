@@ -93,27 +93,28 @@ class MarketplaceBloc extends Bloc<MarketplaceEvent, MarketplaceState> {
     );
   }
 
-  Future<void> _onPurchaseToken(
-      PurchaseTokenEvent event, Emitter<MarketplaceState> emit) async {
-    emit(MarketplaceLoading());
-    debugPrint('[${DateTime.now()}] MarketplaceBloc: Purchasing token ${event.tokenId}');
-    
-    final result = await purchaseToken(PurchaseTokenParams(
-      tokenId: event.tokenId,
-      buyerAddress: event.buyerAddress,
-    ));
-    
-    result.fold(
-      (failure) {
-        debugPrint('[${DateTime.now()}] MarketplaceBloc: Error purchasing token: ${failure.message}');
-        emit(MarketplaceError(_mapFailureToMessage(failure)));
-      },
-      (success) {
-        debugPrint('[${DateTime.now()}] MarketplaceBloc: Purchase ${success ? 'successful' : 'failed'}');
-        emit(PurchaseSuccess());
-      },
-    );
-  }
+ Future<void> _onPurchaseToken(
+    PurchaseTokenEvent event, Emitter<MarketplaceState> emit) async {
+  emit(MarketplaceLoading());
+  debugPrint('[${DateTime.now()}] MarketplaceBloc: Purchasing token ${event.tokenId}');
+  
+  final result = await purchaseToken(PurchaseTokenParams(
+    tokenId: event.tokenId,
+    price: event.price, 
+  ));
+  
+  result.fold(
+    (failure) {
+      debugPrint('[${DateTime.now()}] MarketplaceBloc: Error purchasing token: ${failure.message}');
+      emit(MarketplaceError(_mapFailureToMessage(failure)));
+    },
+    (transaction) {
+      // Maintenant on reçoit une Transaction au lieu d'un bool
+      debugPrint('[${DateTime.now()}] MarketplaceBloc: Purchase successful with hash: ${transaction.transactionHash}');
+      emit(PurchaseSuccess(transaction)); 
+    },
+  );
+}
   
   Future<void> _onClearError(
       ClearErrorEvent event, Emitter<MarketplaceState> emit) async {
