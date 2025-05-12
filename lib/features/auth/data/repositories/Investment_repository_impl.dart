@@ -21,7 +21,7 @@ class InvestmentRepositoryImpl implements InvestmentRepository {
         final remoteTokens = await remoteDataSource.getEnhancedTokens();
         return Right(remoteTokens);
       } catch (e) {
-        return Left(ServerFailure(message:e.toString()));
+        return Left(ServerFailure(e.toString()));
       }
     } else {
       return const Left(NetworkFailure());

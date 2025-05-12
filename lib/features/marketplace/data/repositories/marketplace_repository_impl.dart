@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:the_boost/features/marketplace/domain/entities/transaction.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/network/network_info.dart';
@@ -23,27 +24,33 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   Future<Either<Failure, List<Token>>> getAllListings() async {
     if (await networkInfo.isConnected) {
       try {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ✓ Fetching listings from remote');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ✓ Fetching listings from remote');
         final remoteListings = await remoteDataSource.getAllListings();
         await localDataSource.cacheTokenListings(remoteListings);
         return Right(remoteListings);
       } on ServerException catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Server error getting listings: ${e.message}');
-        return Left(ServerFailure(message: e.message));
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Server error getting listings: ${e.message}');
+        return Left(ServerFailure(e.message));
       } catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting listings: $e');
-        return Left(ServerFailure(message: e.toString()));
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting listings: $e');
+        return Left(ServerFailure(e.toString()));
       }
     } else {
       try {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ⚠️ No network, fetching listings from cache');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ⚠️ No network, fetching listings from cache');
         final localListings = await localDataSource.getLastTokenListings();
         return Right(localListings);
       } on CacheException {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Cache error getting listings');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Cache error getting listings');
         return const Left(CacheFailure(message: 'No cached data available'));
       } catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting cached listings: $e');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting cached listings: $e');
         return Left(CacheFailure(message: e.toString()));
       }
     }
@@ -59,7 +66,8 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ✓ Fetching filtered listings from remote');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ✓ Fetching filtered listings from remote');
         final filteredListings = await remoteDataSource.getFilteredListings(
           query: query,
           minPrice: minPrice,
@@ -69,16 +77,19 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         );
         return Right(filteredListings);
       } on ServerException catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Server error getting filtered listings: ${e.message}');
-        return Left(ServerFailure(message: e.message));
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Server error getting filtered listings: ${e.message}');
+        return Left(ServerFailure(e.message));
       } catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting filtered listings: $e');
-        return Left(ServerFailure(message: e.toString()));
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting filtered listings: $e');
+        return Left(ServerFailure(e.toString()));
       }
     } else {
       // For filtered queries, we can try to filter the cached listings if available
       try {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ⚠️ No network, filtering cached listings');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ⚠️ No network, filtering cached listings');
         final allCachedListings = await localDataSource.getLastTokenListings();
         final filteredCachedListings = _filterLocalListings(
           allCachedListings,
@@ -90,10 +101,12 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         );
         return Right(filteredCachedListings);
       } on CacheException {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Cache error getting filtered listings');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Cache error getting filtered listings');
         return Left(CacheFailure(message: 'No cached data available'));
       } catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error filtering cached listings: $e');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error filtering cached listings: $e');
         return Left(NetworkFailure());
       }
     }
@@ -103,58 +116,72 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   Future<Either<Failure, Token>> getListingDetails(int tokenId) async {
     if (await networkInfo.isConnected) {
       try {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ✓ Fetching token details from remote: $tokenId');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ✓ Fetching token details from remote: $tokenId');
         final tokenDetails = await remoteDataSource.getListingDetails(tokenId);
         await localDataSource.cacheTokenDetails(tokenDetails);
         return Right(tokenDetails);
       } on ServerException catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Server error getting token details: ${e.message}');
-        return Left(ServerFailure(message: e.message));
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Server error getting token details: ${e.message}');
+        return Left(ServerFailure(e.message));
       } catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting token details: $e');
-        return Left(ServerFailure(message: e.toString()));
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting token details: $e');
+        return Left(ServerFailure(e.toString()));
       }
     } else {
       try {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ⚠️ No network, fetching token details from cache: $tokenId');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ⚠️ No network, fetching token details from cache: $tokenId');
         final cachedToken = await localDataSource.getTokenDetails(tokenId);
         return Right(cachedToken);
       } on CacheException {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Cache error getting token details');
-        return Left(CacheFailure(message: 'No cached data available'));
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Cache error getting token details');
+        return const Left(CacheFailure(message: 'No cached data available'));
       } catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting cached token details: $e');
+        debugPrint(
+            '[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error getting cached token details: $e');
         return Left(CacheFailure(message: e.toString()));
       }
     }
   }
 
   @override
-  Future<Either<Failure, bool>> purchaseToken(int tokenId, String buyerAddress) async {
-    if (await networkInfo.isConnected) {
-      try {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ✓ Purchasing token: $tokenId by $buyerAddress');
-        final success = await remoteDataSource.purchaseToken(tokenId, buyerAddress);
-        if (success) {
-          // Invalidate cache for this token since it's been purchased
-          await localDataSource.removeTokenDetails(tokenId);
-          await localDataSource.invalidateListingsCache();
-          debugPrint('[${DateTime.now()}] MarketplaceRepository: ✓ Purchase successful, cache invalidated');
-        }
-        return Right(success);
-      } on ServerException catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Server error purchasing token: ${e.message}');
-        return Left(ServerFailure(message: e.message));
-      } catch (e) {
-        debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Unexpected error purchasing token: $e');
-        return Left(ServerFailure(message: e.toString()));
-      }
-    } else {
-      debugPrint('[${DateTime.now()}] MarketplaceRepository: ❌ Cannot purchase token while offline');
-      return Left(NetworkFailure(message: 'Cannot purchase token while offline'));
+  Future<Either<Failure, Transaction>> purchaseToken(
+      int tokenId, String price) async {
+    try {
+      debugPrint(
+          '[${DateTime.now()}] MarketplaceRepository: √ Purchasing token: $tokenId');
+
+      // Ici, result est un TransactionResponseModel
+      final result = await remoteDataSource.purchaseToken(tokenId, price);
+
+      final transaction = Transaction(
+        transactionHash: result.transactionHash,
+        blockNumber: result.blockNumber,
+        tokenId: result.tokenId,
+        landId: result.landId,
+        price: result.price,
+        buyer: result.buyer,
+        seller: result.seller,
+        timestamp: result.timestamp,
+        message: result.message,
+      );
+
+      return Right(transaction);
+    } on ServerException catch (e) {
+      debugPrint(
+          '[${DateTime.now()}] MarketplaceRepository: ❌ Server error purchasing token: ${e.message}');
+      return Left(ServerFailure(e.message));
+    } on CacheException catch (e) {
+      debugPrint(
+          '[${DateTime.now()}] MarketplaceRepository: ❌ Cache error purchasing token: ${e.toString()}');
+      return Left(CacheFailure(message: e.toString()));
     }
   }
-  
+
   // Helper method to filter local listings
   List<Token> _filterLocalListings(
     List<Token> listings, {
@@ -165,36 +192,40 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     String? sortBy,
   }) {
     var filtered = List<Token>.from(listings);
-    
+
     // Apply filters
     if (query != null && query.isNotEmpty) {
-      filtered = filtered.where((token) => 
-        token.land.location.toLowerCase().contains(query.toLowerCase()) ||
-        token.tokenId.toString() == query ||
-        token.tokenNumber.toString() == query
-      ).toList();
+      filtered = filtered
+          .where((token) =>
+              token.land.location.toLowerCase().contains(query.toLowerCase()) ||
+              token.tokenId.toString() == query ||
+              token.tokenNumber.toString() == query)
+          .toList();
     }
-    
+
     if (minPrice != null) {
       filtered = filtered.where((token) {
         final price = double.tryParse(token.price.replaceAll(' ETH', '')) ?? 0;
         return price >= minPrice;
       }).toList();
     }
-    
+
     if (maxPrice != null) {
       filtered = filtered.where((token) {
         final price = double.tryParse(token.price.replaceAll(' ETH', '')) ?? 0;
         return price <= maxPrice;
       }).toList();
     }
-    
-    if (category != null && category != 'All Categories' && category.isNotEmpty) {
-      filtered = filtered.where((token) => 
-        token.land.status.toLowerCase() == category.toLowerCase()
-      ).toList();
+
+    if (category != null &&
+        category != 'All Categories' &&
+        category.isNotEmpty) {
+      filtered = filtered
+          .where((token) =>
+              token.land.status.toLowerCase() == category.toLowerCase())
+          .toList();
     }
-    
+
     // Apply sorting
     if (sortBy != null) {
       if (sortBy.contains('Low to High')) {
@@ -210,16 +241,16 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
           return priceB.compareTo(priceA);
         });
       } else if (sortBy.contains('Newest')) {
-        filtered.sort((a, b) => b.listingTimestamp.compareTo(a.listingTimestamp));
+        filtered
+            .sort((a, b) => b.listingTimestamp.compareTo(a.listingTimestamp));
       } else if (sortBy.contains('ROI')) {
-        filtered.sort((a, b) => 
-          b.priceChangePercentage.percentage.compareTo(a.priceChangePercentage.percentage)
-        );
+        filtered.sort((a, b) => b.priceChangePercentage.percentage
+            .compareTo(a.priceChangePercentage.percentage));
       } else if (sortBy.contains('Surface')) {
         filtered.sort((a, b) => b.land.surface.compareTo(a.land.surface));
       }
     }
-    
+
     return filtered;
   }
 }

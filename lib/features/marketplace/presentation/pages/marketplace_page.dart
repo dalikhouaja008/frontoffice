@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:the_boost/core/network/network_info.dart';
 import 'package:the_boost/features/marketplace/domain/entities/token.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/utils/responsive_helper.dart';
@@ -17,9 +16,9 @@ class MarketplacePage extends StatefulWidget {
   final String walletAddress;
 
   const MarketplacePage({
-    Key? key,
+    super.key,
     required this.walletAddress,
-  }) : super(key: key);
+  });
 
   @override
   State<MarketplacePage> createState() => _MarketplacePageState();
@@ -1017,17 +1016,35 @@ class _MarketplacePageState extends State<MarketplacePage>
     }
   }
 
-  Widget _buildStaggeredCard(token, int index) {
+  Widget _buildStaggeredCard(Token token, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 600 + (index * 100)),
+      duration: Duration(milliseconds: 400 + (index * 50)),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, (1 - value) * 50),
-          child: Opacity(
-            opacity: value,
-            child: _buildEnhancedListingCard(token),
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 50),
+            child: TokenListingCard(
+              token: token,
+              onTap: () {
+                // Passer tout le token plutôt que juste l'ID
+                Navigator.of(context)
+                    .push(
+                  MaterialPageRoute(
+                    builder: (context) => TokenDetailPage(
+                      token: token, // Passer l'objet token entier
+                      buyerAddress: widget.walletAddress,
+                    ),
+                  ),
+                )
+                    .then((_) {
+                  // Rafraîchir les listings au retour de la page de détails (en cas d'achat)
+                  _loadListings();
+                });
+              },
+            ),
           ),
         );
       },
@@ -1052,7 +1069,7 @@ class _MarketplacePageState extends State<MarketplacePage>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _showTokenDetails(token.tokenId),
+          onTap: () => _showTokenDetails(token),
           splashColor: AppColors.primary.withOpacity(0.1),
           highlightColor: AppColors.primary.withOpacity(0.05),
           child: ClipRRect(
@@ -1062,7 +1079,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                 // The main card
                 TokenListingCard(
                   token: token,
-                  onTap: () => _showTokenDetails(token.tokenId),
+                  onTap: () => _showTokenDetails(token),
                 ),
 
                 // Gradient overlay at the top for badges
@@ -1193,7 +1210,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                     borderRadius: BorderRadius.circular(16),
                     splashColor: AppColors.primary.withOpacity(0.1),
                     highlightColor: AppColors.primary.withOpacity(0.05),
-                    onTap: () => _showTokenDetails(token.tokenId),
+                    onTap: () => _showTokenDetails(token),
                     child: Container(),
                   ),
                 ),
@@ -1588,13 +1605,13 @@ class _MarketplacePageState extends State<MarketplacePage>
     );
   }
 
-  void _showTokenDetails(int tokenId) {
-    // Add a page transition animation when navigating to details
-    Navigator.of(context).push(
+  void _showTokenDetails(Token token) {
+    Navigator.of(context)
+        .push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             TokenDetailPage(
-          tokenId: tokenId,
+          token: token, // Passer l'objet token complet au lieu de juste l'ID
           buyerAddress: widget.walletAddress,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -1616,6 +1633,9 @@ class _MarketplacePageState extends State<MarketplacePage>
         },
         transitionDuration: const Duration(milliseconds: 400),
       ),
-    );
+    )
+        .then((_) {
+      _loadListings();
+    });
   }
 }

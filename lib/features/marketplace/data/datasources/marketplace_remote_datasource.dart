@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:the_boost/features/marketplace/data/models/marketplace_remote_datasource.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/auth_interceptor.dart';
 import '../../../../core/services/secure_storage_service.dart';
@@ -22,8 +23,7 @@ abstract class MarketplaceRemoteDataSource {
   /// Gets details for a specific token by ID
   Future<TokenModel> getListingDetails(int tokenId);
   
-  /// Purchases a token with the specified ID
-  Future<bool> purchaseToken(int tokenId, String buyerAddress);
+  Future<TransactionResponseModel> purchaseToken(int tokenId, String price);
 }
 
 class MarketplaceRemoteDataSourceImpl implements MarketplaceRemoteDataSource {
@@ -232,41 +232,44 @@ class MarketplaceRemoteDataSourceImpl implements MarketplaceRemoteDataSource {
     }
   }
   
-  @override
-  Future<bool> purchaseToken(int tokenId, String buyerAddress) async {
-    try {
-      final headers = await _getAuthHeaders();
-      
-      // Get token details to extract price if needed
-      debugPrint('[${DateTime.now()}] Initiating purchase for token ID: $tokenId by $buyerAddress');
-      
-      final response = await client.post(
-        Uri.parse('$baseUrl/marketplace/buy'),
-        headers: headers,
-        body: json.encode({
-          'tokenId': tokenId,
-          'value': null,  
-        }),
-      );
-      
-      debugPrint('[${DateTime.now()}] Purchase response: ${response.statusCode}');
-      
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        final success = jsonData['success'] == true;
-        if (success) {
-          debugPrint('[${DateTime.now()}] Successfully purchased token $tokenId');
-        } else {
-          debugPrint('[${DateTime.now()}] Purchase unsuccessful: ${jsonData['message']}');
-        }
-        return success;
+@override
+Future<TransactionResponseModel> purchaseToken(int tokenId, String price) async {
+  try {
+    final headers = await _getAuthHeaders();
+    
+    // Extraire le prix numérique (enlever " ETH" s'il est présent)
+    final numericPrice = price.replaceAll(' ETH', '');
+    
+    debugPrint('[${DateTime.now()}] Initiating purchase for token ID: $tokenId at price $numericPrice');
+    
+    final response = await client.post(
+      Uri.parse('$baseUrl/marketplace/buy'),
+      headers: headers,
+      body: json.encode({
+        'tokenId': tokenId,
+        'value': numericPrice,
+      }),
+    );
+    
+    debugPrint('[${DateTime.now()}] Purchase response: ${response.statusCode}');
+    
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['success'] == true) {
+        debugPrint('[${DateTime.now()}] Successfully purchased token $tokenId');
+        return TransactionResponseModel.fromJson(jsonData);
       } else {
-        debugPrint('[${DateTime.now()}] Failed to purchase token: ${response.statusCode} - ${response.reasonPhrase}');
-        throw ServerException(message: 'Failed to purchase token: ${response.reasonPhrase}');
+        final errorMessage = jsonData['message'] ?? 'Transaction échouée';
+        debugPrint('[${DateTime.now()}] Purchase unsuccessful: $errorMessage');
+        throw ServerException(message: errorMessage);
       }
-    } catch (e) {
-      debugPrint('[${DateTime.now()}] Exception in purchaseToken: $e');
-      throw ServerException(message: 'Error purchasing token: $e');
+    } else {
+      debugPrint('[${DateTime.now()}] Failed to purchase token: ${response.statusCode} - ${response.reasonPhrase}');
+      throw ServerException(message: 'Failed to purchase token: ${response.reasonPhrase}');
     }
+  } catch (e) {
+    debugPrint('[${DateTime.now()}] Exception in purchaseToken: $e');
+    throw ServerException(message: 'Error purchasing token: $e');
   }
+}
 }
