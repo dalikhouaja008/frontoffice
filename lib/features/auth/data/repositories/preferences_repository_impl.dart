@@ -1,4 +1,3 @@
-// lib/features/auth/data/repositories/preferences_repository_impl.dart
 import 'package:the_boost/features/auth/data/datasources/preferences_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/models/land_model.dart';
 import 'package:the_boost/features/auth/domain/entities/user_preferences.dart';
@@ -32,5 +31,15 @@ class PreferencesRepositoryImpl implements PreferencesRepository {
     }
   }
   
-
+  // Implement the new method for land types
+  @override
+  Future<List<String>> getAvailableLandTypes() async {
+    try {
+      final landTypes = await _remoteDataSource.getAvailableLandTypes();
+      return landTypes;
+    } catch (e) {
+      print('[${DateTime.now()}] PreferencesRepository: ❌ Error fetching land types: $e');
+      return []; // Return empty list on error
+    }
+  }
 }
