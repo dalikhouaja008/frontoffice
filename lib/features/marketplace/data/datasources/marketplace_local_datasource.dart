@@ -5,118 +5,125 @@ import '../../../../core/error/exceptions.dart';
 import '../models/token_model.dart';
 
 abstract class MarketplaceLocalDataSource {
-  Future<List<TokenModel>> getLastCachedListings();
-  Future<List<TokenModel>> getLastListings(); // Added alias method to match repository calls
-  Future<TokenModel> getListingById(int tokenId);
-  Future<void> cacheListings(List<TokenModel> listings);
-  Future<void> cacheListingDetails(TokenModel token);
+  /// Gets the cached list of token listings
+  Future<List<TokenModel>> getLastTokenListings();
+  
+  /// Caches a list of token listings
+  Future<void> cacheTokenListings(List<TokenModel> tokenListings);
+  
+  /// Gets cached details for a specific token
+  Future<TokenModel> getTokenDetails(int tokenId);
+  
+  /// Caches details for a specific token
+  Future<void> cacheTokenDetails(TokenModel token);
+  
+  /// Removes cached details for a token
+  Future<void> removeTokenDetails(int tokenId);
+  
+  /// Invalidates the entire listings cache
+  Future<void> invalidateListingsCache();
 }
 
 class MarketplaceLocalDataSourceImpl implements MarketplaceLocalDataSource {
   final SharedPreferences sharedPreferences;
-  final String _cachedListingsKey = 'CACHED_LISTINGS';
-  final String _cachedTokenPrefix = 'CACHED_TOKEN_';
-
+  
   MarketplaceLocalDataSourceImpl({required this.sharedPreferences});
-
+  
   @override
-  Future<List<TokenModel>> getLastCachedListings() async {
-    try {
-      final jsonString = sharedPreferences.getString(_cachedListingsKey);
-      debugPrint('[2025-05-05 07:41:57] Reading cached listings: ${jsonString?.length ?? 0} bytes');
-      
-      if (jsonString != null && jsonString.isNotEmpty) {
-        final List<dynamic> decoded = json.decode(jsonString);
-        final listings = decoded.map<TokenModel>((item) => TokenModel.fromJson(item)).toList();
-        debugPrint('[2025-05-05 07:41:57] Successfully retrieved ${listings.length} cached listings');
-        return listings;
-      } else {
-        debugPrint('[2025-05-05 07:41:57] No cached listings found');
+  Future<List<TokenModel>> getLastTokenListings() async {
+    final jsonString = sharedPreferences.getString('CACHED_TOKEN_LISTINGS');
+    if (jsonString != null) {
+      try {
+        debugPrint('[${DateTime.now()}] Retrieving cached listings');
+        final List<dynamic> decodedJsonList = json.decode(jsonString);
+        return decodedJsonList
+            .map((jsonMap) => TokenModel.fromJson(jsonMap))
+            .toList();
+      } catch (e) {
+        debugPrint('[${DateTime.now()}] Error parsing cached listings: $e');
         throw CacheException();
       }
-    } catch (e) {
-      debugPrint('[2025-05-05 07:41:57] Error retrieving cached listings: $e');
+    } else {
+      debugPrint('[${DateTime.now()}] No cached listings found');
       throw CacheException();
-    }
-  }
-
-  // Alias method to match what repository is calling
-  @override
-  Future<List<TokenModel>> getLastListings() => getLastCachedListings();
-
-  @override
-  Future<TokenModel> getListingById(int tokenId) async {
-    try {
-      final jsonString = sharedPreferences.getString('$_cachedTokenPrefix$tokenId');
-      debugPrint('[2025-05-05 07:41:57] Reading cached token $tokenId: ${jsonString != null}');
-      
-      if (jsonString != null) {
-        final token = TokenModel.fromJson(json.decode(jsonString));
-        debugPrint('[2025-05-05 07:41:57] Successfully retrieved cached token $tokenId');
-        return token;
-      } else {
-        debugPrint('[2025-05-05 07:41:57] No cached token found for ID $tokenId');
-        throw CacheException();
-      }
-    } catch (e) {
-      debugPrint('[2025-05-05 07:41:57] Error retrieving cached token $tokenId: $e');
-      throw CacheException();
-    }
-  }
-
-  @override
-  Future<void> cacheListings(List<TokenModel> listings) async {
-    try {
-      debugPrint('[2025-05-05 07:41:57] Caching ${listings.length} listings');
-      final List<Map<String, dynamic>> jsonList = listings
-          .map((token) => token.toJson())
-          .toList();
-      
-      await sharedPreferences.setString(_cachedListingsKey, json.encode(jsonList));
-      debugPrint('[2025-05-05 07:41:57] Successfully cached ${listings.length} listings');
-    } catch (e) {
-      debugPrint('[2025-05-05 07:41:57] Error caching listings: $e');
-      // We don't throw here to prevent crashes during caching operations
-    }
-  }
-
-  @override
-  Future<void> cacheListingDetails(TokenModel token) async {
-    try {
-      debugPrint('[2025-05-05 07:41:57] Caching token ${token.tokenId}');
-      final jsonData = token.toJson();
-      
-      await sharedPreferences.setString(
-        '$_cachedTokenPrefix${token.tokenId}',
-        json.encode(jsonData),
-      );
-      debugPrint('[2025-05-05 07:41:57] Successfully cached token ${token.tokenId}');
-    } catch (e) {
-      debugPrint('[2025-05-05 07:41:57] Error caching token ${token.tokenId}: $e');
-      // We don't throw here to prevent crashes during caching operations
     }
   }
   
-  // Additional helper method to clear all cached listings
-  Future<bool> clearAllCachedListings() async {
+  @override
+  Future<void> cacheTokenListings(List<TokenModel> tokenListings) async {
     try {
-      debugPrint('[2025-05-05 07:41:57] Clearing all cached listings');
-      // Remove the main listings cache
-      await sharedPreferences.remove(_cachedListingsKey);
-      
-      // Get all keys and clear any token-specific caches
-      final allKeys = sharedPreferences.getKeys();
-      for (final key in allKeys) {
-        if (key.startsWith(_cachedTokenPrefix)) {
-          await sharedPreferences.remove(key);
-        }
-      }
-      
-      debugPrint('[2025-05-05 07:41:57] Successfully cleared all cached listings');
-      return true;
+      debugPrint('[${DateTime.now()}] Caching ${tokenListings.length} listings');
+      final List<Map<String, dynamic>> jsonList = 
+          tokenListings.map((token) => token.toJson()).toList();
+      await sharedPreferences.setString(
+        'CACHED_TOKEN_LISTINGS',
+        json.encode(jsonList),
+      );
+      // Also store cache timestamp
+      await sharedPreferences.setInt(
+        'CACHED_TOKEN_LISTINGS_TIMESTAMP', 
+        DateTime.now().millisecondsSinceEpoch
+      );
     } catch (e) {
-      debugPrint('[2025-05-05 07:41:57] Error clearing cached listings: $e');
-      return false;
+      debugPrint('[${DateTime.now()}] Error caching listings: $e');
+      throw CacheException();
     }
+  }
+  
+  @override
+  Future<TokenModel> getTokenDetails(int tokenId) async {
+    final jsonString = sharedPreferences.getString('CACHED_TOKEN_$tokenId');
+    if (jsonString != null) {
+      try {
+        debugPrint('[${DateTime.now()}] Retrieving cached token $tokenId');
+        return TokenModel.fromJson(json.decode(jsonString));
+      } catch (e) {
+        debugPrint('[${DateTime.now()}] Error parsing cached token $tokenId: $e');
+        throw CacheException();
+      }
+    } else {
+      debugPrint('[${DateTime.now()}] No cached token $tokenId found');
+      throw CacheException();
+    }
+  }
+  
+  @override
+  Future<void> cacheTokenDetails(TokenModel token) async {
+    try {
+      debugPrint('[${DateTime.now()}] Caching token ${token.tokenId}');
+      await sharedPreferences.setString(
+        'CACHED_TOKEN_${token.tokenId}',
+        json.encode(token.toJson()),
+      );
+      // Also store cache timestamp
+      await sharedPreferences.setInt(
+        'CACHED_TOKEN_${token.tokenId}_TIMESTAMP',
+        DateTime.now().millisecondsSinceEpoch
+      );
+    } catch (e) {
+      debugPrint('[${DateTime.now()}] Error caching token details: $e');
+      throw CacheException();
+    }
+  }
+  
+  @override
+  Future<void> removeTokenDetails(int tokenId) async {
+    debugPrint('[${DateTime.now()}] Removing cached token $tokenId');
+    await sharedPreferences.remove('CACHED_TOKEN_$tokenId');
+    await sharedPreferences.remove('CACHED_TOKEN_${tokenId}_TIMESTAMP');
+  }
+  
+  @override
+  Future<void> invalidateListingsCache() async {
+    debugPrint('[${DateTime.now()}] Invalidating listings cache');
+    await sharedPreferences.remove('CACHED_TOKEN_LISTINGS');
+    await sharedPreferences.remove('CACHED_TOKEN_LISTINGS_TIMESTAMP');
+  }
+  
+  // Helper method to check if cache is expired (5 minutes TTL)
+  bool isCacheExpired(int timestamp, {int ttlMinutes = 5}) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final expiryTime = timestamp + (ttlMinutes * 60 * 1000);
+    return now > expiryTime;
   }
 }

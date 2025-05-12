@@ -224,7 +224,6 @@ class TokenSelectionWidget extends StatelessWidget {
 
   // Méthode pour récupérer les propriétés des tokens en toute sécurité
   dynamic _getTokenProperty(Map<String, dynamic> token, String key, dynamic defaultValue) {
-    if (token == null) return defaultValue;
     return token.containsKey(key) ? (token[key] ?? defaultValue) : defaultValue;
   }
 

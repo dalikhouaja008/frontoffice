@@ -2,6 +2,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart'; //est une interface que tous les types de providers (Provider, BlocProvider, etc.) implémentent, ce qui nous permet de les utiliser ensemble dans la même liste.
+import 'package:the_boost/core/constants/url.dart';
+import 'package:the_boost/core/di/dependency_injection.dart';
+import 'package:the_boost/core/network/auth_interceptor.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/services/session_service.dart';
@@ -22,6 +25,12 @@ class InjectionContainer {
 
   static void init() {
     print('injection DI: 🚀 Initializing dependency injection');
+      getIt.registerLazySingleton<AuthInterceptor>(
+    () => AuthInterceptor(
+      secureStorage: getIt<SecureStorageService>(),
+      baseUrl: Url.landServiceBaseUrl,
+    ),
+  );
 
     _secureStorage = SecureStorageService();
     _graphQLClient = GraphQLService.client;
