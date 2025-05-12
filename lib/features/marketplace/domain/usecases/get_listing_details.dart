@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
-import 'package:the_boost/core/error/failure.dart';
-import 'package:the_boost/core/use_cases/usecase.dart';
+import '../../../../core/error/failure.dart';
+import '../../../../core/use_cases/usecase.dart';
 import '../entities/token.dart';
 import '../repositories/marketplace_repository.dart';
 

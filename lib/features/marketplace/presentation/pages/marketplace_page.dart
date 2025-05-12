@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:the_boost/features/marketplace/domain/entities/token.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../bloc/marketplace_bloc.dart';
@@ -15,9 +16,9 @@ class MarketplacePage extends StatefulWidget {
   final String walletAddress;
 
   const MarketplacePage({
-    Key? key,
+    super.key,
     required this.walletAddress,
-  }) : super(key: key);
+  });
 
   @override
   State<MarketplacePage> createState() => _MarketplacePageState();
@@ -34,7 +35,7 @@ class _MarketplacePageState extends State<MarketplacePage>
   late Animation<double> _fadeAnimation;
   final ScrollController _scrollController = ScrollController();
   bool _showScrollToTop = false;
-  
+
   // Animation controllers
   late AnimationController _shimmerController;
   late AnimationController _heroAnimationController;
@@ -64,21 +65,21 @@ class _MarketplacePageState extends State<MarketplacePage>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
-    
+
     _heroScaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
       CurvedAnimation(
         parent: _heroAnimationController,
         curve: Curves.easeOutBack,
       ),
     );
-    
+
     _heroBgAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _heroAnimationController,
         curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
       ),
     );
-    
+
     _heroAnimationController.forward();
 
     // Shimmer animation for loading effects
@@ -417,7 +418,8 @@ class _MarketplacePageState extends State<MarketplacePage>
               _buildVerticalDivider(),
               _buildAnimatedStatItem('Avg. ROI', '+12.4%', Icons.trending_up),
               _buildVerticalDivider(),
-              _buildAnimatedStatItem('24h Volume', '1.25 ETH', Icons.currency_exchange),
+              _buildAnimatedStatItem(
+                  '24h Volume', '1.25 ETH', Icons.currency_exchange),
             ],
           ),
         ),
@@ -752,7 +754,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                 color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.close_rounded,
                 size: 14,
                 color: AppColors.primary,
@@ -777,6 +779,10 @@ class _MarketplacePageState extends State<MarketplacePage>
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Afficher les statistiques réelles basées sur les listings
+              _buildMarketStats(state.listings),
+              const SizedBox(height: 20),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -832,7 +838,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                 ),
                 padding: EdgeInsets.zero,
                 iconSize: 18,
-                icon: Icon(
+                icon: const Icon(
                   Icons.grid_view,
                   color: AppColors.primary,
                 ),
@@ -928,7 +934,6 @@ class _MarketplacePageState extends State<MarketplacePage>
     );
   }
 
-  // Enhanced shimmer container with better gradient effects
   Widget _buildEnhancedShimmerContainer(double width, double height,
       {EdgeInsets? margin, double borderRadius = 8}) {
     return AnimatedBuilder(
@@ -1011,18 +1016,35 @@ class _MarketplacePageState extends State<MarketplacePage>
     }
   }
 
-  // Enhanced card with staggered animation
-  Widget _buildStaggeredCard(token, int index) {
+  Widget _buildStaggeredCard(Token token, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 600 + (index * 100)),
+      duration: Duration(milliseconds: 400 + (index * 50)),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, (1 - value) * 50),
-          child: Opacity(
-            opacity: value,
-            child: _buildEnhancedListingCard(token),
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 50),
+            child: TokenListingCard(
+              token: token,
+              onTap: () {
+                // Passer tout le token plutôt que juste l'ID
+                Navigator.of(context)
+                    .push(
+                  MaterialPageRoute(
+                    builder: (context) => TokenDetailPage(
+                      token: token, // Passer l'objet token entier
+                      buyerAddress: widget.walletAddress,
+                    ),
+                  ),
+                )
+                    .then((_) {
+                  // Rafraîchir les listings au retour de la page de détails (en cas d'achat)
+                  _loadListings();
+                });
+              },
+            ),
           ),
         );
       },
@@ -1047,7 +1069,7 @@ class _MarketplacePageState extends State<MarketplacePage>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _showTokenDetails(token.tokenId),
+          onTap: () => _showTokenDetails(token),
           splashColor: AppColors.primary.withOpacity(0.1),
           highlightColor: AppColors.primary.withOpacity(0.05),
           child: ClipRRect(
@@ -1057,7 +1079,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                 // The main card
                 TokenListingCard(
                   token: token,
-                  onTap: () => _showTokenDetails(token.tokenId),
+                  onTap: () => _showTokenDetails(token),
                 ),
 
                 // Gradient overlay at the top for badges
@@ -1093,7 +1115,8 @@ class _MarketplacePageState extends State<MarketplacePage>
                         return Transform.scale(
                           scale: value,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.green,
                               borderRadius: BorderRadius.circular(12),
@@ -1142,7 +1165,8 @@ class _MarketplacePageState extends State<MarketplacePage>
                         return Transform.scale(
                           scale: value,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               borderRadius: BorderRadius.circular(12),
@@ -1178,7 +1202,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                       },
                     ),
                   ),
-                
+
                 // Card hover effect overlay
                 Material(
                   color: Colors.transparent,
@@ -1186,7 +1210,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                     borderRadius: BorderRadius.circular(16),
                     splashColor: AppColors.primary.withOpacity(0.1),
                     highlightColor: AppColors.primary.withOpacity(0.05),
-                    onTap: () => _showTokenDetails(token.tokenId),
+                    onTap: () => _showTokenDetails(token),
                     child: Container(),
                   ),
                 ),
@@ -1299,7 +1323,8 @@ class _MarketplacePageState extends State<MarketplacePage>
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 28, vertical: 14),
                               textStyle: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
@@ -1426,23 +1451,28 @@ class _MarketplacePageState extends State<MarketplacePage>
                                   // Show mock data option
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Using mock data for development'),
+                                      content: Text(
+                                          'Using mock data for development'),
                                       backgroundColor: Colors.green,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(10)),
                                       ),
-                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 16),
                                     ),
                                   );
                                   _loadListings();
                                 },
-                                icon: const Icon(Icons.data_array_rounded, size: 18),
+                                icon: const Icon(Icons.data_array_rounded,
+                                    size: 18),
                                 label: const Text('Use Mock Data'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.grey[700],
                                   side: BorderSide(color: Colors.grey[300]!),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 14),
                                   textStyle: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w500,
                                     fontSize: 14,
@@ -1455,12 +1485,14 @@ class _MarketplacePageState extends State<MarketplacePage>
                               const SizedBox(width: 16),
                               ElevatedButton.icon(
                                 onPressed: _loadListings,
-                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                icon:
+                                    const Icon(Icons.refresh_rounded, size: 18),
                                 label: const Text('Try Again'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 14),
                                   textStyle: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w500,
                                     fontSize: 14,
@@ -1469,7 +1501,8 @@ class _MarketplacePageState extends State<MarketplacePage>
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   elevation: 4,
-                                  shadowColor: AppColors.primary.withOpacity(0.4),
+                                  shadowColor:
+                                      AppColors.primary.withOpacity(0.4),
                                 ),
                               ),
                             ],
@@ -1487,22 +1520,109 @@ class _MarketplacePageState extends State<MarketplacePage>
     );
   }
 
-  void _showTokenDetails(int tokenId) {
-    // Add a page transition animation when navigating to details
-    Navigator.of(context).push(
+  Widget _buildMarketStats(List<Token> listings) {
+    // Calculer les statistiques basées sur les listings actuels
+    final availableTokens = listings.length;
+
+    // Calculer le ROI moyen
+    double totalRoi = 0;
+    int roiCount = 0;
+    for (var token in listings) {
+      if (token.priceChangePercentage.percentage != 0) {
+        totalRoi += token.priceChangePercentage.percentage;
+        roiCount++;
+      }
+    }
+    final avgRoi =
+        roiCount > 0 ? (totalRoi / roiCount).toStringAsFixed(1) + '%' : '+0.0%';
+
+    // Calculer le volume des dernières 24h (tokens listés dans les dernières 24h)
+    double volume24h = 0;
+    for (var token in listings) {
+      if (token.daysSinceListing <= 1) {
+        final price = double.tryParse(token.price.replaceAll(' ETH', '')) ?? 0;
+        volume24h += price;
+      }
+    }
+    final volume = '${volume24h.toStringAsFixed(2)} ETH';
+
+    return Transform.translate(
+      offset: const Offset(0, -20),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              spreadRadius: 1,
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildAnimatedStatItem(
+                  'Available Tokens', availableTokens.toString(), Icons.token),
+              _buildVerticalDivider(),
+              _buildAnimatedStatItem('Avg. ROI', avgRoi, Icons.trending_up),
+              _buildVerticalDivider(),
+              _buildAnimatedStatItem(
+                  '24h Volume', volume, Icons.currency_exchange),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCacheIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.offline_bolt,
+            size: 16,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Showing cached data',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTokenDetails(Token token) {
+    Navigator.of(context)
+        .push(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => TokenDetailPage(
-          tokenId: tokenId,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            TokenDetailPage(
+          token: token, // Passer l'objet token complet au lieu de juste l'ID
           buyerAddress: widget.walletAddress,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(1.0, 0.0);
           const end = Offset.zero;
           const curve = Curves.easeOutCubic;
-          
-          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
           var offsetAnimation = animation.drive(tween);
-          
+
           return SlideTransition(
             position: offsetAnimation,
             child: FadeTransition(
@@ -1513,6 +1633,9 @@ class _MarketplacePageState extends State<MarketplacePage>
         },
         transitionDuration: const Duration(milliseconds: 400),
       ),
-    );
+    )
+        .then((_) {
+      _loadListings();
+    });
   }
 }

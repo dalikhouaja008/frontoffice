@@ -11,12 +11,12 @@ import '../widgets/purchase_dialog.dart';
 import '../../domain/entities/token.dart';
 
 class TokenDetailPage extends StatefulWidget {
-  final int tokenId;
+  final Token token;
   final String buyerAddress;
 
   const TokenDetailPage({
     Key? key,
-    required this.tokenId,
+    required this.token,
     required this.buyerAddress,
   }) : super(key: key);
 
@@ -28,13 +28,6 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadListingDetails();
-  }
-
-  void _loadListingDetails() {
-    context.read<MarketplaceBloc>().add(
-          GetListingDetailsEvent(tokenId: widget.tokenId),
-        );
   }
 
   Future<void> _launchUrl(String url) async {
@@ -51,7 +44,7 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
     }
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -64,101 +57,42 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
         ),
         backgroundColor: AppColors.primary,
       ),
-      body: BlocBuilder<MarketplaceBloc, MarketplaceState>(
-        builder: (context, state) {
-          if (state is MarketplaceLoading) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primary,
-              ),
-            );
-          } else if (state is ListingDetailsLoaded) {
-            final token = state.token;
-            final isDesktop = ResponsiveHelper.isDesktop(context);
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  isDesktop
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 6,
-                              child: _buildTokenVisual(token),
-                            ),
-                            const SizedBox(width: 32),
-                            Expanded(
-                              flex: 6,
-                              child: _buildTokenDetails(token),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildTokenVisual(token),
-                            const SizedBox(height: 24),
-                            _buildTokenDetails(token),
-                          ],
-                        ),
-                  const SizedBox(height: 32),
-                  _buildLandDetails(token),
-                  const SizedBox(height: 32),
-                  _buildInvestmentAnalysis(token),
-                  const SizedBox(height: 32),
-                  _buildTransactionHistory(token),
-                ],
-              ),
-            );
-          } else if (state is MarketplaceError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: AppColors.error,
-                    size: 64,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ResponsiveHelper.isDesktop(context)
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: _buildTokenVisual(widget.token),
+                      ),
+                      const SizedBox(width: 32),
+                      Expanded(
+                        flex: 6,
+                        child: _buildTokenDetails(widget.token),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTokenVisual(widget.token),
+                      const SizedBox(height: 24),
+                      _buildTokenDetails(widget.token),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Failed to load token details',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    state.message,
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadListingDetails,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      textStyle: GoogleFonts.poppins(),
-                    ),
-                    child: const Text('Try Again'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return Center(
-            child: Text(
-              'No token data available',
-              style: GoogleFonts.poppins(),
-            ),
-          );
-        },
+            const SizedBox(height: 32),
+            _buildLandDetails(widget.token),
+            const SizedBox(height: 32),
+            _buildInvestmentAnalysis(widget.token),
+            const SizedBox(height: 32),
+            _buildTransactionHistory(widget.token),
+          ],
+        ),
       ),
     );
   }
@@ -169,7 +103,7 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
@@ -281,7 +215,7 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Price information
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -373,23 +307,24 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             const Divider(color: AppColors.divider),
             const SizedBox(height: 16),
-            
+
             // Token details
             _buildDetailRow('Token ID', '#${token.tokenId}'),
             _buildDetailRow('Land ID', '#${token.landId}'),
             _buildDetailRow('Token Number', token.tokenNumber.toString()),
             _buildDetailRow('Listed On', token.listingDateFormatted),
             _buildDetailRow('Minted On', token.mintDateFormatted),
-            _buildDetailRow('Days Since Listing', token.daysSinceListing.toString()),
+            _buildDetailRow(
+                'Days Since Listing', token.daysSinceListing.toString()),
             _buildDetailRow('Seller', _shortenAddress(token.seller)),
-            
+
             const SizedBox(height: 16),
             const Divider(color: AppColors.divider),
             const SizedBox(height: 16),
-            
+
             // Action Button
             SizedBox(
               width: double.infinity,
@@ -397,11 +332,16 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (context) => PurchaseDialog(
+                    builder: (context) => EnhancedPurchaseDialog(
                       token: token,
                       buyerAddress: widget.buyerAddress,
                     ),
-                  );
+                  ).then((purchased) {
+                    if (purchased == true) {
+                      // Si l'achat a réussi, recharger la liste des tokens
+                      Navigator.of(context).pop();
+                    }
+                  });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -471,7 +411,7 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Land information in a grid
             GridView.count(
               shrinkWrap: true,
@@ -479,14 +419,21 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
               crossAxisCount: ResponsiveHelper.isDesktop(context) ? 3 : 2,
               childAspectRatio: 3,
               children: [
-                _buildGridItem('Location', token.land.location, Icons.location_on),
-                _buildGridItem('Surface Area', '${token.land.surface} m²', Icons.square_foot),
+                _buildGridItem(
+                    'Location', token.land.location, Icons.location_on),
+                _buildGridItem('Surface Area', '${token.land.surface} m²',
+                    Icons.square_foot),
                 _buildGridItem('Status', token.land.status, Icons.verified),
-                _buildGridItem('Registered', token.land.isRegistered ? 'Yes' : 'No', Icons.check_circle),
-                _buildGridItem('Total Tokens', token.land.totalTokens.toString(), Icons.token),
-                _buildGridItem('Available Tokens', token.land.availableTokens.toString(), Icons.sell),
-                _buildGridItem('Price Per Token', token.land.pricePerToken, Icons.monetization_on),
-                _buildGridItem('Owner', _shortenAddress(token.land.owner), Icons.person),
+                _buildGridItem('Registered',
+                    token.land.isRegistered ? 'Yes' : 'No', Icons.check_circle),
+                _buildGridItem('Total Tokens',
+                    token.land.totalTokens.toString(), Icons.token),
+                _buildGridItem('Available Tokens',
+                    token.land.availableTokens.toString(), Icons.sell),
+                _buildGridItem('Price Per Token', token.land.pricePerToken,
+                    Icons.monetization_on),
+                _buildGridItem(
+                    'Owner', _shortenAddress(token.land.owner), Icons.person),
               ],
             ),
           ],
@@ -515,7 +462,7 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Investment metrics
             Row(
               children: [
@@ -537,16 +484,18 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
                   child: _buildInvestmentMetric(
                     'Price Increase',
                     token.priceChangePercentage.formatted,
-                    token.priceChangePercentage.isPositive ? AppColors.success : AppColors.error,
+                    token.priceChangePercentage.isPositive
+                        ? AppColors.success
+                        : AppColors.error,
                   ),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 20),
             const Divider(color: AppColors.divider),
             const SizedBox(height: 16),
-            
+
             // Investment insights
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,14 +512,15 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
                 _buildInsightItem(
                   icon: Icons.trending_up,
                   title: 'Price Growth',
-                  description: 'This token has shown a ${token.priceChangePercentage.formatted} price growth since purchase.',
+                  description:
+                      'This token has shown a ${token.priceChangePercentage.formatted} price growth since purchase.',
                   positive: token.priceChangePercentage.isPositive,
                 ),
                 const SizedBox(height: 12),
                 _buildInsightItem(
                   icon: Icons.history,
                   title: 'Recency',
-                  description: token.isRecentlyListed 
+                  description: token.isRecentlyListed
                       ? 'Recently listed token may indicate fresh market opportunity.'
                       : 'Token has been on the market for ${token.daysSinceListing} days.',
                   positive: token.isRecentlyListed,
@@ -612,12 +562,13 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Transaction timeline
             _buildTransactionItem(
               date: token.mintDateFormatted,
               title: 'Token Minted',
-              description: 'Token was minted by ${_shortenAddress(token.land.owner)}',
+              description:
+                  'Token was minted by ${_shortenAddress(token.land.owner)}',
               amount: token.formattedPurchasePrice,
               isFirst: true,
               isLast: false,
@@ -625,7 +576,8 @@ class _TokenDetailPageState extends State<TokenDetailPage> {
             _buildTransactionItem(
               date: token.listingDateFormatted,
               title: 'Listed for Sale',
-              description: 'Token was listed for sale by ${_shortenAddress(token.seller)}',
+              description:
+                  'Token was listed for sale by ${_shortenAddress(token.seller)}',
               amount: token.formattedPrice,
               isFirst: false,
               isLast: true,
