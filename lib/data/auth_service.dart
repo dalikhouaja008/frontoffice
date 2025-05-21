@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
-import '../features/metamask/data/models/metamask_provider.dart';
+import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
+
 
 enum AuthStatus {
   initial,

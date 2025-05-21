@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/features/chatbot/domain/entities/message.dart';
-
 class ChatBubble extends StatelessWidget {
   final Message message;
 

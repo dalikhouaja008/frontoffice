@@ -14,8 +14,11 @@ import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/core/services/token_minting_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/datasources/investment_remote_data_source.dart';
+import 'package:the_boost/features/auth/data/datasources/preferences_remote_data_source.dart';
 import 'package:the_boost/features/auth/data/repositories/Investment_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:the_boost/features/auth/data/repositories/preferences_repository.dart';
+import 'package:the_boost/features/auth/data/repositories/preferences_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/property_repository_impl.dart';
 import 'package:the_boost/features/auth/data/repositories/two_factor_auth_repository.dart';
 import 'package:the_boost/features/auth/domain/repositories/auth_repository.dart';
@@ -24,22 +27,24 @@ import 'package:the_boost/features/auth/domain/repositories/property_repository.
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_enhanced_tokens_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/investments/get_properties_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/login_use_case.dart';
+import 'package:the_boost/features/auth/domain/use_cases/preferences/get_land_types_usecase.dart';
+import 'package:the_boost/features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
+import 'package:the_boost/features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
 import 'package:the_boost/features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/investment/investment_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/lands/land_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
+import 'package:the_boost/features/auth/presentation/bloc/preferences/preferences_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
+import 'package:the_boost/features/land/data/datasources/land_remote_data_source.dart';
+import 'package:the_boost/features/land/data/repositories/land_repository_impl.dart';
+import 'package:the_boost/features/land/domain/repositories/land_repository.dart';
+import 'package:the_boost/features/land/presentation/bloc/my_lands/my_lands_bloc.dart';
 import '../services/gemini_service.dart';
 import '../../features/chatbot/presentation/controllers/chat_controller.dart';
-import '../../features/auth/data/datasources/preferences_remote_data_source.dart';
-import '../../features/auth/data/repositories/preferences_repository.dart';
-import '../../features/auth/data/repositories/preferences_repository_impl.dart';
-import '../../features/auth/domain/use_cases/preferences/get_land_types_usecase.dart';
-import '../../features/auth/domain/use_cases/preferences/get_preferences_usecase.dart';
-import '../../features/auth/domain/use_cases/preferences/save_preferences_usecase.dart';
-import '../../features/auth/presentation/bloc/preferences/preferences_bloc.dart';
+
 import 'package:http/http.dart' as http;
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -135,7 +140,7 @@ Future<void> _initMarketplaceFeature() async {
 
     // Ensure URLs are available
     const landServiceBaseUrl = Url.landServiceBaseUrl;
-    
+
     // AJOUT: D'abord vérifier si AuthInterceptor est déjà enregistré, sinon l'enregistrer
     if (!getIt.isRegistered<AuthInterceptor>()) {
       getIt.registerLazySingleton<AuthInterceptor>(
@@ -144,7 +149,8 @@ Future<void> _initMarketplaceFeature() async {
           baseUrl: landServiceBaseUrl,
         ),
       );
-      print('[${DateTime.now()}] DependencyInjection: ✅ AuthInterceptor registered');
+      print(
+          '[${DateTime.now()}] DependencyInjection: ✅ AuthInterceptor registered');
     }
 
     // Data Sources
@@ -153,7 +159,8 @@ Future<void> _initMarketplaceFeature() async {
         client: getIt<http.Client>(),
         baseUrl: landServiceBaseUrl,
         secureStorage: getIt<SecureStorageService>(),
-        authInterceptor: getIt<AuthInterceptor>(),  // Maintenant on peut l'utiliser
+        authInterceptor:
+            getIt<AuthInterceptor>(), // Maintenant on peut l'utiliser
       ),
     );
 
@@ -222,10 +229,23 @@ Future<void> _initInvestmentFeature() async {
       ),
     );
 
+    getIt.registerLazySingleton<LandRemoteDataSource>(
+      () => LandRemoteDataSourceImpl(
+        client: getIt<GraphQLClient>(),
+      ),
+    );
+
     // Repositories
     getIt.registerLazySingleton<InvestmentRepository>(
       () => InvestmentRepositoryImpl(
         remoteDataSource: getIt<InvestmentRemoteDataSource>(),
+        networkInfo: getIt<NetworkInfo>(),
+      ),
+    );
+
+    getIt.registerLazySingleton<LandRepository>(
+      () => LandRepositoryImpl(
+        remoteDataSource: getIt<LandRemoteDataSource>(),
         networkInfo: getIt<NetworkInfo>(),
       ),
     );
@@ -239,6 +259,11 @@ Future<void> _initInvestmentFeature() async {
     getIt.registerFactory<InvestmentBloc>(
       () => InvestmentBloc(
         getEnhancedTokensUseCase: getIt<GetEnhancedTokensUseCase>(),
+      ),
+    );
+    getIt.registerFactory<MyLandsBloc>(
+      () => MyLandsBloc(
+        repository: getIt<LandRepository>(),
       ),
     );
 

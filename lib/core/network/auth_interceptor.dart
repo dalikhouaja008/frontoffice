@@ -20,8 +20,6 @@ class AuthInterceptor {
     final token = await getCurrentToken();
     if (token == null) return false;
     
-    // Simple token validation - check if it's a valid JWT format
-    // A more robust implementation would decode and check expiration
     final parts = token.split('.');
     return parts.length == 3;
   }

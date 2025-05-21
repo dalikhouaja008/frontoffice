@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_boost/core/constants/colors.dart';
-import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
 import 'dart:developer' as developer;
+
+import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
 
 typedef PublicKeyUpdateCallback = Future<void> Function(BuildContext context, String address);
 

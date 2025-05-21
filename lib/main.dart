@@ -14,11 +14,14 @@ import 'package:the_boost/features/auth/presentation/bloc/property/property_bloc
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/preferences/preferences_bloc.dart';
-import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
-import 'dart:developer' as developer;
-// Add marketplace bloc import
 import 'package:the_boost/features/marketplace/presentation/bloc/marketplace_bloc.dart';
 import 'package:the_boost/features/marketplace/presentation/bloc/marketplace_event.dart';
+import 'dart:developer' as developer;
+
+import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
+// Add marketplace bloc import
+
+
 
 
 class SimpleBlocObserver extends BlocObserver {
@@ -138,7 +141,7 @@ class TheBoostApp extends StatelessWidget {
               ),
             ),
             debugShowCheckedModeBanner: false,
-            initialRoute: isAuthenticated ? AppRoutes.dashboard : AppRoutes.home,
+            initialRoute: isAuthenticated ? AppRoutes.home : AppRoutes.home,
             onGenerateRoute: AppRoutes.generateRoute,
             builder: (context, child) {
               final currentState = context.watch<LoginBloc>().state;

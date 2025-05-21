@@ -2,8 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:the_boost/core/services/prop_service.dart';
-
-import '../../../data/models/property/property.dart';
+import 'package:the_boost/features/auth/data/models/property/property.dart';
 import 'valuation_screen.dart';
 
 class PropertyListScreen extends StatefulWidget {

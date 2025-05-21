@@ -9,7 +9,11 @@ import 'package:the_boost/features/auth/presentation/features_pages.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/lands_screen.dart';
 import 'package:the_boost/features/auth/presentation/pages/investments/profile_page.dart';
 import 'package:the_boost/features/auth/presentation/pages/selling/token_selling_page.dart';
-import '../../../chatbot/presentation/controllers/chat_controller.dart';
+import 'package:the_boost/features/auth/presentation/pages/valuation/land_valuation_screen_with_nav.dart';
+import 'package:the_boost/features/chatbot/presentation/controllers/chat_controller.dart';
+import 'package:the_boost/features/chatbot/presentation/pages/chat_screen.dart';
+import 'package:the_boost/features/land/presentation/bloc/my_lands/my_lands_bloc.dart';
+import 'package:the_boost/features/land/presentation/pages/my_lands_page.dart';
 
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/features_pages.dart';
@@ -21,10 +25,8 @@ import '../pages/dashboard/dashboard_page.dart';
 import '../pages/home/home_page.dart';
 import '../pages/investments/invest_page.dart';
 import '../pages/property_details/property_details_page.dart';
-import '../pages/valuation/land_valuation_screen_with_nav.dart';
 import '../widgets/howitworks_page.dart';
 import '../widgets/learn_more_page.dart';
-import '../../../chatbot/presentation/pages/chat_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -41,6 +43,7 @@ class AppRoutes {
   static const String preferences = '/preferences';
   static const String profile = '/profile';
   static const String tokenSelling = '/token-selling';
+  static const String myLands = '/my-lands';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -78,7 +81,7 @@ class AppRoutes {
           builder: (_) => ChangeNotifierProvider<ChatController>.value(
             value: getIt<ChatController>(),
             child: const InvestmentAssistantScreen(),
-          ),  
+          ),
         );
       case forgotPassword:
         return MaterialPageRoute(builder: (_) => ForgotPasswordPage());
@@ -89,8 +92,9 @@ class AppRoutes {
         );
       case tokenSelling:
         // Récupérer les arguments si disponibles
-        final Map<String, dynamic> args = settings.arguments as Map<String, dynamic>? ?? {};
-        
+        final Map<String, dynamic> args =
+            settings.arguments as Map<String, dynamic>? ?? {};
+
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
             value: getIt<InvestmentBloc>(),
@@ -99,6 +103,13 @@ class AppRoutes {
               initialSelectedIndex: args['selectedTokenIndex'] ?? 0,
               landName: args['landName'] ?? '',
             ),
+          ),
+        );
+      case myLands:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<MyLandsBloc>(),
+            child: const MyLandsPage(),
           ),
         );
       default:

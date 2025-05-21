@@ -13,6 +13,7 @@ class User {
   final DateTime updatedAt;
   final UserPreferences? preferences;
   final String token;
+  final String? publicKey;
 
   User({
     required this.id,
@@ -25,64 +26,65 @@ class User {
     required this.updatedAt,
     this.preferences,
     this.token = '',
+    this.publicKey,
   });
 
   // Ajout de la méthode fromJson
-factory User.fromJson(Map<String, dynamic> json) {
-  print('[2025-02-13 20:50:39] 🔄 Parsing User from JSON:'
+  factory User.fromJson(Map<String, dynamic> json) {
+    print('[2025-02-13 20:50:39] 🔄 Parsing User from JSON:'
         '\n${const JsonEncoder.withIndent('  ').convert(json)}');
-        
-  try {
-    // Parse preferences if they exist
-    UserPreferences? userPrefs;
-    if (json['preferences'] != null) {
-      userPrefs = UserPreferences.fromJson(json['preferences']);
-    }
-    
-    return User(
-      // Utiliser '_id' au lieu de 'id' car c'est le format renvoyé par le backend
-      id: json['_id'] as String? ?? '',
-      username: json['username'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-      role: json['role'] as String? ?? '',
-      twoFactorSecret: json['twoFactorSecret'] as String?,
-      isTwoFactorEnabled: json['isTwoFactorEnabled'] as bool? ?? false,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt'] as String)
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : DateTime.now(),
-      preferences: userPrefs,
-    );
-  } catch (e) {
-    print('[2025-02-13 20:50:39] ❌ Error parsing User from JSON:'
+
+    try {
+      // Parse preferences if they exist
+      UserPreferences? userPrefs;
+      if (json['preferences'] != null) {
+        userPrefs = UserPreferences.fromJson(json['preferences']);
+      }
+
+      return User(
+        id: json['_id'] as String? ?? '',
+        username: json['username'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        role: json['role'] as String? ?? '',
+        twoFactorSecret: json['twoFactorSecret'] as String?,
+        isTwoFactorEnabled: json['isTwoFactorEnabled'] as bool? ?? false,
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'] as String)
+            : DateTime.now(),
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.parse(json['updatedAt'] as String)
+            : DateTime.now(),
+        preferences: userPrefs,
+        publicKey: json['publicKey'] as String?,
+      );
+    } catch (e) {
+      print('[2025-02-13 20:50:39] ❌ Error parsing User from JSON:'
           '\n└─ Error: $e'
           '\n└─ JSON: ${json.toString()}');
-    rethrow;
+      rethrow;
+    }
   }
-}
 
   // Ajout de la méthode toJson
-// Mettre à jour toJson pour correspondre
-Map<String, dynamic> toJson() {
-  final Map<String, dynamic> data = {
-    '_id': id,  // Utiliser '_id' pour être cohérent
-    'username': username,
-    'email': email,
-    'role': role,
-    'twoFactorSecret': twoFactorSecret,
-    'isTwoFactorEnabled': isTwoFactorEnabled,
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-  };
-  
-  if (preferences != null) {
-    data['preferences'] = preferences!.toJson();
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {
+      '_id': id,
+      'username': username,
+      'email': email,
+      'role': role,
+      'twoFactorSecret': twoFactorSecret,
+      'isTwoFactorEnabled': isTwoFactorEnabled,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'publicKey': publicKey,
+    };
+
+    if (preferences != null) {
+      data['preferences'] = preferences!.toJson();
+    }
+
+    return data;
   }
-  
-  return data;
-}
 
   User copyWith({
     String? id,
@@ -94,6 +96,7 @@ Map<String, dynamic> toJson() {
     DateTime? createdAt,
     DateTime? updatedAt,
     UserPreferences? preferences,
+    String? publicKey,
   }) {
     return User(
       id: id ?? this.id,
@@ -105,6 +108,7 @@ Map<String, dynamic> toJson() {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       preferences: preferences ?? this.preferences,
+      publicKey: publicKey ?? this.publicKey,
     );
   }
 
@@ -120,7 +124,8 @@ Map<String, dynamic> toJson() {
           twoFactorSecret == other.twoFactorSecret &&
           isTwoFactorEnabled == other.isTwoFactorEnabled &&
           createdAt == other.createdAt &&
-          updatedAt == other.updatedAt;
+          updatedAt == other.updatedAt &&
+          publicKey == other.publicKey;
 
   @override
   int get hashCode =>
@@ -131,12 +136,13 @@ Map<String, dynamic> toJson() {
       twoFactorSecret.hashCode ^
       isTwoFactorEnabled.hashCode ^
       createdAt.hashCode ^
-      updatedAt.hashCode;
+      updatedAt.hashCode ^
+      publicKey.hashCode;
 
   @override
   String toString() {
     return 'User{id: $id, username: $username, email: $email, role: $role, '
         'isTwoFactorEnabled: $isTwoFactorEnabled, createdAt: $createdAt, '
-        'updatedAt: $updatedAt}';
+        'updatedAt: $updatedAt, publicKey: $publicKey}';
   }
 }

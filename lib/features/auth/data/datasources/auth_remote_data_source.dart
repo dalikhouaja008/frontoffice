@@ -49,7 +49,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           _id
           email
           username
-          
+          publicKey
+          role
         }
       }
     }
@@ -95,6 +96,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         '_id': userData['_id'],
         'email': userData['email'],
         'username': userData['username'],
+        'publicKey':userData['publicKey'],
         'role': userData['role'],
       });
 

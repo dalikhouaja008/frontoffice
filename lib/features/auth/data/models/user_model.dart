@@ -18,6 +18,7 @@ class UserModel extends User {
     required DateTime createdAt,
     required DateTime updatedAt,
     UserPreferences? preferences,
+    String? publicKey,
   }) : super(
           id: id,
           username: username,
@@ -28,6 +29,7 @@ class UserModel extends User {
           createdAt: createdAt,
           updatedAt: updatedAt,
           preferences: preferences,
+          publicKey: publicKey,
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -39,7 +41,7 @@ class UserModel extends User {
     if (userData['preferences'] != null) {
       userPrefs = UserPreferences.fromJson(userData['preferences']);
     }
-  
+
     return UserModel(
       id: userData['_id'] ?? "",
       username: userData['username'] ?? "Unknown",
@@ -49,13 +51,14 @@ class UserModel extends User {
       refreshToken: json['refreshToken'] ?? "",
       twoFactorSecret: userData['twoFactorSecret'],
       isTwoFactorEnabled: userData['isTwoFactorEnabled'] ?? false,
-      createdAt: userData['createdAt'] != null 
-          ? DateTime.parse(userData['createdAt']) 
+      createdAt: userData['createdAt'] != null
+          ? DateTime.parse(userData['createdAt'])
           : DateTime.now(),
-      updatedAt: userData['updatedAt'] != null 
-          ? DateTime.parse(userData['updatedAt']) 
+      updatedAt: userData['updatedAt'] != null
+          ? DateTime.parse(userData['updatedAt'])
           : DateTime.now(),
       preferences: userPrefs,
+      publicKey: userData['publicKey'],
     );
   }
 
@@ -69,6 +72,7 @@ class UserModel extends User {
       'isTwoFactorEnabled': isTwoFactorEnabled,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'publicKey': publicKey,
     };
 
     if (preferences != null) {
@@ -95,6 +99,7 @@ class UserModel extends User {
     DateTime? createdAt,
     DateTime? updatedAt,
     UserPreferences? preferences,
+    String? publicKey,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -108,6 +113,7 @@ class UserModel extends User {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       preferences: preferences ?? this.preferences,
+      publicKey: publicKey ?? this.publicKey,
     );
   }
 
@@ -125,7 +131,8 @@ class UserModel extends User {
           twoFactorSecret == other.twoFactorSecret &&
           isTwoFactorEnabled == other.isTwoFactorEnabled &&
           createdAt == other.createdAt &&
-          updatedAt == other.updatedAt;
+          updatedAt == other.updatedAt &&
+          publicKey == other.publicKey;
 
   @override
   int get hashCode =>
@@ -138,5 +145,6 @@ class UserModel extends User {
       twoFactorSecret.hashCode ^
       isTwoFactorEnabled.hashCode ^
       createdAt.hashCode ^
-      updatedAt.hashCode;
+      updatedAt.hashCode ^
+      publicKey.hashCode;
 }

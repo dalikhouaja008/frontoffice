@@ -891,9 +891,9 @@ List<PlatformFile> _images = [];
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      Navigator.pushNamed(context, '/dashboard');
+                      Navigator.pushNamed(context, '/my-lands');
                     },
-                    child: Text('Go to Dashboard'),
+                    child: const Text('Go to my lands'),
                   ),
                   SizedBox(width: 16),
                   ElevatedButton(
@@ -901,7 +901,6 @@ List<PlatformFile> _images = [];
                       Navigator.of(context).pop();
                       _resetForm();
                     },
-                    child: Text('Register Another Land'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -911,6 +910,7 @@ List<PlatformFile> _images = [];
                       padding:
                           EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
+                    child: const Text('Register Another Land'),
                   ),
                 ],
               ),
