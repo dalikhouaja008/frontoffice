@@ -34,6 +34,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _hasChanges = false;
+  List<String> _selectedLandTypes = [];
+List<String> _availableLandTypes = []; // This will store types from the API
   final PreferencesService _preferencesService = PreferencesService();
   
   // Selected values for UI
@@ -69,37 +71,41 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   }
   
   Future<void> _loadPreferences() async {
-    setState(() {
-      _isLoading = true;
-    });
+  setState(() {
+    _isLoading = true;
+  });
+  
+  try {
+    // Use the PreferencesService instead of direct storage access
+    final prefs = await _preferencesService.getPreferences(widget.user.id);
     
-    try {
-      // Use the PreferencesService instead of direct storage access
-      final prefs = await _preferencesService.getPreferences(widget.user.id);
-      
-      if (prefs != null) {
-        setState(() {
-          _preferences = prefs;
-          _selectedLocations.clear();
-          _selectedLocations.addAll(prefs.preferredLocations);
-          _minPrice = prefs.minPrice;
-          _maxPrice = prefs.maxPrice == double.infinity ? 1000000 : prefs.maxPrice;
-          _maxDistance = prefs.maxDistanceKm;
-          _notificationsEnabled = prefs.notificationsEnabled;
-        });
-      } else {
-        // Use default preferences
-        final defaultPrefs = UserPreferences.defaultPreferences();
-        setState(() {
-          _preferences = defaultPrefs;
-          _selectedLocations.clear();
-          _selectedLocations.addAll(defaultPrefs.preferredLocations);
-          _minPrice = defaultPrefs.minPrice;
-          _maxPrice = defaultPrefs.maxPrice == double.infinity ? 1000000 : defaultPrefs.maxPrice;
-          _maxDistance = defaultPrefs.maxDistanceKm;
-          _notificationsEnabled = defaultPrefs.notificationsEnabled;
-        });
-      }
+    if (prefs != null) {
+      setState(() {
+        _preferences = prefs;
+        _selectedLocations.clear();
+        _selectedLocations.addAll(prefs.preferredLocations);
+        _selectedLandTypes.clear();
+        _selectedLandTypes.addAll(prefs.preferredLandTypes); // Add this line
+        _minPrice = prefs.minPrice;
+        _maxPrice = prefs.maxPrice == double.infinity ? 1000000 : prefs.maxPrice;
+        _maxDistance = prefs.maxDistanceKm;
+        _notificationsEnabled = prefs.notificationsEnabled;
+      });
+    } else {
+      // Use default preferences
+      final defaultPrefs = UserPreferences.defaultPreferences();
+      setState(() {
+        _preferences = defaultPrefs;
+        _selectedLocations.clear();
+        _selectedLocations.addAll(defaultPrefs.preferredLocations);
+        _selectedLandTypes.clear();
+        _selectedLandTypes.addAll(defaultPrefs.preferredLandTypes); // Add this line
+        _minPrice = defaultPrefs.minPrice;
+        _maxPrice = defaultPrefs.maxPrice == double.infinity ? 1000000 : defaultPrefs.maxPrice;
+        _maxDistance = defaultPrefs.maxDistanceKm;
+        _notificationsEnabled = defaultPrefs.notificationsEnabled;
+      });
+    }
     } catch (e) {
       print('Error loading preferences: $e');
       // Use default preferences in case of error
@@ -139,6 +145,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           minPrice: _minPrice,
           maxPrice: _maxPrice,
           preferredLocations: _selectedLocations,
+                  preferredLandTypes: _selectedLandTypes, // Add this line
+
           maxDistanceKm: _maxDistance,
           notificationsEnabled: _notificationsEnabled,
           lastUpdated: DateTime.now(),
@@ -284,6 +292,11 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                   backgroundColor: Colors.green,
                 ),
               );
+              } else if (state is LandTypesLoaded) {
+    // Update available land types when they're loaded
+    setState(() {
+      _availableLandTypes = state.landTypes;
+    });
             } else if (state is PreferencesSaving) {
               setState(() {
                 _isSaving = true;
@@ -307,6 +320,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                 setState(() {
                   _preferences = state.preferences;
                   _selectedLocations = List.from(state.preferences.preferredLocations);
+                        _selectedLandTypes = List.from(state.preferences.preferredLandTypes); // Add this line
+
                   _minPrice = state.preferences.minPrice;
                   _maxPrice = state.preferences.maxPrice == double.infinity ? 1000000 : state.preferences.maxPrice;
                   _maxDistance = state.preferences.maxDistanceKm;
@@ -365,6 +380,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                                   const SizedBox(height: AppDimensions.paddingXL),
                                   _buildLocationsSection(),
                                   const SizedBox(height: AppDimensions.paddingXL),
+  _buildLandTypesSection(),
+                                  const SizedBox(height: AppDimensions.paddingXL),
                                   _buildDistanceSection(),
                                   const SizedBox(height: AppDimensions.paddingXL),
                                   _buildNotificationsSection(),
@@ -401,6 +418,69 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
     
     return true;
   }
+
+  Widget _buildLandTypesSection() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Land Types',
+        style: AppTextStyles.h4,
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'Select land types you\'re interested in',
+        style: TextStyle(
+          color: Colors.black54,
+        ),
+      ),
+      const SizedBox(height: AppDimensions.paddingM),
+      
+      // Show loading or empty state if no land types are available
+      if (_availableLandTypes.isEmpty)
+        Container(
+          padding: const EdgeInsets.all(AppDimensions.paddingL),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Center(
+            child: _availableLandTypes.isEmpty
+                ? const Text('Loading land types...')
+                : const Text('No land types available'),
+          ),
+        )
+      else
+        // Use Wrap widget for a flex layout of selection chips
+        Wrap(
+          spacing: AppDimensions.paddingS,
+          runSpacing: AppDimensions.paddingS,
+          children: _availableLandTypes.map((type) {
+            final isSelected = _selectedLandTypes.contains(type);
+            return FilterChip(
+              label: Text(type),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedLandTypes.add(type);
+                  } else {
+                    _selectedLandTypes.remove(type);
+                  }
+                  _hasChanges = true;
+                });
+              },
+              selectedColor: AppColors.primary.withOpacity(0.2),
+              checkmarkColor: AppColors.primary,
+              backgroundColor: Colors.grey.shade200,
+              elevation: kIsWeb ? 1 : 0,
+            );
+          }).toList(),
+        ),
+    ],
+  );
+}
   
   Widget _buildInfoCard() {
     return Container(

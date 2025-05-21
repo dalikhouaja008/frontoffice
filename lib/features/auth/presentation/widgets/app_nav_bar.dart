@@ -204,6 +204,7 @@ class AppNavBar extends StatelessWidget {
 
   // Add this widget to your AppNavBar class
   Widget _buildWalletButton(BuildContext context, User? user) {
+
     // Check if the user already has a publicKey stored
     final String? userPublicKey = user?.publicKey;
     final bool userHasStoredWallet =
@@ -426,14 +427,16 @@ class AppNavBar extends StatelessWidget {
                         },
                         isNew: true, // Highlight as a new feature
                       ),
-                    _NavLink('Invest',
-                        route: '/invest', currentRoute: currentRoute),
+                    // Only show Invest link when authenticated
+                    if (isAuthenticated)
+                      _NavLink('Invest',
+                          route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More',
                         route: '/learn-more', currentRoute: currentRoute),
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
-                // Add wallet connect button
+                // Add wallet connect button (only for authenticated users)
                 _buildWalletButton(context, user),
                 const SizedBox(width: AppDimensions.paddingM),
                 if (isAuthenticated)
@@ -490,7 +493,7 @@ class AppNavBar extends StatelessWidget {
         _buildLogo(context),
         Row(
           children: [
-            // Add wallet connect button
+            // Add wallet connect button (only for authenticated users)
             _buildWalletButton(context, user),
             const SizedBox(width: 8),
             if (isAuthenticated) ...[
@@ -657,14 +660,16 @@ class AppNavBar extends StatelessWidget {
                     );
                   },
                 ),
-              ListTile(
-                leading: const Icon(Icons.token),
-                title: const Text('Invest'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/invest');
-                },
-              ),
+              // Only show Invest when authenticated  
+              if (isAuthenticated)
+                ListTile(
+                  leading: const Icon(Icons.token),
+                  title: const Text('Invest'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/invest');
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.book),
                 title: const Text('Learn More'),
@@ -723,6 +728,7 @@ class AppNavBar extends StatelessWidget {
                   );
                 },
               ),
+
             ],
           ),
         );

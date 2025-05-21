@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
 import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
+import 'package:the_boost/features/land_registration/presentation/pages/register_land_page.dart';
 import '../../widgets/hero_section.dart';
 import '../../widgets/features_grid.dart';
 import '../../widgets/steps_section.dart';
 import '../base_page.dart';
-import '../register_land_page,.dart';
 
 class HomePage extends StatelessWidget {
   @override

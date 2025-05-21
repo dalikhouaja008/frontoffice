@@ -23,6 +23,8 @@ import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
 
 
 
+import 'features/land_registration/presentation/bloc/register_land_bloc.dart';
+
 
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -99,6 +101,9 @@ class TheBoostApp extends StatelessWidget {
         BlocProvider<PropertyBloc>(create: (_) => getIt<PropertyBloc>()),
         BlocProvider<PreferencesBloc>(create: (_) => getIt<PreferencesBloc>()),
         BlocProvider<LandBloc>(create: (_) => getIt<LandBloc>()),
+        BlocProvider<RegisterLandBloc>(
+  create: (_) => getIt<RegisterLandBloc>(),
+),
         // Add MarketplaceBloc provider
         BlocProvider<MarketplaceBloc>(create: (_) => getIt<MarketplaceBloc>()),
       ],

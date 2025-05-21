@@ -40,6 +40,17 @@ class PreferencesSaved extends PreferencesState {
   @override
   List<Object> get props => [preferences];
 }
+
+// New state for land types loaded
+class LandTypesLoaded extends PreferencesState {
+  final List<String> landTypes;
+
+  const LandTypesLoaded({required this.landTypes});
+
+  @override
+  List<Object> get props => [landTypes];
+}
+
 class PreferencesError extends PreferencesState {
   final String message;
 
