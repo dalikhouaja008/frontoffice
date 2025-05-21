@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:the_boost/features/auth/data/models/property/valuation_result.dart';
 import 'dart:async';
 
 import '../../../../../core/services/prop_service.dart';
 import '../../../../../core/utils/string_utils.dart';
-import '../../../data/models/property/valuation_result.dart';
 import 'package:the_boost/core/constants/colors.dart';
 
 class ValuationScreen extends StatefulWidget {

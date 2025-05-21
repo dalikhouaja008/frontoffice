@@ -6,6 +6,7 @@ import 'package:the_boost/core/constants/url.dart';
 import 'package:the_boost/core/di/dependency_injection.dart';
 import 'package:the_boost/core/network/auth_interceptor.dart';
 import 'package:the_boost/core/network/graphql_client.dart';
+import 'package:the_boost/core/network/network_info.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/services/session_service.dart';
 import 'package:the_boost/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -17,6 +18,10 @@ import 'package:the_boost/features/auth/domain/use_cases/sign_up_use_case.dart';
 import 'package:the_boost/features/auth/presentation/bloc/2FA/two_factor_auth_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:the_boost/features/auth/presentation/bloc/signup/sign_up_bloc.dart';
+import 'package:the_boost/features/land/data/datasources/land_remote_data_source.dart';
+import 'package:the_boost/features/land/data/repositories/land_repository_impl.dart';
+import 'package:the_boost/features/land/domain/repositories/land_repository.dart';
+import 'package:the_boost/features/land/presentation/bloc/my_lands/my_lands_bloc.dart';
 
 class InjectionContainer {
   static late final SecureStorageService _secureStorage;
@@ -25,12 +30,12 @@ class InjectionContainer {
 
   static void init() {
     print('injection DI: 🚀 Initializing dependency injection');
-      getIt.registerLazySingleton<AuthInterceptor>(
-    () => AuthInterceptor(
-      secureStorage: getIt<SecureStorageService>(),
-      baseUrl: Url.landServiceBaseUrl,
-    ),
-  );
+    getIt.registerLazySingleton<AuthInterceptor>(
+      () => AuthInterceptor(
+        secureStorage: getIt<SecureStorageService>(),
+        baseUrl: Url.landServiceBaseUrl,
+      ),
+    );
 
     _secureStorage = SecureStorageService();
     _graphQLClient = GraphQLService.client;
@@ -71,9 +76,15 @@ class InjectionContainer {
         ),
       ),
       BlocProvider<TwoFactorAuthBloc>(
-          create: (context) => TwoFactorAuthBloc(
-                repository: context.read<TwoFactorAuthRepository>(),
-              )),
+        create: (context) => TwoFactorAuthBloc(
+          repository: context.read<TwoFactorAuthRepository>(),
+        ),
+      ),
+      BlocProvider<MyLandsBloc>(
+        create: (context) => MyLandsBloc(
+          repository: context.read<LandRepository>(),
+        ),
+      ),
     ];
   }
 
@@ -97,6 +108,11 @@ class InjectionContainer {
           secureStorage: context.read<SecureStorageService>(),
         ),
       ),
+      Provider<LandRemoteDataSource>(
+        create: (context) => LandRemoteDataSourceImpl(
+          client: context.read<GraphQLClient>(),
+        ),
+      ),
     ];
   }
 
@@ -112,6 +128,12 @@ class InjectionContainer {
       Provider<TwoFactorAuthRepository>(
         create: (context) => TwoFactorAuthRepositoryImpl(
           context.read<AuthRemoteDataSource>(),
+        ),
+      ),
+      Provider<LandRepository>(
+        create: (context) => LandRepositoryImpl(
+          remoteDataSource: context.read<LandRemoteDataSource>(),
+          networkInfo: context.read<NetworkInfo>(),
         ),
       ),
     ];

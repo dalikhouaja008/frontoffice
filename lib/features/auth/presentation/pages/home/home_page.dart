@@ -16,92 +16,94 @@ class HomePage extends StatelessWidget {
       title: 'Home',
       currentRoute: '/',
       body: Stack(
-          children: [
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildHeroSection(context),
-                  _buildFeaturesSection(context),
-                  _buildHowItWorksSection(context),
-                  _buildAdvantagesSection(context),
-                  _buildTestimonialsSection(context),
-                  _buildFaqSection(context),
-                  _buildCallToActionSection(context),
-                ],
-              ),
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeroSection(context),
+                _buildFeaturesSection(context),
+                _buildHowItWorksSection(context),
+                _buildAdvantagesSection(context),
+                _buildTestimonialsSection(context),
+                _buildFaqSection(context),
+                _buildCallToActionSection(context),
+              ],
             ),
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: FloatingActionButton.extended(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.investmentAssistant);
-                },
-                icon: const Icon(Icons.support_agent),
-                label: const Text('Get Investment Help'),
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.investmentAssistant);
+              },
+              icon: const Icon(Icons.support_agent),
+              label: const Text('Get Investment Help'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSection(BuildContext context) {
+    return HeroSection(
+      title: 'Invest in Land\nThe Smart Way',
+      subtitle:
+          'Buy, sell, and exchange tokenized land assets with full transparency and security through blockchain technology.',
+      primaryButtonText: 'Start Investing',
+      secondaryButtonText:
+          'Register Your Land', // Changed text to describe land registration
+      onPrimaryButtonPressed: () {
+        Navigator.of(context).pushNamed('/invest');
+      },
+      onSecondaryButtonPressed: () {
+        // Navigate to the RegisterLandPage we created
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => RegisterLandPage(),
+          ),
+        );
+      },
+      image: Container(
+        height: 400,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Image.asset(
+              'assets/1.jpg', // Replace with your actual asset path
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            Positioned.fill(
+              child: Center(
+                child: Text(
+                  "",
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
         ),
-      );
+      ),
+    );
   }
-  Widget _buildHeroSection(BuildContext context) {
-  return HeroSection(
- title: 'Invest in Land\nThe Smart Way',
-subtitle: 'Buy, sell, and exchange tokenized land assets with full transparency and security through blockchain technology.',
-primaryButtonText: 'Start Investing',
-secondaryButtonText: 'Register Your Land', // Changed text to describe land registration
-onPrimaryButtonPressed: () {
-  Navigator.of(context).pushNamed('/invest');
-},
-onSecondaryButtonPressed: () {
-  // Navigate to the RegisterLandPage we created
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (context) => RegisterLandPage(),
-    ),
-  );
-},
-    image: Container(
-      height: 400,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Image.asset(
-            'assets/1.jpg', // Replace with your actual asset path
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-          Positioned.fill(
-            child: Center(
-              child: Text(
-                "",
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 
   Widget _buildFeaturesSection(BuildContext context) {
     return FeaturesGrid(
@@ -109,25 +111,25 @@ onSecondaryButtonPressed: () {
       subtitle: 'Everything you need to invest in land assets with confidence',
       features: [
         FeatureItem(
-          icon: Icons.token,
-          title: 'Asset Tokenization',
-          description: 'Convert land ownership into digital tokens for fractional investing and easier transfers.'
-        ),
+            icon: Icons.token,
+            title: 'Asset Tokenization',
+            description:
+                'Convert land ownership into digital tokens for fractional investing and easier transfers.'),
         FeatureItem(
-          icon: Icons.swap_horiz,
-          title: 'Buy & Sell Tokens',
-          description: 'Trade land tokens easily through our intuitive platform with minimal fees.'
-        ),
+            icon: Icons.swap_horiz,
+            title: 'Buy & Sell Tokens',
+            description:
+                'Trade land tokens easily through our intuitive platform with minimal fees.'),
         FeatureItem(
-          icon: Icons.security,
-          title: 'Blockchain Security',
-          description: 'Secure all transactions and ownership records with immutable blockchain technology.'
-        ),
+            icon: Icons.security,
+            title: 'Blockchain Security',
+            description:
+                'Secure all transactions and ownership records with immutable blockchain technology.'),
         FeatureItem(
-          icon: Icons.show_chart,
-          title: 'Market Analytics',
-          description: 'Access detailed market data and trends to make informed investment decisions.'
-        ),
+            icon: Icons.show_chart,
+            title: 'Market Analytics',
+            description:
+                'Access detailed market data and trends to make informed investment decisions.'),
       ],
       crossAxisCount: 4,
       childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.2 : 1.0,
@@ -140,25 +142,25 @@ onSecondaryButtonPressed: () {
       subtitle: 'Simple steps to start your land investment journey',
       steps: [
         StepItem(
-          number: '01',
-          title: 'Create an Account',
-          description: 'Sign up and complete verification to access investment opportunities.'
-        ),
+            number: '01',
+            title: 'Create an Account',
+            description:
+                'Sign up and complete verification to access investment opportunities.'),
         StepItem(
-          number: '02',
-          title: 'Browse Properties',
-          description: 'Explore available land offerings with detailed information and analytics.'
-        ),
+            number: '02',
+            title: 'Browse Properties',
+            description:
+                'Explore available land offerings with detailed information and analytics.'),
         StepItem(
-          number: '03',
-          title: 'Purchase Tokens',
-          description: 'Buy tokens representing shares in land properties of your choice.'
-        ),
+            number: '03',
+            title: 'Purchase Tokens',
+            description:
+                'Buy tokens representing shares in land properties of your choice.'),
         StepItem(
-          number: '04',
-          title: 'Manage Portfolio',
-          description: 'Track performance, receive updates, and sell or trade tokens when ready.'
-        ),
+            number: '04',
+            title: 'Manage Portfolio',
+            description:
+                'Track performance, receive updates, and sell or trade tokens when ready.'),
       ],
     );
   }

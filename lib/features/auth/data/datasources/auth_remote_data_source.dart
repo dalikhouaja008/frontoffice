@@ -49,6 +49,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           _id
           email
           username
+          publicKey
+          role
+
         }
       }
     }
@@ -89,13 +92,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw Exception('No user data in response');
     }
 
-    // Create the User object
-    final user = User.fromJson({
-      '_id': userData['_id'],
-      'email': userData['email'],
-      'username': userData['username'],
-      'role': userData['role'],
-    });
+
+      // Créer l'objet User
+      final user = User.fromJson({
+        '_id': userData['_id'],
+        'email': userData['email'],
+        'username': userData['username'],
+        'publicKey':userData['publicKey'],
+        'role': userData['role'],
+      });
+
+      // Vérifier si 2FA est requis
+      final requiresTwoFactor = loginData['requiresTwoFactor'] ?? false;
+      if (requiresTwoFactor) {
+        final tempToken = loginData['tempToken'];
+        if (tempToken == null) {
+          print('AuthRemoteDataSourceImpl: ❌ No temp token for 2FA'
+              '\n└─ Email: ${user.email}');
+          throw Exception('No temporary token provided for 2FA');
+        }
+
 
     // Handle Two-Factor Authentication (2FA)
     final requiresTwoFactor = loginData['requiresTwoFactor'] ?? false; // Default to false

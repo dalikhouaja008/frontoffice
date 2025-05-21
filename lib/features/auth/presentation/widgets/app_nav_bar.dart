@@ -6,6 +6,7 @@ import 'package:the_boost/core/constants/colors.dart';
 import 'package:the_boost/core/constants/dimensions.dart';
 import 'package:the_boost/core/services/secure_storage_service.dart';
 import 'package:the_boost/core/utils/responsive_helper.dart';
+import 'package:the_boost/features/auth/presentation/pages/valuation/land_valuation_home_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/buttons/app_button.dart';
 import 'package:the_boost/features/auth/domain/entities/user.dart';
 import 'package:the_boost/features/auth/presentation/bloc/login/login_bloc.dart';
@@ -14,19 +15,16 @@ import 'package:the_boost/features/auth/presentation/bloc/routes.dart';
 import 'package:the_boost/features/auth/presentation/pages/preferences/user_preferences_screen.dart';
 import 'package:the_boost/features/auth/presentation/widgets/dialogs/preferences_alert_dialog.dart';
 import 'package:the_boost/features/auth/presentation/widgets/notification_bell.dart';
+import 'package:the_boost/features/marketplace/presentation/pages/marketplace_page.dart';
+import 'package:the_boost/features/metamask/data/models/metamask_provider.dart';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
 import '../../../../core/di/dependency_injection.dart';
 import '../../../../core/services/prop_service.dart';
-import '../../../metamask/data/models/metamask_provider.dart';
-import '../pages/valuation/land_valuation_home_screen.dart';
-import '../pages/valuation/land_valuation_screen_with_nav.dart';
 
-import '../../../../features/marketplace/presentation/pages/marketplace_page.dart';
 
 import 'howitworks_page.dart';
-
 
 class AppNavBar extends StatelessWidget {
   final VoidCallback? onLoginPressed;
@@ -78,13 +76,13 @@ class AppNavBar extends StatelessWidget {
   }
 
   // Handle public key update with user integration
-  Future<void> _handlePublicKeyUpdate(BuildContext context, String address, User? user) async {
-    developer.log('[2025-05-05 01:36:09] AppNavBar: 🔑 Public key updated for address: $address');
-    
+  Future<void> _handlePublicKeyUpdate(
+      BuildContext context, String address, User? user) async {
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Connected to wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}'),
+        content: Text(
+            'Connected to wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
@@ -97,47 +95,101 @@ class AppNavBar extends StatelessWidget {
         ),
       ),
     );
-    
-    // If the user is authenticated, associate the wallet address with the user account
+
+    // Check if user is authenticated
     if (user != null) {
-      developer.log('[2025-05-05 01:36:09] AppNavBar: 👤 User authenticated: ${user.id}. Associating wallet address: $address with user: ${user.username}');
-      
+      developer.log(
+          '[${DateTime.now()}] AppNavBar: 👤 User authenticated: ${user.id}');
+
+      // Compare with user's stored wallet address if it exists
+      if (user.publicKey != null && user.publicKey!.isNotEmpty) {
+        // Check if the current connected wallet matches the user's stored wallet
+        if (user.publicKey!.toLowerCase() != address.toLowerCase()) {
+          developer.log(
+              '[${DateTime.now()}] AppNavBar: ⚠️ Wallet mismatch detected. Connected: $address, Stored: ${user.publicKey}');
+
+          // Show a wallet mismatch dialog or notification
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Wallet Mismatch'),
+              content: const Text(
+                  'The connected wallet address is different from the wallet address associated with your account. '
+                  'Would you like to update your account to use this wallet?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Here you would typically make an API call to update the user's wallet
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Updating your account wallet...'),
+                        backgroundColor: Colors.blue,
+                      ),
+                    );
+                    // This would be replaced with actual API call
+                  },
+                  child: const Text('Update Wallet'),
+                ),
+              ],
+            ),
+          );
+          return;
+        } else {
+          developer.log(
+              '[${DateTime.now()}] AppNavBar: ✅ Connected wallet matches user\'s stored wallet');
+        }
+      } else {
+        // User doesn't have a wallet address stored yet, so save this one
+        developer.log(
+            '[${DateTime.now()}] AppNavBar: 📝 User doesn\'t have a stored wallet. Saving this wallet address');
+
+        // Here you would make an API call to update the user record with this wallet address
+        // This would be replaced with actual API call
+      }
+
+      // Get encryption public key if needed
       final provider = Provider.of<MetamaskProvider>(context, listen: false);
       if (provider.publicKey.isEmpty) {
-        developer.log('[2025-05-05 01:36:09] AppNavBar: 🔑 Requesting public key for user ${user.id}');
-        
+        developer.log(
+            '[${DateTime.now()}] AppNavBar: 🔑 Requesting encryption public key for user ${user.id}');
+
         // We need to get the public key from MetaMask and save it to the backend
         final success = await provider.getEncryptionPublicKey(userId: user.id);
         if (success) {
-          developer.log('[2025-05-05 01:36:09] AppNavBar: ✅ Public key saved for user ${user.id}');
+          developer.log(
+              '[${DateTime.now()}] AppNavBar: ✅ Encryption public key saved for user ${user.id}');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Wallet connected and public key saved successfully!'),
+              content: Text(
+                  'Wallet connected and encryption key saved successfully!'),
               backgroundColor: Colors.green,
             ),
           );
         } else {
-          developer.log('[2025-05-05 01:36:09] AppNavBar: ❌ Failed to get public key: ${provider.error}');
+          developer.log(
+              '[${DateTime.now()}] AppNavBar: ❌ Failed to get encryption public key: ${provider.error}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to get public key: ${provider.error}'),
+              content: Text('Failed to get encryption key: ${provider.error}'),
               backgroundColor: Colors.red,
             ),
           );
         }
-      } else {
-        developer.log('[2025-05-05 01:36:09] AppNavBar: ℹ️ Public key already exists for user ${user.id}');
-        
-        // Associate the existing public key with this user explicitly
-        provider.savePublicKeyToBackend(userId: user.id);
       }
     } else {
-      developer.log('[2025-05-05 01:36:09] AppNavBar: ⚠️ User not authenticated. Wallet connected but not associated with user account');
-      
+      developer.log(
+          '[${DateTime.now()}] AppNavBar: ⚠️ User not authenticated. Wallet connected but not associated with user account');
+
       // Prompt user to log in to associate the wallet
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Log in to associate this wallet with your account'),
+          content:
+              const Text('Log in to associate this wallet with your account'),
           backgroundColor: Colors.orange,
           action: SnackBarAction(
             label: 'Login',
@@ -152,16 +204,18 @@ class AppNavBar extends StatelessWidget {
 
   // Add this widget to your AppNavBar class
   Widget _buildWalletButton(BuildContext context, User? user) {
-    // Only show wallet button when user is authenticated
-    if (user == null) {
-      return const SizedBox.shrink(); // Return empty widget if not authenticated
-    }
-    
+
+    // Check if the user already has a publicKey stored
+    final String? userPublicKey = user?.publicKey;
+    final bool userHasStoredWallet =
+        userPublicKey != null && userPublicKey.isNotEmpty;
+
     return Consumer<MetamaskProvider>(
       builder: (context, provider, _) {
-        developer.log('[2025-05-05 01:36:09] AppNavBar: 🔄 Building wallet button. Connected: ${provider.currentAddress.isNotEmpty}. Loading: ${provider.isLoading}');
-        
-        // Loading state
+        developer.log(
+            '[${DateTime.now()}] AppNavBar: 🔄 Building wallet button. Connected: ${provider.currentAddress.isNotEmpty}. User wallet: $userHasStoredWallet');
+
+        // If the wallet provider is in loading state, show spinner
         if (provider.isLoading) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -181,37 +235,81 @@ class AppNavBar extends StatelessWidget {
           );
         }
 
-        // Connected state
-        if (provider.currentAddress.isNotEmpty) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primary),
-            ),
-            child: InkWell(
-              onTap: () => _showWalletOptions(context, provider, user),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 18),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+        // If user is not authenticated, show a simplified connect button
+        if (user == null) {
+          return ElevatedButton.icon(
+            icon: const Icon(Icons.account_balance_wallet, size: 16),
+            label: const Text('Connect Wallet', style: TextStyle(fontSize: 12)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: Colors.grey.shade300),
               ),
+              elevation: 1,
             ),
+            onPressed: () {
+              developer.log(
+                  '[${DateTime.now()}] AppNavBar: 🔘 MetaMask connect button clicked');
+              provider.connect().then((_) {
+                if (provider.currentAddress.isNotEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Please log in to associate this wallet with your account'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              });
+            },
           );
         }
 
-        // Not connected state
+        // If user has a stored wallet key, show it in the button
+        if (userHasStoredWallet) {
+          return ElevatedButton.icon(
+            icon: const Icon(Icons.account_balance_wallet, size: 16),
+            label: Text(
+              '${userPublicKey!.substring(0, 6)}...${userPublicKey.substring(userPublicKey.length - 4)}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                  color: provider.currentAddress.isNotEmpty &&
+                          provider.currentAddress.toLowerCase() ==
+                              userPublicKey.toLowerCase()
+                      ? Colors.green
+                      : Colors.grey.shade300,
+                ),
+              ),
+              elevation: 1,
+            ),
+            onPressed: () {
+              if (provider.currentAddress.isEmpty) {
+                // If wallet is not connected, try to connect
+                provider.connect().then((_) {
+                  if (provider.currentAddress.isNotEmpty) {
+                    _handlePublicKeyUpdate(
+                        context, provider.currentAddress, user);
+                  }
+                });
+              } else {
+                // If wallet is connected, show wallet info
+                _showWalletInfo(context, provider, user);
+              }
+            },
+          );
+        }
+
+        // If user is authenticated but has no wallet, show connect button
         return ElevatedButton.icon(
           icon: const Icon(Icons.account_balance_wallet, size: 16),
           label: const Text('Connect Wallet', style: TextStyle(fontSize: 12)),
@@ -226,114 +324,39 @@ class AppNavBar extends StatelessWidget {
             elevation: 1,
           ),
           onPressed: () {
-            developer.log('[2025-05-05 01:36:09] AppNavBar: 🔘 MetaMask connect button clicked');
-            
-            try {
-              provider.connect().then((success) {
-                developer.log('[2025-05-05 01:36:09] AppNavBar: 🔄 MetaMask connect result: $success');
-                
-                if (success && provider.currentAddress.isNotEmpty) {
-                  _handlePublicKeyUpdate(context, provider.currentAddress, user);
-                } else if (!success && provider.error.isNotEmpty) {
-                  developer.log('[2025-05-05 01:36:09] AppNavBar: ❌ MetaMask error: ${provider.error}');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('MetaMask error: ${provider.error}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }).catchError((error) {
-                developer.log('[2025-05-05 01:36:09] AppNavBar: ❌ MetaMask connect error: $error');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to connect to MetaMask: $error'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              });
-            } catch (e) {
-              developer.log('[2025-05-05 01:36:09] AppNavBar: ❌ Exception during MetaMask connection: $e');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to connect to MetaMask: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
+            developer.log(
+                '[${DateTime.now()}] AppNavBar: 🔘 MetaMask connect button clicked');
+            provider.connect().then((_) {
+              if (provider.currentAddress.isNotEmpty) {
+                _handlePublicKeyUpdate(context, provider.currentAddress, user);
+              }
+            });
           },
         );
       },
     );
   }
 
-  // Show wallet options dialog with user integration
-  void _showWalletOptions(BuildContext context, MetamaskProvider provider, User? user) {
+  // Helper method to show wallet info in a dialog
+  void _showWalletInfo(
+      BuildContext context, MetamaskProvider provider, User user) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Wallet Connected'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Your Ethereum Address:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              SelectableText(provider.currentAddress),
-              const SizedBox(height: 16),
-              if (provider.publicKey.isNotEmpty) ...[
-                const Text('Public Key Status:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    const SizedBox(width: 4),
-                    const Text('Public Key Saved'),
-                  ],
-                ),
-              ],
-              if (user != null) ...[
-                const SizedBox(height: 16),
-                const Text('Account Status:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.link, color: Colors.blue, size: 16),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text('Connected to ${user.username}\'s account (ID: ${user.id})'),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 16),
-              const Text('Network:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('ChainID: ${provider.chainId.isEmpty ? "Unknown" : provider.chainId}'),
-            ],
-          ),
+        title: const Text('Wallet Information'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Connected Address: ${provider.currentAddress}'),
+            const SizedBox(height: 8),
+            Text('User Public Key: ${user.publicKey ?? 'Not set'}'),
+            const SizedBox(height: 16),
+            const Text('Status: Connected',
+                style: TextStyle(color: Colors.green)),
+          ],
         ),
         actions: [
-          if (!provider.success && provider.publicKey.isEmpty)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                provider.getEncryptionPublicKey(userId: user?.id).then((success) {
-                  if (success) {
-                    _handlePublicKeyUpdate(context, provider.currentAddress, user);
-                  } else if (provider.error.isNotEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to get public key: ${provider.error}'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                });
-              },
-              child: const Text('Get Public Key'),
-            ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
@@ -410,7 +433,6 @@ class AppNavBar extends StatelessWidget {
                           route: '/invest', currentRoute: currentRoute),
                     _NavLink('Learn More',
                         route: '/learn-more', currentRoute: currentRoute),
-
                   ],
                 ),
                 const SizedBox(width: AppDimensions.paddingM),
@@ -505,13 +527,16 @@ class AppNavBar extends StatelessWidget {
     );
   }
 
-
   // Helper method to get or generate wallet address
   String _getUserWalletAddress(User? user) {
-    // If your User model doesn't have a wallet address,
-    // you could use another identifier like email or userId
-    // This is just a placeholder - replace with actual wallet address retrieval logic
+    // If user has a publicKey, return it
+    if (user != null && user.publicKey != null && user.publicKey!.isNotEmpty) {
+      return user.publicKey!;
+    }
+
+    // Otherwise generate a placeholder address based on user ID or username
     if (user == null) return '';
+
     final String baseString = user.id.isNotEmpty
         ? user.id
         : (user.username.isNotEmpty ? user.username : 'user');
@@ -519,7 +544,7 @@ class AppNavBar extends StatelessWidget {
     // Pad the string if needed to ensure it's long enough
     final String paddedString = baseString.padRight(40, '0');
 
-    // Create a fixed-length wallet address without substring
+    // Create a fixed-length wallet address
     return '0x${paddedString.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase().substring(0, 40)}';
   }
 
@@ -653,54 +678,57 @@ class AppNavBar extends StatelessWidget {
                   Navigator.pushNamed(context, '/learn-more');
                 },
               ),
-              // Add wallet management option to drawer - only when authenticated
-              if (isAuthenticated)
-                Consumer<MetamaskProvider>(
-                  builder: (context, provider, _) {
-                    return ListTile(
-                      leading: const Icon(Icons.account_balance_wallet),
-                      title: Row(
-                        children: [
-                          const Text('Wallet'),
-                          const SizedBox(width: 10),
-                          if (provider.isLoading) 
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          else if (provider.currentAddress.isNotEmpty)
-                            Icon(Icons.check_circle, color: Colors.green, size: 14),
-                        ],
-                      ),
-                      subtitle: provider.currentAddress.isNotEmpty 
+              // Add wallet management option to drawer
+              Consumer<MetamaskProvider>(
+                builder: (context, provider, _) {
+                  return ListTile(
+                    leading: const Icon(Icons.account_balance_wallet),
+                    title: Row(
+                      children: [
+                        const Text('Wallet'),
+                        const SizedBox(width: 10),
+                        if (provider.isLoading)
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else if (provider.currentAddress.isNotEmpty)
+                          Icon(Icons.check_circle,
+                              color: Colors.green, size: 14),
+                      ],
+                    ),
+                    subtitle: provider.currentAddress.isNotEmpty
                         ? Text(
                             '${provider.currentAddress.substring(0, 4)}...${provider.currentAddress.substring(provider.currentAddress.length - 4)}',
                             style: TextStyle(fontSize: 12),
                           )
                         : null,
-                      onTap: () {
-                        Navigator.pop(context);
-                        if (provider.currentAddress.isNotEmpty) {
-                          _showWalletOptions(context, provider, user);
-                        } else {
-                          provider.connect().then((success) {
-                            if (success) {
-                              _handlePublicKeyUpdate(context, provider.currentAddress, user);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to connect wallet: ${provider.error}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          });
-                        }
-                      },
-                    );
-                  },
-                ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (provider.currentAddress.isNotEmpty) {
+                        _showWalletInfo(context, provider, user!);
+                      } else {
+                        provider.connect().then((success) {
+                          if (success) {
+                            _handlePublicKeyUpdate(
+                                context, provider.currentAddress, user);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Failed to connect wallet: ${provider.error}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        });
+                      }
+                    },
+                  );
+                },
+              ),
+
             ],
           ),
         );
@@ -843,20 +871,19 @@ class AppNavBar extends StatelessWidget {
         // Add wallet management option
         PopupMenuItem(
             value: 'wallet',
-            child: Consumer<MetamaskProvider>(
-              builder: (context, provider, _) {
-                return Row(
-                  children: [
-                    Icon(Icons.account_balance_wallet, color: Colors.black54),
-                    SizedBox(width: AppDimensions.paddingM),
-                    Text('Manage Wallet'),
-                    const Spacer(),
-                    if (provider.currentAddress.isNotEmpty)
-                      Icon(Icons.check_circle, color: Colors.green, size: 14)
-                  ],
-                );
-              }
-            )),
+            child: Consumer<MetamaskProvider>(builder: (context, provider, _) {
+              return Row(
+                children: [
+                  const Icon(Icons.account_balance_wallet,
+                      color: Colors.black54),
+                  SizedBox(width: AppDimensions.paddingM),
+                  Text('Manage Wallet'),
+                  const Spacer(),
+                  if (provider.currentAddress.isNotEmpty)
+                    Icon(Icons.check_circle, color: Colors.green, size: 14)
+                ],
+              );
+            })),
         const PopupMenuItem(
             value: 'settings',
             child: Row(children: [
@@ -892,23 +919,26 @@ class AppNavBar extends StatelessWidget {
             );
             break;
           case 'invest':
-            Navigator.pushNamed(context, AppRoutes.invest);
+            Navigator.pushNamed(context, AppRoutes.myLands);
             break;
           case 'preferences':
             if (user != null) _checkAndShowPreferences(context, user);
             break;
           case 'wallet':
-            final provider = Provider.of<MetamaskProvider>(context, listen: false);
+            final provider =
+                Provider.of<MetamaskProvider>(context, listen: false);
             if (provider.currentAddress.isNotEmpty) {
-              _showWalletOptions(context, provider, user);
+              _showWalletInfo(context, provider, user!);
             } else {
               provider.connect().then((success) {
                 if (success) {
-                  _handlePublicKeyUpdate(context, provider.currentAddress, user);
+                  _handlePublicKeyUpdate(
+                      context, provider.currentAddress, user);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Failed to connect wallet: ${provider.error}'),
+                      content:
+                          Text('Failed to connect wallet: ${provider.error}'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -976,7 +1006,8 @@ class AppNavBar extends StatelessWidget {
                             children: [
                               Text(user?.username ?? 'User',
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold, fontSize: 16)),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16)),
                               Text(user?.email ?? '',
                                   style: const TextStyle(
                                       color: Colors.black54, fontSize: 14)),
@@ -988,38 +1019,39 @@ class AppNavBar extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.dashboard, color: AppColors.primary),
-                    title: const Text('Dashboard'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.dashboard);
-                    }
-                  ),
+                      leading:
+                          const Icon(Icons.dashboard, color: AppColors.primary),
+                      title: const Text('Dashboard'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, AppRoutes.dashboard);
+                      }),
                   ListTile(
-                    leading: const Icon(Icons.person, color: AppColors.primary),
-                    title: const Text('My Profile'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/profile');
-                    }
-                  ),
+                      leading:
+                          const Icon(Icons.person, color: AppColors.primary),
+                      title: const Text('My Profile'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/profile');
+                      }),
                   // Add Marketplace menu item
                   ListTile(
-                    leading: const Icon(Icons.shopping_cart, color: AppColors.primary),
-                    title: Row(
-                      children: [
-                        const Text('Marketplace'),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            //color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          /*child: const Text(
+                      leading: const Icon(Icons.shopping_cart,
+                          color: AppColors.primary),
+                      title: Row(
+                        children: [
+                          const Text('Marketplace'),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              //color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            /*child: const Text(
                             'NEW',
                             style: TextStyle(
                               color: Colors.white,
@@ -1027,67 +1059,66 @@ class AppNavBar extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),*/
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MarketplacePage(
-                            walletAddress: _getUserWalletAddress(user),
                           ),
-                        ),
-                      );
-                    }
-                  ),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MarketplacePage(
+                              walletAddress: _getUserWalletAddress(user),
+                            ),
+                          ),
+                        );
+                      }),
                   ListTile(
-                    leading: const Icon(Icons.token, color: AppColors.primary),
-                    title: const Text('My Investments'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.invest);
-                    }
-                  ),
+                      leading:
+                          const Icon(Icons.token, color: AppColors.primary),
+                      title: const Text('My Investments'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, AppRoutes.invest);
+                      }),
                   ListTile(
-                    leading: const Icon(Icons.map, color: AppColors.primary),
-                    title: const Text('Land Valuation'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LandValuationHomeScreen(),
-                        ),
-                      );
-                    }
-                  ),
+                      leading: const Icon(Icons.map, color: AppColors.primary),
+                      title: const Text('Land Valuation'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const LandValuationHomeScreen(),
+                          ),
+                        );
+                      }),
                   ListTile(
-                    leading: const Icon(Icons.tune, color: AppColors.primary),
-                    title: const Text('Investment Preferences'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (user != null) _checkAndShowPreferences(context, user);
-                    }
-                  ),
+                      leading: const Icon(Icons.tune, color: AppColors.primary),
+                      title: const Text('Investment Preferences'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        if (user != null)
+                          _checkAndShowPreferences(context, user);
+                      }),
                   ListTile(
-                    leading: const Icon(Icons.settings, color: AppColors.primary),
-                    title: const Text('Settings'),
-                    onTap: () {
-                      Navigator.pop(context);
-                    }
-                  ),
+                      leading:
+                          const Icon(Icons.settings, color: AppColors.primary),
+                      title: const Text('Settings'),
+                      onTap: () {
+                        Navigator.pop(context);
+                      }),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Logout', style: TextStyle(color: Colors.red)),
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.read<LoginBloc>().add(LogoutRequested());
-                      Navigator.pushReplacementNamed(context, AppRoutes.home);
-                    }
-                  ),
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text('Logout',
+                          style: TextStyle(color: Colors.red)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.read<LoginBloc>().add(LogoutRequested());
+                        Navigator.pushReplacementNamed(context, AppRoutes.home);
+                      }),
                 ],
               ),
             ),
